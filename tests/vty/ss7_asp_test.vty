@@ -104,6 +104,7 @@ ss7_asp_vty_test(config-cs7)# list
   description .TEXT
   network-indicator (international | national | reserved | spare)
   point-code POINT_CODE
+  secondary-pc POINT_CODE
   point-code format <1-24> [<1-23>] [<1-22>]
   point-code format default
   point-code delimiter (default|dash)
@@ -123,6 +124,7 @@ ss7_asp_vty_test(config-cs7)# ?
   description        Save human-readable description of the object
   network-indicator  Configure the Network Indicator
   point-code         Configure the local Point Code
+  secondary-pc       Configure the local Secondary Point Code
   xua                SIGTRAN xxxUA related
   asp                Configure Application Server Process
   no                 Negate a command or set its defaults
