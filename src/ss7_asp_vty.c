@@ -414,15 +414,12 @@ DEFUN_ATTR(asp_role, asp_role_cmd,
 {
 	struct osmo_ss7_asp *asp = vty->index;
 
-	if (!strcmp(argv[0], "ipsp")) {
-		vty_out(vty, "IPSP role isn't supported yet%s", VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-
 	if (!strcmp(argv[0], "sg"))
 		asp->cfg.role = OSMO_SS7_ASP_ROLE_SG;
 	else if (!strcmp(argv[0], "asp"))
 		asp->cfg.role = OSMO_SS7_ASP_ROLE_ASP;
+	else if (!strcmp(argv[0], "ipsp"))
+		asp->cfg.role = OSMO_SS7_ASP_ROLE_IPSP;
 	else
 		OSMO_ASSERT(0);
 
