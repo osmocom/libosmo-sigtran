@@ -350,6 +350,11 @@ static struct xua_msg *m3ua_gen_error(uint32_t err_code)
 {
 	struct xua_msg *xua = xua_msg_alloc();
 
+	if (!xua) {
+		LOGP(DLM3UA, LOGL_NOTICE, "Failed to allocate M3UA MGMT error message.\n");
+		return NULL;
+	}
+
 	xua->hdr = XUA_HDR(M3UA_MSGC_MGMT, M3UA_MGMT_ERR);
 	xua->hdr.version = M3UA_VERSION;
 	xua_msg_add_u32(xua, M3UA_IEI_ERR_CODE, err_code);
@@ -359,15 +364,31 @@ static struct xua_msg *m3ua_gen_error(uint32_t err_code)
 
 static struct xua_msg *m3ua_gen_error_msg(uint32_t err_code, struct msgb *msg)
 {
-	struct xua_msg *xua = m3ua_gen_error(err_code);
-	unsigned int len_max_40 = msgb_length(msg);
+	struct xua_msg *err = m3ua_gen_error(err_code);
+	struct xua_msg *xua;
+	struct xua_msg_part *na_ie;
+	unsigned int len_max_40;
 
-	if (len_max_40 > 40)
-		len_max_40 = 40;
+	if (!err)
+		return NULL;
 
-	xua_msg_add_data(xua, M3UA_IEI_DIAG_INFO, len_max_40, msgb_data(msg));
+	switch (err_code) {
+	case M3UA_ERR_INVAL_NET_APPEAR:
+		/* Include NA IE in Error message. */
+		xua = xua_from_msg(M3UA_VERSION, msgb_length(msg), msgb_data(msg));
+		na_ie = xua_msg_find_tag(xua, M3UA_IEI_NET_APPEAR);
+		xua_msg_add_data(err, M3UA_IEI_NET_APPEAR, na_ie->len, na_ie->dat);
+		xua_msg_free(xua);
+		break;
+	default:
+		len_max_40 = msgb_length(msg);
+		if (len_max_40 > 40)
+			len_max_40 = 40;
 
-	return xua;
+		xua_msg_add_data(err, M3UA_IEI_DIAG_INFO, len_max_40, msgb_data(msg));
+	}
+
+	return err;
 }
 
 /***********************************************************************
@@ -534,6 +555,7 @@ struct m3ua_data_hdr *data_hdr_from_m3ua(struct xua_msg *xua)
 
 static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
+	struct xua_msg_part *na_ie = xua_msg_find_tag(xua, M3UA_IEI_NET_APPEAR);
 	struct xua_msg_part *rctx_ie = xua_msg_find_tag(xua, M3UA_IEI_ROUTE_CTX);
 	struct m3ua_data_hdr *dh;
 	struct osmo_ss7_as *as;
@@ -547,6 +569,18 @@ static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 			__func__,
 			get_value_string(m3ua_xfer_msgt_names, xua->hdr.msg_type));
 		return M3UA_ERR_UNSUPP_MSG_TYPE;
+	}
+
+	/* Reject unsupported Network Appearance IE. */
+	if (na_ie) {
+		uint32_t na = xua_msg_part_get_u32(na_ie);
+
+		LOGPASP(asp, DLM3UA, LOGL_NOTICE,
+			"Unsupported 'Network Appearance' IE '0x%08x' in message type '%s', sending 'Error'.\n",
+			na, get_value_string(m3ua_xfer_msgt_names, xua->hdr.msg_type));
+		if (na_ie->len != 4)
+			return M3UA_ERR_PARAM_FIELD_ERR;
+		return M3UA_ERR_INVAL_NET_APPEAR;
 	}
 
 	rc = xua_find_as_for_asp(&as, asp, rctx_ie);
@@ -978,6 +1012,8 @@ static int m3ua_rx_snm_sg(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 
 static int m3ua_rx_snm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
+	struct xua_msg_part *na_ie = xua_msg_find_tag(xua, M3UA_IEI_NET_APPEAR);
+
 	/* SNM only permitted in ACTIVE state */
 	if (asp->fi->state != XUA_ASP_S_ACTIVE) {
 		if (asp->fi->state == XUA_ASP_S_INACTIVE &&
@@ -989,6 +1025,18 @@ static int m3ua_rx_snm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 				"while ASP in state %s\n", osmo_fsm_inst_state_name(asp->fi));
 			return M3UA_ERR_UNEXPECTED_MSG;
 		}
+	}
+
+	/* Reject unsupported Network Appearance IE. */
+	if (na_ie) {
+		uint32_t na = xua_msg_part_get_u32(na_ie);
+
+		LOGPASP(asp, DLM3UA, LOGL_NOTICE,
+			"Unsupported 'Network Appearance' IE '0x%08x' in message type '%s', sending 'Error'.\n",
+			na, get_value_string(m3ua_xfer_msgt_names, xua->hdr.msg_type));
+		if (na_ie->len != 4)
+			return M3UA_ERR_PARAM_FIELD_ERR;
+		return M3UA_ERR_INVAL_NET_APPEAR;
 	}
 
 	switch (asp->cfg.role) {
