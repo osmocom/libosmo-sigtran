@@ -1,3 +1,21 @@
+libosmo-sigtran (2.0.0) unstable; urgency=medium
+
+  [ Pau Espin Pedrol ]
+  * ss7_as: Avoid dispatch event to asp with uninitialized FSM
+
+  [ Harald Welte ]
+  * remove old static libsccp.a, libmtp.a, libxua.a
+  * remove obsolete sccp.h
+
+  [ Oliver Smith ]
+  * gitreview: libosmo-sccp -> libosmo-sigtran
+  * README: libosmo-sccp -> libosmo-sigtran
+  * configure: libosmo-sccp -> libosmo-sigtran
+  * contrib/jenkins: libosmo-sccp -> libosmo-sigtran
+  * debian: libosmo-sccp -> libosmo-sigtran
+
+ -- Oliver Smith <osmith@sysmocom.de>  Thu, 12 Sep 2024 11:03:17 +0200
+
 libosmo-sccp (1.9.0) unstable; urgency=medium
 
   [ Pau Espin Pedrol ]

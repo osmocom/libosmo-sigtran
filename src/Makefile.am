@@ -23,7 +23,7 @@ lib_LTLIBRARIES = libosmo-sigtran.la
 # This is _NOT_ the library release version, it's an API version.
 # Please read Chapter 6 "Library interface versions" of the libtool
 # documentation before making any modification
-LIBVERSION=10:0:0
+LIBVERSION=10:1:0
 
 libosmo_sigtran_la_SOURCES = \
 	ipa.c \
