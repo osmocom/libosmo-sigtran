@@ -1,5 +1,5 @@
 #!/bin/sh
-# jenkins build helper script for libosmo-sccp.  This is how we build on jenkins.osmocom.org
+# jenkins build helper script for libosmo-sigtran.  This is how we build on jenkins.osmocom.org
 #
 # environment variables:
 # * WITH_MANUALS: build manual PDFs if set to "1"
@@ -43,7 +43,7 @@ set +x
 echo
 echo
 echo
-echo " =============================== libosmo-sccp ==============================="
+echo " =============================== libosmo-sigtran ==============================="
 echo
 set -x
 
