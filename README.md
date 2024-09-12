@@ -1,4 +1,4 @@
-libosmo-sccp - Osmocom SCCP, SIGTRAN and STP
+libosmo-sigtran - Osmocom SCCP, SIGTRAN and STP
 ============================================
 
 This repository contains
@@ -7,24 +7,25 @@ This repository contains
   (connection oriented and connectionless)
 * *OsmoSTP*, a SS7 Transfer Point that can be used to act as router and translator between M3UA, SUA and/or
   SCCPlite
-* *libosmo-sccp*, a legacy C-language [static] library that we used in prehistoric osmocom code before we had
-  libosmo-sigtran.
+
+The code in this repository used to be in *libosmo-sccp.git*, together with the legacy C-language static library
+*libosmo-sccp*. This library was used in prehistoric Osmocom code before we had libosmo-sigtran. If you need to compile
+old code that requires libosmo-sccp, use [libosmo-sccp-legacy](https://gitea.osmocom.org/osmocom/libosmo-sccp-legacy).
 
 Homepage
 --------
 
-The official homepage of libosmo-sccp is at <https://osmocom.org/projects/libosmo-sccp/wiki>
-
-The official homepage of osmo-stp is at <https://osmocom.org/projects/osmo-stp/wiki>
+* [libosmo-sigtran homepage](https://osmocom.org/projects/libosmo-sccp/wiki)
+* [osmo-stp homepage](https://osmocom.org/projects/osmo-stp/wiki)
 
 GIT Repository
 --------------
 
 You can clone from the official git repository using
 
-	git clone https://gitea.osmocom.org/osmocom/libosmo-sccp
+	git clone https://gitea.osmocom.org/osmocom/libosmo-sigtran
 
-There is a web interface at <https://gitea.osmocom.org/osmocom/libosmo-sccp>
+There is a web interface at <https://gitea.osmocom.org/osmocom/libosmo-sigtran>
 
 Documentation
 -------------
@@ -32,10 +33,8 @@ Documentation
 osmo-stp User Manuals and VTY reference manuals are [optionally] built in PDF form
 as part of the build process.
 
-Pre-rendered PDF version of the current "master" can be found at
-[User Manual](https://ftp.osmocom.org/docs/latest/osmostp-usermanual.pdf)
-as well as the VTY reference manuals
-* [VTY Reference Manual for osmo-stp](https://ftp.osmocom.org/docs/latest/osmostp-vty-reference.pdf)
+Pre-rendered PDF versions of the manuals can be found at:
+https://ftp.osmocom.org/docs/osmo-stp/
 
 Forum
 -----
@@ -59,11 +58,11 @@ when posting.
 Issue Tracker
 -------------
 
-We use the issue trackers of smocom.org for tracking the state of bug reports and feature requests.  Feel free
+We use the issue trackers of osmocom.org for tracking the state of bug reports and feature requests.  Feel free
 to submit any issues you may find, or help us out by resolving existing issues.
 
-* [osmo-stp issue tracker](https://osmocom.org/projects/osmo-stp/issues)
 * [libosmo-sigtran issue tracker](https://osmocom.org/projects/libosmo-sccp/issues)
+* [osmo-stp issue tracker](https://osmocom.org/projects/osmo-stp/issues)
 
 Contributing
 ------------
