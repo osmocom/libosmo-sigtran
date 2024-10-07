@@ -364,18 +364,18 @@ DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
 	unsigned int argind;
 
 	if (dpc < 0) {
-		vty_out(vty, "Invalid point code (%s)%s", argv[0], VTY_NEWLINE);
+		vty_out(vty, "%% Invalid point code (%s)%s", argv[0], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
 	if (mask < 0) {
-		vty_out(vty, "Invalid point code (%s)%s", argv[1], VTY_NEWLINE);
+		vty_out(vty, "%% Invalid point code (%s)%s", argv[1], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
 	rt = osmo_ss7_route_create(rtable, dpc, mask, ls_name);
 	if (!rt) {
-		vty_out(vty, "cannot create route %s/%s to %s%s",
+		vty_out(vty, "%% Cannot create route %s/%s to %s%s",
 			argv[0], argv[1], argv[2], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -394,6 +394,7 @@ DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
 			return CMD_WARNING;
 		break; /* Parse values below */
 	default:
+		vty_out(vty, "%% Incomplete command (missing an argument?)%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 

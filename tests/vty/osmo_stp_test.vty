@@ -621,3 +621,5 @@ cs7 instance 0
 ...
  route-table system
 ... !update route 3.2.1 7.255.7 linkset my-ass priority 5 qos-class 1
+OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset my-ass priority
+% Incomplete command (missing an argument?)
