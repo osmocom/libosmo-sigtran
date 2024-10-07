@@ -341,7 +341,7 @@ DEFUN_ATTR(cs7_route_table, cs7_route_table_cmd,
 }
 
 DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
-	   "update route POINT_CODE MASK linkset LS_NAME [priority PRIO] [qos-class (CLASS|default)]",
+	   "update route POINT_CODE MASK linkset LS_NAME [priority] [PRIO] [qos-class] [(CLASS|default)]",
 	   "Update the Route\n"
 	   "Update the Route\n"
 	   "Destination Point Code\n"
@@ -377,6 +377,23 @@ DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
 	if (!rt) {
 		vty_out(vty, "cannot create route %s/%s to %s%s",
 			argv[0], argv[1], argv[2], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	switch (argc) {
+	case 3:
+		return CMD_SUCCESS;
+	case 5:
+		if (strcmp(argv[3], "priority") != 0 &&
+		    strcmp(argv[3], "qos-class") != 0)
+			return CMD_WARNING;
+		break; /* Parse values below */
+	case 7:
+		if (strcmp(argv[3], "priority") != 0 &&
+		    strcmp(argv[5], "qos-class") != 0)
+			return CMD_WARNING;
+		break; /* Parse values below */
+	default:
 		return CMD_WARNING;
 	}
 
