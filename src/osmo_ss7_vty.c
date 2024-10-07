@@ -346,7 +346,6 @@ DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
 	   "Update the Route\n"
 	   "Destination Point Code\n"
 	   "Point Code Mask\n"
-	   "Point Code Length\n"
 	   "Specify Destination Linkset\n"
 	   "Linkset Name\n"
 	   "Specify Priority\n"
