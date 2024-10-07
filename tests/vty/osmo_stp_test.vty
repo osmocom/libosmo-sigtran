@@ -1,0 +1,576 @@
+OsmoSTP> list
+... !show cs7
+  show cs7 instance <0-15> users
+  show cs7 (sua|m3ua|ipa) [<0-65534>]
+  show cs7 (sua|m3ua|ipa) (sctp|tcp) [<0-65534>]
+  show cs7 config
+  show cs7 instance <0-15> asp
+  show cs7 instance <0-15> asp name ASP_NAME
+  show cs7 instance <0-15> asp-remaddr
+  show cs7 instance <0-15> asp-remaddr name ASP_NAME
+  show cs7 instance <0-15> asp-assoc-status
+  show cs7 instance <0-15> asp-assoc-status name ASP_NAME
+  show cs7 instance <0-15> as (active|all|m3ua|sua)
+  show cs7 instance <0-15> route
+  show cs7 instance <0-15> sccp addressbook
+  show cs7 instance <0-15> sccp users
+  show cs7 instance <0-15> sccp ssn <0-65535>
+  show cs7 instance <0-15> sccp connections
+  show cs7 instance <0-15> sccp timers
+... !show cs7
+
+OsmoSTP> enable
+OsmoSTP# list
+... !show cs7
+  show cs7 instance <0-15> users
+  show cs7 (sua|m3ua|ipa) [<0-65534>]
+  show cs7 (sua|m3ua|ipa) (sctp|tcp) [<0-65534>]
+  show cs7 config
+  cs7 instance <0-15> asp NAME disconnect
+  show cs7 instance <0-15> asp
+  show cs7 instance <0-15> asp name ASP_NAME
+  show cs7 instance <0-15> asp-remaddr
+  show cs7 instance <0-15> asp-remaddr name ASP_NAME
+  show cs7 instance <0-15> asp-assoc-status
+  show cs7 instance <0-15> asp-assoc-status name ASP_NAME
+  show cs7 instance <0-15> as (active|all|m3ua|sua)
+  show cs7 instance <0-15> route
+  show cs7 instance <0-15> sccp addressbook
+  show cs7 instance <0-15> sccp users
+  show cs7 instance <0-15> sccp ssn <0-65535>
+  show cs7 instance <0-15> sccp connections
+  show cs7 instance <0-15> sccp timers
+... !show cs7
+
+OsmoSTP# show ?
+...
+  cs7              ITU-T Signaling System 7
+...
+
+OsmoSTP# show cs7 ?
+  instance  An instance of the SS7 stack
+  sua       SCCP User Adaptation
+  m3ua      MTP3 User Adaptation
+  ipa       IPA Multiplex (SCCP Lite)
+  config    Currently running cs7 configuration
+
+OsmoSTP# show cs7 m3ua ?
+  [<0-65534>]  Local Port Number
+  sctp         SCTP (Stream Control Transmission Protocol)
+  tcp          TCP (Transmission Control Protocol)
+
+OsmoSTP# show cs7 m3ua 2905 ?
+  <cr>  
+
+OsmoSTP# show cs7 m3ua sctp ?
+  [<0-65534>]  Local Port Number
+
+OsmoSTP# show cs7 m3ua sctp 2905 ?
+  <cr>  
+
+OsmoSTP# show cs7 instance ?
+  <0-15>  An instance of the SS7 stack
+
+OsmoSTP# show cs7 instance 0 ?
+  users             User Table
+  asp               Application Server Process (ASP)
+  asp-remaddr       Application Server Process (ASP) remote addresses information
+  asp-assoc-status  Application Server Process (ASP) SCTP association status
+  as                Application Server (AS)
+  route             Routing Table
+  sccp              Signalling Connection Control Part
+
+OsmoSTP# show cs7 instance 0 as ?
+  active  Display all active ASs
+  all     Display all ASs (default)
+  m3ua    Display all m3ua ASs
+  sua     Display all SUA ASs
+
+OsmoSTP# show cs7 instance 0 sccp ?
+  addressbook  List all SCCP addressbook entries
+  users        Show List of SCCP Users registered
+  ssn          Find an SCCP User registered for the given SSN
+  connections  Show List of active SCCP connections
+  timers       Show List of SCCP timers
+
+OsmoSTP# show cs7 instance 0 sccp ssn ?
+  <0-65535>  Subsystem Number (SSN)
+
+OsmoSTP# configure terminal
+OsmoSTP(config)# cs7 instance 0
+
+OsmoSTP(config-cs7)# list
+...
+  description .TEXT
+  network-indicator (international | national | reserved | spare)
+  point-code POINT_CODE
+  secondary-pc POINT_CODE
+  point-code format <1-24> [<1-23>] [<1-22>]
+  point-code format default
+  point-code delimiter (default|dash)
+  xua rkm routing-key-allocation (static-only|dynamic-permitted)
+  asp NAME <0-65535> <0-65535> (sua|m3ua|ipa)
+  asp NAME <0-65535> <0-65535> (sua|m3ua|ipa) (sctp|tcp)
+  no asp NAME
+  as NAME (sua|m3ua|ipa)
+  no as NAME
+  sccp-address NAME
+  no sccp-address NAME
+  route-table system
+  listen (sua|m3ua|ipa) <0-65534> [(sctp|tcp)]
+  no listen (sua|m3ua|ipa) <0-65534> [(sctp|tcp)]
+  sccp-timer (conn_est|ias|iar|rel|repeat_rel|int|guard|reset|reassembly) <1-999999>
+  sccp max-optional-data (<0-999999>|standard)
+
+OsmoSTP(config-cs7)# ?
+...
+  description        Save human-readable description of the object
+  network-indicator  Configure the Network Indicator
+  point-code         Configure the local Point Code
+  secondary-pc       Configure the local Secondary Point Code
+  xua                SIGTRAN xxxUA related
+  asp                Configure Application Server Process
+  no                 Negate a command or set its defaults
+  as                 Configure an Application Server
+  sccp-address       Create/Modify an SCCP addressbook entry
+  route-table        Specify the name of the route table
+  listen             Configure/Enable xUA Listener
+  sccp-timer         Configure SCCP timer values, see ITU-T Q.714
+  sccp               Configure SCCP behavior
+
+OsmoSTP(config-cs7)# description ?
+  TEXT  Text until the end of the line
+
+OsmoSTP(config-cs7)# network-indicator ?
+  international  International Network
+  national       National Network
+  reserved       Reserved Network
+  spare          Spare Network
+
+OsmoSTP(config-cs7)# point-code ?
+  POINT_CODE  Point Code
+  format      Configure Point Code Format
+  delimiter   Configure Point Code Delimiter
+
+OsmoSTP(config-cs7)# point-code format ?
+  <1-24>   Length of first PC component
+  default  Default Point Code Format (3.8.3)
+OsmoSTP(config-cs7)# point-code format 1 ?
+  [<1-23>]  Length of second PC component
+OsmoSTP(config-cs7)# point-code format 1 1 ?
+  [<1-22>]  Length of third PC component
+
+OsmoSTP(config-cs7)# point-code delimiter ?
+  default  Use dot as delimiter
+  dash     User dash as delimiter
+
+OsmoSTP(config-cs7)# xua ?
+  rkm  Routing Key Management
+OsmoSTP(config-cs7)# xua rkm ?
+  routing-key-allocation  Routing Key Management Allocation Policy
+OsmoSTP(config-cs7)# xua rkm routing-key-allocation ?
+  static-only        Only static (pre-configured) Routing Keys permitted
+  dynamic-permitted  Dynamically allocate Routing Keys for what ASPs request
+
+OsmoSTP(config-cs7)# asp ?
+  NAME  Name of ASP
+OsmoSTP(config-cs7)# asp foo ?
+  <0-65535>  Remote port number
+OsmoSTP(config-cs7)# asp foo 0 ?
+  <0-65535>  Local port number
+OsmoSTP(config-cs7)# asp foo 0 0 ?
+  sua   SCCP User Adaptation
+  m3ua  MTP3 User Adaptation
+  ipa   IPA Multiplex (SCCP Lite)
+OsmoSTP(config-cs7)# asp foo 0 0 m3ua ?
+  sctp  SCTP (Stream Control Transmission Protocol)
+  tcp   TCP (Transmission Control Protocol)
+  <cr>  
+
+OsmoSTP(config-cs7)# as ?
+  NAME  Name of the Application Server
+OsmoSTP(config-cs7)# as foo ?
+  sua   SCCP User Adaptation
+  m3ua  MTP3 User Adaptation
+  ipa   IPA Multiplex (SCCP Lite)
+
+OsmoSTP(config-cs7)# sccp-address ?
+  NAME  Name of the SCCP Address
+
+OsmoSTP(config-cs7)# no ?
+  asp           Disable Application Server Process
+  as            Disable Application Server
+  sccp-address  Delete an SCCP addressbook entry
+  listen        Disable xUA Listener on given port
+OsmoSTP(config-cs7)# no asp ?
+  NAME  Name of ASP
+OsmoSTP(config-cs7)# no as ?
+  NAME  Name of AS
+OsmoSTP(config-cs7)# no sccp-address ?
+  NAME  Name of the SCCP Address
+
+OsmoSTP(config-cs7)# sccp-address foo
+OsmoSTP(config-cs7-sccpaddr)# list
+...
+  no point-code
+  no subsystem-number
+  no global-title
+  routing-indicator (GT|PC|IP)
+  point-code POINT_CODE
+  subsystem-number <0-4294967295>
+  global-title
+OsmoSTP(config-cs7-sccpaddr)# ?
+...
+  no                 Negate a command or set its defaults
+  routing-indicator  Add Routing Indicator
+  point-code         Add point-code Number
+  subsystem-number   Add Subsystem Number
+  global-title       Add/Modify Global Title
+
+OsmoSTP(config-cs7-sccpaddr)# point-code 1.2.3
+
+OsmoSTP(config-cs7-sccpaddr)# do show cs7 instance 0 sccp addressbook
+
+Name         RI: PC:       SSN:       GT:
+------------ --- --------- ---------- --------------------------------------- 
+foo          PC  1.2.3     (none)     (none)
+
+OsmoSTP(config-cs7-sccpaddr)# exit
+
+OsmoSTP(config-cs7)# sccp-address foobarfoobarfoobarfoobarfoobarfoobar
+Error: SCCP address name too long: 'foobarfoobarfoobarfoobarfoobarfoobar'
+% Command incomplete.
+
+OsmoSTP(config-cs7)# exit
+OsmoSTP(config)# cs7 instance 1
+OsmoSTP(config-cs7)# sccp-address foo
+Error: SCCP address name already used in cs7 instance 0: 'foo'
+% Command incomplete.
+OsmoSTP(config-cs7)# sccp-address bar
+OsmoSTP(config-cs7-sccpaddr)# point-code 1.2.3
+OsmoSTP(config-cs7-sccpaddr)# exit
+OsmoSTP(config-cs7)# exit
+OsmoSTP(config)# no cs7 instance 1
+% Unknown command.
+
+OsmoSTP(config)# cs7 instance 0
+
+OsmoSTP(config-cs7)# asp my-asp 12345 54321 m3ua
+OsmoSTP(config-cs7-asp)# list
+...
+  description .TEXT
+  remote-ip (A.B.C.D|X:X::X:X) [primary]
+  no remote-ip (A.B.C.D|X:X::X:X)
+  local-ip (A.B.C.D|X:X::X:X) [primary]
+  no local-ip (A.B.C.D|X:X::X:X)
+  qos-class <0-255>
+  role (sg|asp|ipsp)
+  transport-role (client|server)
+  sctp-param init (num-ostreams|max-instreams|max-attempts|timeout) <0-65535>
+  no sctp-param init (num-ostreams|max-instreams|max-attempts|timeout)
+  block
+  shutdown
+...
+
+OsmoSTP(config-cs7-asp)# ?
+...
+  description     Save human-readable description of the object
+  remote-ip       Specify Remote IP Address of ASP
+  no              Negate a command or set its defaults
+  local-ip        Specify Local IP Address from which to contact ASP
+  qos-class       Specify QoS Class of ASP
+  role            Specify the xUA role for this ASP
+  transport-role  Specify the transport layer role for this ASP
+  sctp-param      Configure SCTP parameters
+  block           Allows a SCTP Association with ASP, but doesn't let it become active
+  shutdown        Terminates SCTP association; New associations will be rejected
+...
+
+OsmoSTP(config-cs7-asp)# no ?
+...
+  sctp-param  Configure SCTP parameters
+  quirk       Disable quirk to work around interop issues
+...
+
+OsmoSTP(config-cs7-asp)# remote-ip 127.0.0.200
+OsmoSTP(config-cs7-asp)# local-ip 127.0.0.100
+OsmoSTP(config-cs7-asp)# do show cs7 instance 0 asp
+ASP Name      AS Name       State          Type  Role  SCTP Role  Local Addresses          Remote Addresses
+------------  ------------  -------------  ----  ----  ---------  -----------------------  -----------------------
+my-asp        ?             uninitialized  m3ua  sg    server     127.0.0.100:54321        127.0.0.200:12345      
+OsmoSTP(config-cs7-asp)# remote-ip 127.0.0.201
+OsmoSTP(config-cs7-asp)# local-ip 127.0.0.101
+OsmoSTP(config-cs7-asp)# do show cs7 instance 0 asp
+ASP Name      AS Name       State          Type  Role  SCTP Role  Local Addresses          Remote Addresses
+------------  ------------  -------------  ----  ----  ---------  -----------------------  -----------------------
+my-asp        ?             uninitialized  m3ua  sg    server     (127.0.0.100|127.0.0.101):54321  (127.0.0.200|127.0.0.201):12345
+OsmoSTP(config-cs7-asp)# ! Mark as primary:
+OsmoSTP(config-cs7-asp)# remote-ip 127.0.0.201 primary
+OsmoSTP(config-cs7-asp)# ! 'local-ip 127.0.0.101 primary' cannot be tested here since output may be different based on sysctl available
+OsmoSTP(config-cs7-asp)# local-ip 127.0.0.101
+...
+OsmoSTP(config-cs7-asp)# do show cs7 instance 0 asp
+ASP Name      AS Name       State          Type  Role  SCTP Role  Local Addresses          Remote Addresses
+------------  ------------  -------------  ----  ----  ---------  -----------------------  -----------------------
+my-asp        ?             uninitialized  m3ua  sg    server     (127.0.0.100|127.0.0.101):54321  (127.0.0.200|127.0.0.201*):12345
+OsmoSTP(config-cs7-asp)# show running-config
+...
+  local-ip 127.0.0.100
+  local-ip 127.0.0.101
+  remote-ip 127.0.0.200
+  remote-ip 127.0.0.201 primary
+...
+end
+OsmoSTP(config-cs7-asp)# ! Mark as non-primary:
+OsmoSTP(config-cs7-asp)# remote-ip 127.0.0.201
+OsmoSTP(config-cs7-asp)# local-ip 127.0.0.101
+OsmoSTP(config-cs7-asp)# do show cs7 instance 0 asp
+ASP Name      AS Name       State          Type  Role  SCTP Role  Local Addresses          Remote Addresses
+------------  ------------  -------------  ----  ----  ---------  -----------------------  -----------------------
+my-asp        ?             uninitialized  m3ua  sg    server     (127.0.0.100|127.0.0.101):54321  (127.0.0.200|127.0.0.201):12345
+OsmoSTP(config-cs7-asp)# show running-config
+...
+  local-ip 127.0.0.100
+  local-ip 127.0.0.101
+  remote-ip 127.0.0.200
+  remote-ip 127.0.0.201
+...
+end
+OsmoSTP(config-cs7-asp)# exit
+
+OsmoSTP(config-cs7)# as my-ass m3ua
+OsmoSTP(config-cs7-as)# list
+...
+  description .TEXT
+  asp NAME
+  no asp NAME
+  traffic-mode (broadcast | loadshare | roundrobin | override)
+  no traffic-mode
+  recovery-timeout <1-2000>
+  qos-class <0-255>
+  routing-key RCONTEXT DPC
+  routing-key RCONTEXT DPC si (aal2|bicc|b-isup|h248|isup|sat-isup|sccp|tup)
+  routing-key RCONTEXT DPC ssn SSN
+  routing-key RCONTEXT DPC si (aal2|bicc|b-isup|h248|isup|sat-isup|sccp|tup) ssn SSN
+  point-code override dpc PC
+  point-code override patch-sccp (disabled|both)
+
+OsmoSTP(config-cs7-as)# ?
+...
+  description       Save human-readable description of the object
+  asp               Specify that a given ASP is part of this AS
+  no                Negate a command or set its defaults
+  traffic-mode      Specifies traffic mode of operation of the ASP within the AS
+  recovery-timeout  Specifies the recovery timeout value in milliseconds
+  qos-class         Specity QoS Class of AS
+  routing-key       Define a routing key
+  point-code        Point Code Specific Features
+
+OsmoSTP(config-cs7-as)# no ?
+  asp           Specify ASP to be removed from this AS
+  traffic-mode  Remove explicit traffic mode of operation of this AS
+
+OsmoSTP(config-cs7-as)# do show cs7 instance 0 as all
+                          Routing    Routing Key                          Cic   Cic   Traffic
+AS Name      State        Context    Dpc           Si   Opc           Ssn Min   Max   Mode
+------------ ------------ ---------- ------------- ---- ------------- --- ----- ----- -------
+my-ass       AS_DOWN      0          0.0.0                                             override
+
+OsmoSTP(config-cs7-as)# do show cs7 instance 0 as active
+                          Routing    Routing Key                          Cic   Cic   Traffic
+AS Name      State        Context    Dpc           Si   Opc           Ssn Min   Max   Mode
+------------ ------------ ---------- ------------- ---- ------------- --- ----- ----- -------
+
+OsmoSTP(config-cs7-as)# do show cs7 instance 0 as sua
+                          Routing    Routing Key                          Cic   Cic   Traffic
+AS Name      State        Context    Dpc           Si   Opc           Ssn Min   Max   Mode
+------------ ------------ ---------- ------------- ---- ------------- --- ----- ----- -------
+
+OsmoSTP(config-cs7-as)# do show cs7 instance 0 as m3ua
+                          Routing    Routing Key                          Cic   Cic   Traffic
+AS Name      State        Context    Dpc           Si   Opc           Ssn Min   Max   Mode
+------------ ------------ ---------- ------------- ---- ------------- --- ----- ----- -------
+my-ass       AS_DOWN      0          0.0.0                                             override
+
+OsmoSTP(config-cs7-as)# asp my-asp
+OsmoSTP(config-cs7-as)# routing-key 0 3.2.1
+
+OsmoSTP(config-cs7-as)# do show cs7 instance 0 asp
+ASP Name      AS Name       State          Type  Role  SCTP Role  Local Addresses          Remote Addresses
+------------  ------------  -------------  ----  ----  ---------  -----------------------  -----------------------
+my-asp        my-ass        ASP_DOWN       m3ua  sg    server     (127.0.0.100|127.0.0.101):54321  (127.0.0.200|127.0.0.201):12345
+
+OsmoSTP(config-cs7-as)# exit
+OsmoSTP(config-cs7)# do show cs7 instance 0 asp
+ASP Name      AS Name       State          Type  Role  SCTP Role  Local Addresses          Remote Addresses
+------------  ------------  -------------  ----  ----  ---------  -----------------------  -----------------------
+my-asp        my-ass        ASP_DOWN       m3ua  sg    server     (127.0.0.100|127.0.0.101):54321  (127.0.0.200|127.0.0.201):12345
+
+OsmoSTP(config-cs7)# exit
+
+
+OsmoSTP(config)# do show cs7 instance 0 asp
+ASP Name      AS Name       State          Type  Role  SCTP Role  Local Addresses          Remote Addresses
+------------  ------------  -------------  ----  ----  ---------  -----------------------  -----------------------
+my-asp        my-ass        ASP_DOWN       m3ua  sg    server     (127.0.0.100|127.0.0.101):54321  (127.0.0.200|127.0.0.201):12345
+
+OsmoSTP(config)# do show cs7 instance 0 as all
+                          Routing    Routing Key                          Cic   Cic   Traffic
+AS Name      State        Context    Dpc           Si   Opc           Ssn Min   Max   Mode
+------------ ------------ ---------- ------------- ---- ------------- --- ----- ----- -------
+my-ass       AS_DOWN      0          3.2.1                                             override
+
+
+
+OsmoSTP(config)# show running-config
+...
+cs7 instance 0
+ xua rkm routing-key-allocation dynamic-permitted
+ asp my-asp 12345 54321 m3ua
+  local-ip 127.0.0.100
+  local-ip 127.0.0.101
+  remote-ip 127.0.0.200
+  remote-ip 127.0.0.201
+  role sg
+  sctp-role server
+ as my-ass m3ua
+  asp my-asp
+  routing-key 0 3.2.1
+ route-table system
+ listen m3ua 2905
+  local-ip 127.0.0.2
+  local-ip 127.0.0.1
+  local-ip ::1
+  accept-asp-connections dynamic-permitted
+ sccp-address foo
+  routing-indicator PC
+  point-code 1.2.3
+cs7 instance 1
+ route-table system
+ sccp-address bar
+  routing-indicator PC
+  point-code 1.2.3
+end
+
+OsmoSTP(config)# do show cs7 instance 0 users
+
+OsmoSTP(config)# do show cs7 m3ua
+xUA server for m3ua/sctp on (::ffff:127.0.0.2|::ffff:127.0.0.1|::1):2905 is listening
+
+OsmoSTP(config)# cs7 instance 0
+OsmoSTP(config-cs7)# no asp unknown-asp
+No ASP named 'unknown-asp' found
+
+OsmoSTP(config-cs7)# no asp my-asp
+
+OsmoSTP(config-cs7)# do show cs7 instance 0 asp
+ASP Name      AS Name       State          Type  Role  SCTP Role  Local Addresses          Remote Addresses
+------------  ------------  -------------  ----  ----  ---------  -----------------------  -----------------------
+
+OsmoSTP(config-cs7)# do show cs7 instance 0 as all
+                          Routing    Routing Key                          Cic   Cic   Traffic
+AS Name      State        Context    Dpc           Si   Opc           Ssn Min   Max   Mode
+------------ ------------ ---------- ------------- ---- ------------- --- ----- ----- -------
+my-ass       AS_DOWN      0          3.2.1                                             override
+
+
+OsmoSTP(config-cs7)# do show cs7 instance 0 sccp timers
+SS7 instance 0 has no SCCP initialized
+
+OsmoSTP(config-cs7)# show running-config
+... !sccp-timer
+
+OsmoSTP(config-cs7)# sccp-timer ias 5
+OsmoSTP(config-cs7)# do show cs7 instance 0 sccp timers
+sccp-timer conn_est 60
+sccp-timer ias 5
+sccp-timer iar 900
+sccp-timer rel 10
+sccp-timer repeat_rel 10
+sccp-timer int 60
+sccp-timer guard 1380
+sccp-timer reset 10
+sccp-timer reassembly 10
+OsmoSTP(config-cs7)# show running-config
+... !sccp-timer
+ sccp-timer ias 5
+... !sccp-timer
+
+OsmoSTP(config-cs7)# sccp-timer ias 420
+OsmoSTP(config-cs7)# do show cs7 instance 0 sccp timers
+sccp-timer conn_est 60
+sccp-timer ias 420
+sccp-timer iar 900
+sccp-timer rel 10
+sccp-timer repeat_rel 10
+sccp-timer int 60
+sccp-timer guard 1380
+sccp-timer reset 10
+sccp-timer reassembly 10
+OsmoSTP(config-cs7)# show running-config
+... !sccp-timer
+
+OsmoSTP(config-cs7)# sccp-timer?
+  sccp-timer  Configure SCCP timer values, see ITU-T Q.714
+
+OsmoSTP(config-cs7)# sccp-timer ?
+  conn_est    Waiting for connection confirm message, 1 to 2 minutes (default: 60)
+  ias         Send keep-alive: on an idle connection, delay before sending an Idle Timer message, 5 to 10 minutes (default: 420)
+  iar         Receive keep-alive: on an idle connection, delay until considering a connection as stale, 11 to 21 minutes (default: 900)
+  rel         Waiting for release complete message, 10 to 20 seconds (default: 10)
+  repeat_rel  Waiting for release complete message; or to repeat sending released message after the initial expiry, 10 to 20 seconds (default: 10)
+  int         Waiting for release complete message; or to release connection resources, freeze the LRN and alert a maintenance function after the initial expiry, extending to 1 minute (default: 60)
+  guard       Waiting to resume normal procedure for temporary connection sections during the restart procedure, 23 to 25 minutes (default: 1380)
+  reset       Waiting to release temporary connection section or alert maintenance function after reset request message is sent, 10 to 20 seconds (default: 10)
+  reassembly  Waiting to receive all the segments of the remaining segments, single segmented message after receiving the first segment, 10 to 20 seconds (default: 10)
+
+OsmoSTP(config-cs7)# sccp-timer conn_est ?
+  <1-999999>  Timer value, in seconds
+
+OsmoSTP(config-cs7)# sccp ?
+  max-optional-data  Adjust the upper bound for the optional data length (the payload) for CR, CC, CREF and RLSD messages. For any Optional Data part larger than this value in octets, send CR, CC, CREF and RLSD messages without any payload, and send the data payload in a separate Data Form 1 message. ITU-T Q.713 sections 4.2 thru 4.5 define a limit of 130 bytes for the 'Data' parameter. This limit can be adjusted here. May be useful for interop with nonstandard SCCP peers.
+
+OsmoSTP(config-cs7)# sccp max-optional-data ?
+  <0-999999>  Set a non-standard maximum allowed number of bytes
+  standard    Use the ITU-T Q.713 4.2 to 4.5 standard value of 130
+
+OsmoSTP(config-cs7)# show running-config
+... !sccp max-optional-data
+
+OsmoSTP(config-cs7)# sccp max-optional-data 0
+OsmoSTP(config-cs7)# show running-config
+...
+ sccp max-optional-data 0
+...
+
+OsmoSTP(config-cs7)# sccp max-optional-data 123
+OsmoSTP(config-cs7)# show running-config
+...
+ sccp max-optional-data 123
+...
+
+OsmoSTP(config-cs7)# sccp max-optional-data 999999
+OsmoSTP(config-cs7)# show running-config
+...
+cs7 instance 0
+...
+ sccp max-optional-data 999999
+...
+cs7 instance 1
+... !sccp max-optional-data
+
+OsmoSTP(config-cs7)# sccp max-optional-data standard
+OsmoSTP(config-cs7)# show running-config
+... !sccp max-optional-data
+
+OsmoSTP(config-cs7)# sccp max-optional-data 130
+OsmoSTP(config-cs7)# show running-config
+... !sccp max-optional-data
+
+OsmoSTP(config-cs7)# route-table system
+OsmoSTP(config-cs7-rt)# list
+...
+  update route POINT_CODE MASK linkset LS_NAME [priority PRIO] [qos-class (CLASS|default)]
+  remove route POINT_CODE MASK
+OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset my-ass priority 5
+% Unknown command.

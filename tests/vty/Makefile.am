@@ -6,6 +6,7 @@ LDADD = $(top_builddir)/src/libosmo-sigtran.la \
 	$(LIBOSMOCORE_LIBS) $(LIBOSMOVTY_LIBS) $(LIBOSMONETIF_LIBS) $(LIBSCTP_LIBS)
 
 EXTRA_DIST = \
+	osmo_stp_test.vty \
 	ss7_asp_test.vty \
 	vty_test_runner.py \
 	$(NULL)
@@ -27,14 +28,24 @@ endif
 vty-python-test: $(top_builddir)/stp/osmo-stp
 	$(srcdir)/vty_test_runner.py -w $(abs_top_builddir) -v
 
-# To update the VTY script from current application behavior,
-# pass -u to osmo_verify_transcript_vty.py by doing:
-#   make vty-test U=-u
-vty-transcript-test: ss7_asp_vty_test
+vty-transcript-test-stp: $(top_builddir)/stp/osmo-stp
+	osmo_verify_transcript_vty.py -v \
+		-n OsmoSTP -p 4239 \
+		-r "$(top_builddir)/stp/osmo-stp -c $(top_srcdir)/doc/examples/osmo-stp-multihome.cfg" \
+		$(U) $(srcdir)/osmo_stp_*.vty
+
+vty-transcript-test-asp: ss7_asp_vty_test
 	osmo_verify_transcript_vty.py -v \
 		-p 42043 \
 		-r "$(builddir)/ss7_asp_vty_test" \
 		$(U) $(srcdir)/ss7_asp_*.vty
+
+# To update the VTY script from current application behavior,
+# pass -u to osmo_verify_transcript_vty.py by doing:
+#   make vty-test U=-u
+vty-transcript-test:
+	$(MAKE) vty-transcript-test-stp
+#	$(MAKE) vty-transcript-test-asp
 
 # don't run multiple tests concurrently so that the ports don't conflict
 vty-test:
