@@ -28,17 +28,23 @@ endif
 vty-python-test: $(top_builddir)/stp/osmo-stp
 	$(srcdir)/vty_test_runner.py -w $(abs_top_builddir) -v
 
+# Run a specific test with: 'make vty-test VTY_TEST_STP=osmo_stp_test.vty'
+VTY_TEST_STP ?= osmo_stp_*.vty
+
 vty-transcript-test-stp: $(top_builddir)/stp/osmo-stp
 	osmo_verify_transcript_vty.py -v \
 		-n OsmoSTP -p 4239 \
 		-r "$(top_builddir)/stp/osmo-stp -c $(top_srcdir)/doc/examples/osmo-stp-multihome.cfg" \
-		$(U) $(srcdir)/osmo_stp_*.vty
+		$(U) $(srcdir)/$(VTY_TEST_STP)
+
+# Run a specific test with: 'make vty-test VTY_TEST_ASP=ss7_asp_test.vty'
+VTY_TEST_ASP ?= ss7_asp_*.vty
 
 vty-transcript-test-asp: ss7_asp_vty_test
 	osmo_verify_transcript_vty.py -v \
 		-p 42043 \
 		-r "$(builddir)/ss7_asp_vty_test" \
-		$(U) $(srcdir)/ss7_asp_*.vty
+		$(U) $(srcdir)/$(VTY_TEST_ASP)
 
 # To update the VTY script from current application behavior,
 # pass -u to osmo_verify_transcript_vty.py by doing:
