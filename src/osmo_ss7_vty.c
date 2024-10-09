@@ -361,6 +361,7 @@ DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
 	int mask = osmo_ss7_pointcode_parse_mask_or_len(rtable->inst, argv[1]);
 	const char *ls_name = argv[2];
 	unsigned int argind;
+	int rc;
 
 	if (dpc < 0) {
 		vty_out(vty, "%% Invalid point code (%s)%s", argv[0], VTY_NEWLINE);
@@ -372,16 +373,9 @@ DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
 		return CMD_WARNING;
 	}
 
-	rt = osmo_ss7_route_create(rtable, dpc, mask, ls_name);
-	if (!rt) {
-		vty_out(vty, "%% Cannot create route %s/%s to %s%s",
-			argv[0], argv[1], argv[2], VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-
 	switch (argc) {
 	case 3:
-		return CMD_SUCCESS;
+		break; /* Continue below */
 	case 5:
 		if (strcmp(argv[3], "priority") != 0 &&
 		    strcmp(argv[3], "qos-class") != 0)
@@ -397,6 +391,17 @@ DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
 		return CMD_WARNING;
 	}
 
+	rt = ss7_route_alloc(rtable, dpc, mask);
+	if (!rt) {
+		vty_out(vty, "%% Cannot allocate new route%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if ((rc = ss7_route_set_linkset(rt, ls_name)) < 0) {
+		vty_out(vty, "%% Cannot find linkset %s%s", ls_name, VTY_NEWLINE);
+		goto destroy_warning;
+	}
+
 	argind = 3;
 	if (argc > argind && !strcmp(argv[argind], "priority")) {
 		argind++;
@@ -408,7 +413,20 @@ DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
 		rt->cfg.qos_class = atoi(argv[argind++]);
 	}
 
+	if ((rc = ss7_route_insert(rt)) < 0) {
+		char buf_err[128];
+		strerror_r(-rc, buf_err, sizeof(buf_err));
+		vty_out(vty, "%% Cannot insert route %s/%s to %s: %s (%d)%s",
+			argv[0], argv[1], argv[2],
+			buf_err, rc, VTY_NEWLINE);
+		goto destroy_warning;
+	}
+
 	return CMD_SUCCESS;
+
+destroy_warning:
+	osmo_ss7_route_destroy(rt);
+	return CMD_WARNING;
 }
 
 DEFUN_ATTR(cs7_rt_rem, cs7_rt_rem_cmd,

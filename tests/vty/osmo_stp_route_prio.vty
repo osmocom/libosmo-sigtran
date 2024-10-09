@@ -68,15 +68,14 @@ OsmoSTP(config-cs7)# route-table system
 OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset as1 priority 5
 OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset as3
 OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset as2 priority 2
-OsmoSTP(config-cs7-rt)# ! FIXME! THIS IS WRONG ORDER:
 OsmoSTP(config-cs7-rt)# show running-config
 ...
 cs7 instance 0
 ...
  route-table system
-  update route 3.2.1 7.255.7 linkset as1 priority 5
   update route 3.2.1 7.255.7 linkset as3
   update route 3.2.1 7.255.7 linkset as2 priority 2
+  update route 3.2.1 7.255.7 linkset as1 priority 5
 ...
 OsmoSTP(config-cs7-rt)# do show cs7 instance 0 route
 Routing table = system
@@ -84,6 +83,6 @@ C=Cong Q=QoS P=Prio
 
 Destination            C Q P Linkset Name        Linkset Non-adj Route
 ---------------------- - - - ------------------- ------- ------- -------
-3.2.1/14                   5 as1                 ?       ?       ?      
 3.2.1/14                   0 as3                 ?       ?       ?      
 3.2.1/14                   2 as2                 ?       ?       ?      
+3.2.1/14                   5 as1                 ?       ?       ?      
