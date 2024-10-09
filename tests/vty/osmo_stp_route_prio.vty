@@ -1,0 +1,89 @@
+OsmoSTP> enable
+OsmoSTP# configure terminal
+OsmoSTP(config)# cs7 instance 0
+
+OsmoSTP(config-cs7)# ! CREATE 3 AS with 1 ASP EACH:
+OsmoSTP(config-cs7)# asp asp1 2905 54321 m3ua
+OsmoSTP(config-cs7-asp)# remote-ip 127.0.0.110
+OsmoSTP(config-cs7-asp)# local-ip 27.0.0.1
+OsmoSTP(config-cs7-asp)# exit
+OsmoSTP(config-cs7)# asp asp2 2905 54321 m3ua
+OsmoSTP(config-cs7-asp)# remote-ip 127.0.0.120
+OsmoSTP(config-cs7-asp)# local-ip 27.0.0.1
+OsmoSTP(config-cs7-asp)# exit
+OsmoSTP(config-cs7)# asp asp3 2905 54321 m3ua
+OsmoSTP(config-cs7-asp)# remote-ip 127.0.0.130
+OsmoSTP(config-cs7-asp)# local-ip 27.0.0.1
+OsmoSTP(config-cs7-asp)# exit
+OsmoSTP(config-cs7)# as as1 m3ua
+OsmoSTP(config-cs7-as)# asp asp1
+OsmoSTP(config-cs7-as)# routing-key 56 0.1.2
+OsmoSTP(config-cs7-as)# exit
+OsmoSTP(config-cs7)# as as2 m3ua
+OsmoSTP(config-cs7-as)# asp asp2
+OsmoSTP(config-cs7-as)# routing-key 57 0.1.3
+OsmoSTP(config-cs7-as)# exit
+OsmoSTP(config-cs7)# as as3 m3ua
+OsmoSTP(config-cs7-as)# asp asp3
+OsmoSTP(config-cs7-as)# routing-key 57 0.1.4
+OsmoSTP(config-cs7-as)# exit
+OsmoSTP(config-cs7)# show running-config
+...
+cs7 instance 0
+ xua rkm routing-key-allocation dynamic-permitted
+ asp asp1 2905 54321 m3ua
+  local-ip 27.0.0.1
+  remote-ip 127.0.0.110
+  role sg
+  sctp-role server
+ asp asp2 2905 54321 m3ua
+  local-ip 27.0.0.1
+  remote-ip 127.0.0.120
+  role sg
+  sctp-role server
+ asp asp3 2905 54321 m3ua
+  local-ip 27.0.0.1
+  remote-ip 127.0.0.130
+  role sg
+  sctp-role server
+ as as1 m3ua
+  asp asp1
+  routing-key 56 0.1.2
+ as as2 m3ua
+  asp asp2
+  routing-key 57 0.1.3
+ as as3 m3ua
+  asp asp3
+  routing-key 57 0.1.4
+ route-table system
+ listen m3ua 2905
+  local-ip 127.0.0.2
+  local-ip 127.0.0.1
+  local-ip ::1
+  accept-asp-connections dynamic-permitted
+end
+
+OsmoSTP(config-cs7)# ! ADD 2 ROUTES WITH DECREASING PRIORITIES. THEY SHOULD END UP REORDERED BY PRIORITY:
+OsmoSTP(config-cs7)# route-table system
+OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset as1 priority 5
+OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset as3
+OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset as2 priority 2
+OsmoSTP(config-cs7-rt)# ! FIXME! THIS IS WRONG ORDER:
+OsmoSTP(config-cs7-rt)# show running-config
+...
+cs7 instance 0
+...
+ route-table system
+  update route 3.2.1 7.255.7 linkset as1 priority 5
+  update route 3.2.1 7.255.7 linkset as3
+  update route 3.2.1 7.255.7 linkset as2 priority 2
+...
+OsmoSTP(config-cs7-rt)# do show cs7 instance 0 route
+Routing table = system
+C=Cong Q=QoS P=Prio
+
+Destination            C Q P Linkset Name        Linkset Non-adj Route
+---------------------- - - - ------------------- ------- ------- -------
+3.2.1/14                   5 as1                 ?       ?       ?      
+3.2.1/14                   0 as3                 ?       ?       ?      
+3.2.1/14                   2 as2                 ?       ?       ?      

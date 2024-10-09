@@ -7,6 +7,7 @@ LDADD = $(top_builddir)/src/libosmo-sigtran.la \
 
 EXTRA_DIST = \
 	osmo_stp_test.vty \
+	osmo_stp_route_prio.vty \
 	ss7_asp_test.vty \
 	vty_test_runner.py \
 	$(NULL)
