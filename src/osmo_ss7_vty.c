@@ -410,7 +410,9 @@ DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
 
 	if (argc > argind && !strcmp(argv[argind], "qos-class")) {
 		argind++;
-		rt->cfg.qos_class = atoi(argv[argind++]);
+		if (strcmp(argv[argind], "default") != 0)
+			rt->cfg.qos_class = atoi(argv[argind]);
+		argind++;
 	}
 
 	if ((rc = ss7_route_insert(rt)) < 0) {
