@@ -74,6 +74,12 @@
 	QOS_CLASS_RANGE_HELP_STR \
 	"Default QoS Class (0)\n"
 
+#define ROUTE_PRIO_RANGE_STR "<0-4294967295>"
+#define ROUTE_PRIO_RANGE_HELP_STR "Priority\n"
+#define ROUTE_PRIO_VAR_STR "(" ROUTE_PRIO_RANGE_STR "|default)"
+#define ROUTE_PRIO_VAR_HELP_STR \
+	ROUTE_PRIO_RANGE_HELP_STR \
+	"Default Priority (5)\n"
 
 /* netinet/tcp.h */
 static const struct value_string tcp_info_state_values[] = {
@@ -349,7 +355,7 @@ DEFUN_ATTR(cs7_route_table, cs7_route_table_cmd,
 }
 
 DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
-	   "update route POINT_CODE MASK linkset LS_NAME [priority] [PRIO] [qos-class] [" QOS_CLASS_VAR_STR "]",
+	   "update route POINT_CODE MASK linkset LS_NAME [priority] [" ROUTE_PRIO_VAR_STR "] [qos-class] [" QOS_CLASS_VAR_STR "]",
 	   "Update the Route\n"
 	   "Update the Route\n"
 	   "Destination Point Code\n"
@@ -357,7 +363,7 @@ DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
 	   "Specify Destination Linkset\n"
 	   "Linkset Name\n"
 	   "Specify Priority\n"
-	   "Priority\n"
+	   ROUTE_PRIO_VAR_HELP_STR
 	   "Specify QoS Class\n"
 	   QOS_CLASS_VAR_HELP_STR,
 	   CMD_ATTR_IMMEDIATE)
@@ -412,7 +418,9 @@ DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
 	argind = 3;
 	if (argc > argind && !strcmp(argv[argind], "priority")) {
 		argind++;
-		rt->cfg.priority = atoi(argv[argind++]);
+		if (strcmp(argv[argind], "default") != 0)
+			rt->cfg.priority = atoi(argv[argind]);
+		argind++;
 	}
 
 	if (argc > argind && !strcmp(argv[argind], "qos-class")) {
@@ -484,7 +492,7 @@ static void write_one_rtable(struct vty *vty, struct osmo_ss7_route_table *rtabl
 			osmo_ss7_pointcode_print(rtable->inst, rt->cfg.pc),
 			osmo_ss7_pointcode_print2(rtable->inst, rt->cfg.mask),
 			rt->cfg.linkset_name);
-		if (rt->cfg.priority)
+		if (rt->cfg.priority != OSMO_SS7_ROUTE_PRIO_DEFAULT)
 			vty_out(vty, " priority %u", rt->cfg.priority);
 		if (rt->cfg.qos_class)
 			vty_out(vty, " qos-class %u", rt->cfg.qos_class);

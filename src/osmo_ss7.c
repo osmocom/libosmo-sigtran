@@ -696,6 +696,7 @@ ss7_route_alloc(struct osmo_ss7_route_table *rtbl, uint32_t pc, uint32_t mask)
 	 * masks to ensure we don't fail duplicate detection with longer mask lengths */
 	rt->cfg.mask = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, mask);
 	rt->cfg.pc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, pc);
+	rt->cfg.priority = OSMO_SS7_ROUTE_PRIO_DEFAULT;
 	return rt;
 }
 

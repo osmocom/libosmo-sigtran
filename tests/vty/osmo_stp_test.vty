@@ -570,7 +570,7 @@ OsmoSTP(config-cs7)# show running-config
 OsmoSTP(config-cs7)# route-table system
 OsmoSTP(config-cs7-rt)# list
 ...
-  update route POINT_CODE MASK linkset LS_NAME [priority] [PRIO] [qos-class] [(<0-7>|default)]
+  update route POINT_CODE MASK linkset LS_NAME [priority] [(<0-4294967295>|default)] [qos-class] [(<0-7>|default)]
   remove route POINT_CODE MASK
 OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset my-ass
 OsmoSTP(config-cs7-rt)# show running-config
@@ -587,13 +587,31 @@ cs7 instance 0
 ...
  route-table system
 ... !update route 3.2.1 7.255.7 linkset my-ass
+OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset my-ass priority default
+OsmoSTP(config-cs7-rt)# show running-config
+...
+cs7 instance 0
+...
+ route-table system
+  update route 3.2.1 7.255.7 linkset my-ass
+...
+OsmoSTP(config-cs7-rt)# remove route 3.2.1 7.255.7
 OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset my-ass priority 5
 OsmoSTP(config-cs7-rt)# show running-config
 ...
 cs7 instance 0
 ...
  route-table system
-  update route 3.2.1 7.255.7 linkset my-ass priority 5
+  update route 3.2.1 7.255.7 linkset my-ass
+...
+OsmoSTP(config-cs7-rt)# remove route 3.2.1 7.255.7
+OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset my-ass priority 6
+OsmoSTP(config-cs7-rt)# show running-config
+...
+cs7 instance 0
+...
+ route-table system
+  update route 3.2.1 7.255.7 linkset my-ass priority 6
 ...
 OsmoSTP(config-cs7-rt)# remove route 3.2.1 7.255.7
 OsmoSTP(config-cs7-rt)# show running-config
@@ -601,25 +619,25 @@ OsmoSTP(config-cs7-rt)# show running-config
 cs7 instance 0
 ...
  route-table system
-... !update route 3.2.1 7.255.7 linkset my-ass priority 5
-OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset my-ass priority 5 qos-class 1
+... !update route 3.2.1 7.255.7 linkset my-ass priority 6
+OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset my-ass priority 6 qos-class 1
 OsmoSTP(config-cs7-rt)# show running-config
 ...
 cs7 instance 0
 ...
  route-table system
-  update route 3.2.1 7.255.7 linkset my-ass priority 5 qos-class 1
+  update route 3.2.1 7.255.7 linkset my-ass priority 6 qos-class 1
 ...
 cs7 instance 1
 ...
  route-table system
-... !update route 3.2.1 7.255.7 linkset my-ass priority 5 qos-class 1
+... !update route 3.2.1 7.255.7 linkset my-ass priority 6 qos-class 1
 OsmoSTP(config-cs7-rt)# remove route 3.2.1 7.255.7
 OsmoSTP(config-cs7-rt)# show running-config
 ...
 cs7 instance 0
 ...
  route-table system
-... !update route 3.2.1 7.255.7 linkset my-ass priority 5 qos-class 1
+... !update route 3.2.1 7.255.7 linkset my-ass priority 6 qos-class 1
 OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset my-ass priority
 % Incomplete command (missing an argument?)
