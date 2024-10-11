@@ -570,7 +570,7 @@ OsmoSTP(config-cs7)# show running-config
 OsmoSTP(config-cs7)# route-table system
 OsmoSTP(config-cs7-rt)# list
 ...
-  update route POINT_CODE MASK linkset LS_NAME [priority] [PRIO] [qos-class] [(CLASS|default)]
+  update route POINT_CODE MASK linkset LS_NAME [priority] [PRIO] [qos-class] [(<0-255>|default)]
   remove route POINT_CODE MASK
 OsmoSTP(config-cs7-rt)# update route 3.2.1 7.255.7 linkset my-ass
 OsmoSTP(config-cs7-rt)# show running-config

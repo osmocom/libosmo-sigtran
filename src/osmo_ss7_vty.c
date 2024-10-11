@@ -67,6 +67,14 @@
 	"SCTP (Stream Control Transmission Protocol)\n" \
 	"TCP (Transmission Control Protocol)\n"
 
+#define QOS_CLASS_RANGE_STR "<0-255>"
+#define QOS_CLASS_RANGE_HELP_STR "QoS Class\n"
+#define QOS_CLASS_VAR_STR "(" QOS_CLASS_RANGE_STR "|default)"
+#define QOS_CLASS_VAR_HELP_STR \
+	QOS_CLASS_RANGE_HELP_STR \
+	"Default QoS Class (0)\n"
+
+
 /* netinet/tcp.h */
 static const struct value_string tcp_info_state_values[] = {
 	{ TCP_ESTABLISHED,	"ESTABLISHED" },
@@ -341,7 +349,7 @@ DEFUN_ATTR(cs7_route_table, cs7_route_table_cmd,
 }
 
 DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
-	   "update route POINT_CODE MASK linkset LS_NAME [priority] [PRIO] [qos-class] [(CLASS|default)]",
+	   "update route POINT_CODE MASK linkset LS_NAME [priority] [PRIO] [qos-class] [" QOS_CLASS_VAR_STR "]",
 	   "Update the Route\n"
 	   "Update the Route\n"
 	   "Destination Point Code\n"
@@ -351,8 +359,7 @@ DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
 	   "Specify Priority\n"
 	   "Priority\n"
 	   "Specify QoS Class\n"
-	   "QoS Class\n"
-	   "Default QoS Class\n",
+	   QOS_CLASS_VAR_HELP_STR,
 	   CMD_ATTR_IMMEDIATE)
 {
 	struct osmo_ss7_route_table *rtable = vty->index;
@@ -1073,9 +1080,9 @@ DEFUN_ATTR(asp_no_remote_ip, asp_no_remote_ip_cmd,
 }
 
 DEFUN_ATTR(asp_qos_clas, asp_qos_class_cmd,
-	   "qos-class <0-255>",
+	   "qos-class " QOS_CLASS_RANGE_STR,
 	   "Specify QoS Class of ASP\n"
-	   "QoS Class of ASP\n",
+	   QOS_CLASS_RANGE_HELP_STR,
 	   CMD_ATTR_NODE_EXIT)
 {
 	struct osmo_ss7_asp *asp = vty->index;
@@ -1934,9 +1941,9 @@ DEFUN_ATTR(as_recov_tout, as_recov_tout_cmd,
 }
 
 DEFUN_ATTR(as_qos_clas, as_qos_class_cmd,
-	   "qos-class <0-255>",
+	   "qos-class " QOS_CLASS_RANGE_STR,
 	   "Specity QoS Class of AS\n"
-	   "QoS Class of AS\n",
+	   QOS_CLASS_RANGE_HELP_STR,
 	   CMD_ATTR_IMMEDIATE)
 {
 	struct osmo_ss7_as *as = vty->index;
