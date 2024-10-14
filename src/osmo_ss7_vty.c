@@ -74,7 +74,7 @@
 	QOS_CLASS_RANGE_HELP_STR \
 	"Default QoS Class (0)\n"
 
-#define ROUTE_PRIO_RANGE_STR "<0-4294967295>"
+#define ROUTE_PRIO_RANGE_STR "<1-9>"
 #define ROUTE_PRIO_RANGE_HELP_STR "Priority\n"
 #define ROUTE_PRIO_VAR_STR "(" ROUTE_PRIO_RANGE_STR "|default)"
 #define ROUTE_PRIO_VAR_HELP_STR \
