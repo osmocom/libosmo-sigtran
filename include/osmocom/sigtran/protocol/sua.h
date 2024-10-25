@@ -130,6 +130,7 @@
 #define SUA_RI_HOST	3
 #define SUA_RI_SSN_IP	4
 
+/* 3.10.6. SCCP Cause: Cause Type */
 #define SUA_CAUSE_T_MASK	0xff00
 #define SUA_CAUSE_T_RETURN	0x0100
 #define SUA_CAUSE_T_REFUSAL	0x0200

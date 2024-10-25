@@ -189,6 +189,7 @@ enum sccp_protocol_options {
 	SCCP_PROTOCOL_RETURN_MESSAGE	    = 8,
 };
 
+/* ITU-T Q.713, Section 3.11 Release cause */
 enum sccp_release_cause {
 	SCCP_RELEASE_CAUSE_END_USER_ORIGINATED	    = 0,
 	SCCP_RELEASE_CAUSE_END_USER_CONGESTION	    = 1,
@@ -209,6 +210,7 @@ enum sccp_release_cause {
 	SCCP_RELEASE_CAUSE_SCCP_FAILURE		    = 16,
 };
 
+/* ITU-T Q.713, Section 3.12 Return cause */
 enum sccp_return_cause {
 	SCCP_RETURN_CAUSE_NO_TRANSLATION_NATURE	    = 0,
 	SCCP_RETURN_CAUSE_NO_TRANSLATION	    = 1,
@@ -227,6 +229,7 @@ enum sccp_return_cause {
 	SCCP_RETURN_CAUSE_SEGMENTATION_FAILURE	    = 14
 };
 
+/* ITU-T Q.713, Section 3.13 Reset cause */
 enum sccp_reset_cause {
 	SCCP_RESET_CAUSE_END_USER_ORIGINATED	    = 0,
 	SCCP_RESET_CAUSE_SCCP_USER_ORIGINATED	    = 1,
@@ -242,6 +245,7 @@ enum sccp_reset_cause {
 	SCCP_RESET_CAUSE_RESERVED		    = 11,
 };
 
+/* ITU-T Q.713, Section 3.14 Error cause */
 enum sccp_error_cause {
 	SCCP_ERROR_LRN_MISMATCH_UNASSIGNED	    = 0, /* local reference number */
 	SCCP_ERROR_LRN_MISMATCH_INCONSISTENT	    = 1,
@@ -250,7 +254,7 @@ enum sccp_error_cause {
 	SCCP_ERROR_UNQUALIFIED			    = 4,
 };
 
-/* ITU=T Q.713 Section 3.15 */
+/* ITU-T Q.713 Section 3.15 Refusal cause */
 enum sccp_refusal_cause {
 	SCCP_REFUSAL_END_USER_ORIGINATED	    = 0,
 	SCCP_REFUSAL_END_USER_CONGESTION	    = 1,
