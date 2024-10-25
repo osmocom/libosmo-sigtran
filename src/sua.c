@@ -89,7 +89,7 @@ static const struct value_string sua_iei_names[] = {
 	{ SUA_IEI_DEST_ADDR,		"Destination Address" },
 	{ SUA_IEI_SRC_REF,		"Source Reference" },
 	{ SUA_IEI_DEST_REF,		"Destination Reference" },
-	{ SUA_IEI_CAUSE,		"Cause" },
+	{ SUA_IEI_CAUSE,		"SCCP Cause" },
 	{ SUA_IEI_SEQ_NR,		"Sequence Number" },
 	{ SUA_IEI_RX_SEQ_NR,		"Receive Sequence Number" },
 	{ SUA_IEI_ASP_CAPA,		"ASP Capability" },
