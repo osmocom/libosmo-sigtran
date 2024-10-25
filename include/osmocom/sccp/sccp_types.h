@@ -209,6 +209,9 @@ enum sccp_release_cause {
 	SCCP_RELEASE_CAUSE_UNQUALIFIED		    = 15,
 	SCCP_RELEASE_CAUSE_SCCP_FAILURE		    = 16,
 };
+extern const struct value_string osmo_sccp_release_cause_names[];
+static inline const char *osmo_sccp_release_cause_name(enum sccp_release_cause val)
+{ return get_value_string(osmo_sccp_release_cause_names, val); }
 
 /* ITU-T Q.713, Section 3.12 Return cause */
 enum sccp_return_cause {
@@ -228,6 +231,9 @@ enum sccp_return_cause {
 	SCCP_RETURN_CAUSE_SEGMENTATION_NOT_SUPPORTED= 13,
 	SCCP_RETURN_CAUSE_SEGMENTATION_FAILURE	    = 14
 };
+extern const struct value_string osmo_sccp_return_cause_names[];
+static inline const char *osmo_sccp_return_cause_name(enum sccp_return_cause val)
+{ return get_value_string(osmo_sccp_return_cause_names, val); }
 
 /* ITU-T Q.713, Section 3.13 Reset cause */
 enum sccp_reset_cause {
@@ -243,7 +249,11 @@ enum sccp_reset_cause {
 	SCCP_RESET_CAUSE_ACCESS_OPERATIONAL	    = 9,
 	SCCP_RESET_CAUSE_NETWORK_CONGESTION	    = 10,
 	SCCP_RESET_CAUSE_RESERVED		    = 11,
+	SCCP_RESET_CAUSE_UNQUALIFIED		    = 12,
 };
+extern const struct value_string osmo_sccp_reset_cause_names[];
+static inline const char *osmo_sccp_reset_cause_name(enum sccp_reset_cause val)
+{ return get_value_string(osmo_sccp_reset_cause_names, val); }
 
 /* ITU-T Q.713, Section 3.14 Error cause */
 enum sccp_error_cause {
@@ -253,6 +263,9 @@ enum sccp_error_cause {
 	SCCP_ERROR_SERVICE_CLASS_MISMATCH	    = 3,
 	SCCP_ERROR_UNQUALIFIED			    = 4,
 };
+extern const struct value_string osmo_sccp_error_cause_names[];
+static inline const char *osmo_sccp_error_cause_name(enum sccp_error_cause val)
+{ return get_value_string(osmo_sccp_error_cause_names, val); }
 
 /* ITU-T Q.713 Section 3.15 Refusal cause */
 enum sccp_refusal_cause {
@@ -277,6 +290,9 @@ enum sccp_refusal_cause {
 	SCCP_REFUSAL_NO_TRANS_FOR_ADDRESS_NATURE    = 18,
 	SCCP_REFUSAL_UNEQUIPPED_USER		    = 19,
 };
+extern const struct value_string osmo_sccp_refusal_cause_names[];
+static inline const char *osmo_sccp_refusal_cause_name(enum sccp_refusal_cause val)
+{ return get_value_string(osmo_sccp_refusal_cause_names, val); }
 
 /*
  * messages... as of Q.713 Chapter 4

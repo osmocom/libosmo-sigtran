@@ -41,6 +41,7 @@
 #include <osmocom/sigtran/protocol/sua.h>
 #include <osmocom/sigtran/protocol/m3ua.h>
 #include <osmocom/sigtran/osmo_ss7.h>
+#include <osmocom/sccp/sccp_types.h>
 
 #include "xua_as_fsm.h"
 #include "xua_asp_fsm.h"
@@ -1007,4 +1008,54 @@ static int sua_rx_snm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	default:
 		return SUA_ERR_UNSUPP_MSG_CLASS;
 	}
+}
+
+/* RFC 3868 3.10.6. SCCP Cause */
+const struct value_string sua_cause_type_names[] = {
+	{ SUA_CAUSE_T_RETURN, "Return Cause" },
+	{ SUA_CAUSE_T_REFUSAL, "Refusal Cause" },
+	{ SUA_CAUSE_T_RELEASE, "Release Cause" },
+	{ SUA_CAUSE_T_RESET, "Reset Cause" },
+	{ SUA_CAUSE_T_ERROR, "Error Cause" },
+	{}
+};
+const char *osmo_sua_sccp_cause_name(uint32_t sccp_cause, char *out_buf, size_t out_buf_len)
+{
+	uint16_t cause_type = sccp_cause & SUA_CAUSE_T_MASK;
+	uint8_t cause_val = sccp_cause & 0xff;
+	const char *cause_type_str = get_value_string_or_null(sua_cause_type_names, cause_type);
+	const char *cause_str = NULL;
+
+	if (!out_buf || out_buf_len == 0)
+		return NULL;
+
+	if (!cause_type_str)
+		goto ret_unknown_cause_type;
+
+	switch (cause_type) {
+	case SUA_CAUSE_T_RETURN:
+		cause_str = osmo_sccp_return_cause_name(cause_val);
+		break;
+	case SUA_CAUSE_T_REFUSAL:
+		cause_str = osmo_sccp_refusal_cause_name(cause_val);
+		break;
+	case SUA_CAUSE_T_RELEASE:
+		cause_str = osmo_sccp_release_cause_name(cause_val);
+		break;
+	case SUA_CAUSE_T_RESET:
+		cause_str = osmo_sccp_reset_cause_name(cause_val);
+		break;
+	case SUA_CAUSE_T_ERROR:
+		cause_str = osmo_sccp_error_cause_name(cause_val);
+		break;
+	default:
+		goto ret_unknown_cause_type;
+	}
+
+	snprintf(out_buf, out_buf_len, "%s <%s>", cause_type_str, cause_str);
+	return out_buf;
+
+ret_unknown_cause_type:
+	snprintf(out_buf, out_buf_len, "Unknown SUA SCCP Cause 0x%08x\n", sccp_cause);
+	return out_buf;
 }

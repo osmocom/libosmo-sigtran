@@ -19,6 +19,7 @@
  */
 
 #pragma once
+#include <stddef.h>
 #include <stdint.h>
 
 #include <osmocom/sigtran/protocol/m3ua.h>
@@ -137,6 +138,8 @@
 #define SUA_CAUSE_T_RELEASE	0x0300
 #define SUA_CAUSE_T_RESET	0x0400
 #define SUA_CAUSE_T_ERROR	0x0500
+
+const char *osmo_sua_sccp_cause_name(uint32_t sccp_cause, char *out_buf, size_t out_buf_len);
 
 /* 3.9.12 Error: Identical to M3UA, extended by two at the bottom */
 #define SUA_ERR_INVALID_VERSION		M3UA_ERR_INVALID_VERSION
