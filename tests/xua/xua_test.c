@@ -18,9 +18,9 @@
 
 #include "sccp_test_data.h"
 
+#include "../src/xua_msg.h"
 #include "../src/xua_internal.h"
 
-#include <osmocom/sigtran/xua_msg.h>
 #include <osmocom/sigtran/protocol/sua.h>
 #include <osmocom/sigtran/protocol/m3ua.h>
 #include <osmocom/sigtran/sccp_sap.h>

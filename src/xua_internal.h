@@ -2,7 +2,7 @@
 
 #include <osmocom/core/tdef.h>
 #include <osmocom/sigtran/osmo_ss7.h>
-#include <osmocom/sigtran/xua_msg.h>
+#include "xua_msg.h"
 
 #define M3UA_MSG_SIZE 2048
 #define M3UA_MSG_HEADROOM 512

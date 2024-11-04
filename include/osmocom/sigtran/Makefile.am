@@ -1,5 +1,11 @@
-sigtran_HEADERS = xua_types.h xua_msg.h sccp_sap.h \
-		  sigtran_sap.h sccp_helpers.h mtp_sap.h osmo_ss7.h
+sigtran_HEADERS = \
+	mtp_sap.h \
+	osmo_ss7.h \
+	sccp_helpers.h \
+	sccp_sap.h \
+	sigtran_sap.h \
+	xua_msg.h \
+	$(NULL)
 
 sigtrandir = $(includedir)/osmocom/sigtran
 

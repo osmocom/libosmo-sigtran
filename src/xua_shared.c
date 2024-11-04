@@ -28,7 +28,7 @@
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/logging.h>
 
-#include <osmocom/sigtran/xua_msg.h>
+#include "xua_msg.h"
 
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <osmocom/sigtran/protocol/m3ua.h>

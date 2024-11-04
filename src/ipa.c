@@ -37,7 +37,7 @@
 
 //#include <osmocom/netif/stream.h>
 #include <osmocom/netif/ipa.h>
-#include <osmocom/sigtran/xua_msg.h>
+#include "xua_msg.h"
 
 #include <osmocom/sigtran/mtp_sap.h>
 #include <osmocom/sigtran/sccp_sap.h>

@@ -15,7 +15,7 @@
  *
  */
 
-#include <osmocom/sigtran/xua_msg.h>
+#include "../src/xua_msg.h"
 #include <osmocom/sigtran/protocol/m2ua.h>
 
 #include <osmocom/core/utils.h>

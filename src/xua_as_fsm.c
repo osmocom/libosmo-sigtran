@@ -19,7 +19,7 @@
 
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <osmocom/sigtran/sigtran_sap.h>
-#include <osmocom/sigtran/xua_msg.h>
+#include "xua_msg.h"
 #include <osmocom/sigtran/protocol/sua.h>
 #include <osmocom/sigtran/protocol/m3ua.h>
 

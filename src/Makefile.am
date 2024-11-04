@@ -8,6 +8,8 @@ noinst_HEADERS = \
 	xua_asp_fsm.h \
 	xua_as_fsm.h \
 	xua_internal.h \
+	xua_msg.h \
+	xua_types.h \
 	$(NULL)
 
 noinst_LIBRARIES = libxua.a

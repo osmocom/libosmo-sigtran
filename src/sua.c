@@ -34,7 +34,7 @@
 #include <osmocom/core/fsm.h>
 
 #include <osmocom/netif/stream.h>
-#include <osmocom/sigtran/xua_msg.h>
+#include "xua_msg.h"
 
 #include <osmocom/sigtran/sccp_sap.h>
 #include <osmocom/sigtran/protocol/mtp.h>

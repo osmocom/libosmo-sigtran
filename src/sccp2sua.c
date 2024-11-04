@@ -34,7 +34,7 @@
 #include <osmocom/sigtran/sccp_sap.h>
 #include <osmocom/sigtran/sccp_helpers.h>
 #include <osmocom/sigtran/protocol/sua.h>
-#include <osmocom/sigtran/xua_msg.h>
+#include "xua_msg.h"
 
 #include "xua_internal.h"
 #include "sccp_internal.h"

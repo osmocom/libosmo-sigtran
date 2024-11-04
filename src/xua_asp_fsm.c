@@ -24,7 +24,7 @@
 
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <osmocom/sigtran/sigtran_sap.h>
-#include <osmocom/sigtran/xua_msg.h>
+#include "xua_msg.h"
 #include <osmocom/sigtran/protocol/sua.h>
 
 #include "xua_asp_fsm.h"
