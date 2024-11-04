@@ -51,6 +51,7 @@
 #include "sccp_internal.h"
 #include "xua_internal.h"
 #include "ss7_internal.h"
+#include "ss7_route_table.h"
 #include "xua_asp_fsm.h"
 #include "xua_as_fsm.h"
 
@@ -342,7 +343,7 @@ osmo_ss7_instance_find_or_create(void *ctx, uint32_t id)
 	INIT_LLIST_HEAD(&inst->asp_list);
 	INIT_LLIST_HEAD(&inst->rtable_list);
 	INIT_LLIST_HEAD(&inst->xua_servers);
-	inst->rtable_system = osmo_ss7_route_table_find_or_create(inst, "system");
+	inst->rtable_system = ss7_route_table_find_or_create(inst, "system");
 
 	/* default point code structure + formatting */
 	inst->cfg.pc_fmt.delimiter = '.';
@@ -610,49 +611,6 @@ osmo_ss7_link_find_or_create(struct osmo_ss7_linkset *lset, uint32_t id)
 	return link;
 }
 
-
-/***********************************************************************
- * SS7 Route Tables
- ***********************************************************************/
-
-struct osmo_ss7_route_table *
-osmo_ss7_route_table_find(struct osmo_ss7_instance *inst, const char *name)
-{
-	struct osmo_ss7_route_table *rtbl;
-	OSMO_ASSERT(ss7_initialized);
-	llist_for_each_entry(rtbl, &inst->rtable_list, list) {
-		if (!strcmp(rtbl->cfg.name, name))
-			return rtbl;
-	}
-	return NULL;
-}
-
-struct osmo_ss7_route_table *
-osmo_ss7_route_table_find_or_create(struct osmo_ss7_instance *inst, const char *name)
-{
-	struct osmo_ss7_route_table *rtbl;
-
-	OSMO_ASSERT(ss7_initialized);
-	rtbl = osmo_ss7_route_table_find(inst, name);
-	if (!rtbl) {
-		LOGSS7(inst, LOGL_INFO, "Creating Route Table %s\n", name);
-		rtbl = talloc_zero(inst, struct osmo_ss7_route_table);
-		rtbl->inst = inst;
-		rtbl->cfg.name = talloc_strdup(rtbl, name);
-		INIT_LLIST_HEAD(&rtbl->routes);
-		llist_add_tail(&rtbl->list, &inst->rtable_list);
-	}
-	return rtbl;
-}
-
-void osmo_ss7_route_table_destroy(struct osmo_ss7_route_table *rtbl)
-{
-	llist_del(&rtbl->list);
-	/* routes are allocated as children of route table, will be
-	 * automatically freed() */
-	talloc_free(rtbl);
-}
-
 /***********************************************************************
  * SS7 Routes
  ***********************************************************************/
@@ -752,53 +710,12 @@ ss7_route_set_linkset(struct osmo_ss7_route *rt, const char *linkset_name)
 	return 0;
 }
 
-/*! \brief Find a SS7 route for given destination point code in given table */
-struct osmo_ss7_route *
-osmo_ss7_route_find_dpc(struct osmo_ss7_route_table *rtbl, uint32_t dpc)
-{
-	struct osmo_ss7_route *rt;
-
-	OSMO_ASSERT(ss7_initialized);
-
-	dpc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, dpc);
-
-	/* we assume the routes are sorted by mask length, i.e. more
-	 * specific routes first, and less specific routes with shorter
-	 * mask later */
-	llist_for_each_entry(rt, &rtbl->routes, list) {
-		if ((dpc & rt->cfg.mask) == rt->cfg.pc)
-			return rt;
-	}
-	return NULL;
-}
-
-/*! \brief Find a SS7 route for given destination point code + mask in given table */
-struct osmo_ss7_route *
-osmo_ss7_route_find_dpc_mask(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
-				uint32_t mask)
-{
-	struct osmo_ss7_route *rt;
-
-	OSMO_ASSERT(ss7_initialized);
-	mask = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, mask);
-	dpc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, dpc);
-
-	/* we assume the routes are sorted by mask length, i.e. more
-	 * specific routes first, and less specific routes with shorter
-	 * mask later */
-	llist_for_each_entry(rt, &rtbl->routes, list) {
-		if (dpc == rt->cfg.pc && mask == rt->cfg.mask)
-			return rt;
-	}
-	return NULL;
-}
-
 /*! \brief Find a SS7 route for given destination point code in given SS7 */
 struct osmo_ss7_route *
 osmo_ss7_route_lookup(struct osmo_ss7_instance *inst, uint32_t dpc)
 {
 	OSMO_ASSERT(ss7_initialized);
-	return osmo_ss7_route_find_dpc(inst->rtable_system, dpc);
+	return ss7_route_table_find_route_by_dpc(inst->rtable_system, dpc);
 }
 
 /* insert the route in the ordered list of routes. The list is sorted by
@@ -853,7 +770,7 @@ ss7_route_insert(struct osmo_ss7_route *rt)
 	}
 
 	/* check for duplicates */
-	prev_rt = osmo_ss7_route_find_dpc_mask(rtbl, rt->cfg.pc, rt->cfg.mask);
+	prev_rt = ss7_route_table_find_route_by_dpc_mask(rtbl, rt->cfg.pc, rt->cfg.mask);
 	if (prev_rt && !strcmp(prev_rt->cfg.linkset_name, rt->cfg.linkset_name)) {
 		LOGSS7(rtbl->inst, LOGL_ERROR,
 		       "Refusing to create route with existing linkset name: pc=%u=%s mask=0x%x via linkset/AS '%s'\n",
@@ -899,7 +816,7 @@ osmo_ss7_route_create(struct osmo_ss7_route_table *rtbl, uint32_t pc,
 	/* Keep old behavior, return already existing route: */
 	if (rc == -EADDRINUSE) {
 		talloc_free(rt);
-		return osmo_ss7_route_find_dpc_mask(rtbl, rt->cfg.pc, rt->cfg.mask);
+		return ss7_route_table_find_route_by_dpc_mask(rtbl, rt->cfg.pc, rt->cfg.mask);
 	}
 
 	return rt;

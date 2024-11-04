@@ -28,6 +28,7 @@
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <osmocom/sigtran/protocol/m3ua.h>
 
+#include "ss7_route_table.h"
 #include "xua_internal.h"
 #include "xua_as_fsm.h"
 #include "xua_asp_fsm.h"
@@ -372,7 +373,7 @@ static int handle_rkey_dereg(struct osmo_ss7_asp *asp, uint32_t rctx,
 		return -1;
 	}
 
-	rt = osmo_ss7_route_find_dpc(inst->rtable_system, as->cfg.routing_key.pc);
+	rt = ss7_route_table_find_route_by_dpc(inst->rtable_system, as->cfg.routing_key.pc);
 	if (!rt) {
 		msgb_append_dereg_res(resp, M3UA_RKM_DEREG_ERR_UNKNOWN, 0);
 		return -1;

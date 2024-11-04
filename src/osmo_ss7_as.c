@@ -33,6 +33,7 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/logging.h>
 
+#include "ss7_route_table.h"
 #include "ss7_internal.h"
 #include "xua_as_fsm.h"
 #include "xua_asp_fsm.h"

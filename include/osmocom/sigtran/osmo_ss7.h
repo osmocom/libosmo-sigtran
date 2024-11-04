@@ -18,6 +18,7 @@ struct osmo_ss7_user;
 struct osmo_sccp_instance;
 struct osmo_mtp_prim;
 struct osmo_xua_layer_manager;
+struct osmo_ss7_route_table;
 
 int osmo_ss7_init(void);
 int osmo_ss7_find_free_rctx(struct osmo_ss7_instance *inst);
@@ -36,30 +37,6 @@ static inline bool osmo_ss7_pc_is_valid(uint32_t pc)
 {
 	return pc <= 0x00ffffff;
 }
-
-/***********************************************************************
- * SS7 Routing Tables
- ***********************************************************************/
-
-struct osmo_ss7_route_table {
-	/*! member in list of routing tables */
-	struct llist_head list;
-	/*! \ref osmo_ss7_instance to which we belong */
-	struct osmo_ss7_instance *inst;
-	/*! list of \ref osmo_ss7_route */
-	struct llist_head routes;
-
-	struct {
-		char *name;
-		char *description;
-	} cfg;
-};
-
-struct osmo_ss7_route_table *
-osmo_ss7_route_table_find(struct osmo_ss7_instance *inst, const char *name);
-struct osmo_ss7_route_table *
-osmo_ss7_route_table_find_or_create(struct osmo_ss7_instance *inst, const char *name);
-void osmo_ss7_route_table_destroy(struct osmo_ss7_route_table *rtbl);
 
 /***********************************************************************
  * SS7 Instances
@@ -229,11 +206,6 @@ struct osmo_ss7_route {
 	} cfg;
 };
 
-struct osmo_ss7_route *
-osmo_ss7_route_find_dpc(struct osmo_ss7_route_table *rtbl, uint32_t dpc);
-struct osmo_ss7_route *
-osmo_ss7_route_find_dpc_mask(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
-			     uint32_t mask);
 struct osmo_ss7_route *
 osmo_ss7_route_lookup(struct osmo_ss7_instance *inst, uint32_t dpc);
 struct osmo_ss7_route *

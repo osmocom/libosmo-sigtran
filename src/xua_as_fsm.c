@@ -23,6 +23,7 @@
 #include <osmocom/sigtran/protocol/sua.h>
 #include <osmocom/sigtran/protocol/m3ua.h>
 
+#include "ss7_route_table.h"
 #include "xua_asp_fsm.h"
 #include "xua_as_fsm.h"
 #include "xua_internal.h"
@@ -230,7 +231,7 @@ static void ipa_add_route(struct osmo_fsm_inst *fi)
 	struct osmo_ss7_as *as = xafp->as;
 	struct osmo_ss7_instance *inst = as->inst;
 
-	if (osmo_ss7_route_find_dpc_mask(inst->rtable_system, as->cfg.routing_key.pc, 0xffffff))
+	if (ss7_route_table_find_route_by_dpc_mask(inst->rtable_system, as->cfg.routing_key.pc, 0xffffff))
 		return;
 
 	/* As opposed to M3UA, there is no RKM and we have to implicitly
@@ -251,7 +252,7 @@ static void ipa_del_route(struct osmo_fsm_inst *fi)
 		return;
 
 	/* find the route which we have created if we ever reached ipa_asp_fsm_wait_id_ack2 */
-	rt = osmo_ss7_route_find_dpc_mask(inst->rtable_system, as->cfg.routing_key.pc, 0xffffff);
+	rt = ss7_route_table_find_route_by_dpc_mask(inst->rtable_system, as->cfg.routing_key.pc, 0xffffff);
 	/* no route found, bail out */
 	if (!rt) {
 		LOGPFSML(fi, LOGL_NOTICE, "Attempting to delete route for this IPA AS, but cannot "

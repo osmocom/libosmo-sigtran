@@ -46,6 +46,7 @@
 #include "xua_internal.h"
 #include <osmocom/sigtran/sccp_sap.h>
 #include "sccp_internal.h"
+#include "ss7_route_table.h"
 #include "ss7_internal.h"
 
 #include <netinet/tcp.h>
@@ -470,7 +471,7 @@ DEFUN_ATTR(cs7_rt_rem, cs7_rt_rem_cmd,
 		return CMD_WARNING;
 	}
 
-	rt = osmo_ss7_route_find_dpc_mask(rtable, dpc, mask);
+	rt = ss7_route_table_find_route_by_dpc_mask(rtable, dpc, mask);
 	if (!rt) {
 		vty_out(vty, "cannot find route to be deleted%s", VTY_NEWLINE);
 		return CMD_WARNING;
@@ -2022,7 +2023,7 @@ static int _rout_key(struct vty *vty,
 	 * (users may change the routing key via VTY during runtime) and then
 	 * putting a new route (see below). */
 	if (cs7_role == CS7_ROLE_ASP) {
-		rt = osmo_ss7_route_find_dpc_mask(as->inst->rtable_system, rkey->pc, 0xffffff);
+		rt = ss7_route_table_find_route_by_dpc_mask(as->inst->rtable_system, rkey->pc, 0xffffff);
 		if (rt)
 			osmo_ss7_route_destroy(rt);
 	}

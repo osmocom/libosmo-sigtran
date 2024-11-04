@@ -39,6 +39,7 @@
 
 #include "sccp_internal.h"
 #include "xua_internal.h"
+#include "ss7_route_table.h"
 #include "ss7_internal.h"
 
 /*! \brief Find a SCCP User registered for given PC+SSN or SSN only
@@ -585,7 +586,7 @@ osmo_sccp_simple_client_on_ss7_id(void *ctx, uint32_t ss7_id, const char *name,
 	     as->cfg.name);
 
 	/* Create a default route if necessary */
-	rt = osmo_ss7_route_find_dpc_mask(ss7->rtable_system, 0, 0);
+	rt = ss7_route_table_find_route_by_dpc_mask(ss7->rtable_system, 0, 0);
 	if (!rt) {
 		LOGP(DLSCCP, LOGL_NOTICE, "%s: Creating default route\n", name);
 		rt = osmo_ss7_route_create(ss7->rtable_system, 0, 0,
