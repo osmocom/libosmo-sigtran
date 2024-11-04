@@ -214,7 +214,8 @@ osmo_ss7_route_create(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
 void osmo_ss7_route_destroy(struct osmo_ss7_route *rt);
 const char *osmo_ss7_route_print(const struct osmo_ss7_route *rt);
 const char *osmo_ss7_route_name(struct osmo_ss7_route *rt, bool list_asps);
-
+struct osmo_ss7_as *
+osmo_ss7_route_get_dest_as(struct osmo_ss7_route *rt);
 
 /***********************************************************************
  * SS7 Application Servers

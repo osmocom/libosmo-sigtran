@@ -882,6 +882,15 @@ const char *osmo_ss7_route_print(const struct osmo_ss7_route *rt)
 	return buf;
 }
 
+/*! \brief Get destination AS of route
+ *  \param[in] rt Route entry holding the AS destination
+ *  \returns pointer to Application Server on success; NULL if rt doesn't route
+ *  to an AS (i.e. routes to a linkset). */
+struct osmo_ss7_as *
+osmo_ss7_route_get_dest_as(struct osmo_ss7_route *rt)
+{
+	return rt->dest.as;
+}
 
 /***********************************************************************
  * SS7 Application Server
