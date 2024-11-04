@@ -1,5 +1,4 @@
-#ifndef m2ua_types_h
-#define m2ua_types_h
+#pragma once
 
 /**
  * Types found in the M2UA RFC 3331
@@ -251,5 +250,3 @@ enum {
 	M2UA_DEREG_ERR_PERM_DENIED,		/* Error - Permission Denied */
 	M2UA_DEREG_ERR_NOT_REG,			/* Error - Not Registered */
 };
-
-#endif
