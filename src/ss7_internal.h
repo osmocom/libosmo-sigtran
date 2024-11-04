@@ -50,13 +50,3 @@ enum ss7_asp_ctr {
 	SS7_ASP_CTR_PKT_RX_UNKNOWN,
 	SS7_ASP_CTR_PKT_TX_TOTAL,
 };
-
-/***********************************************************************
- * SS7 Routes
- ***********************************************************************/
-#define OSMO_SS7_ROUTE_PRIO_DEFAULT 5
-
-struct osmo_ss7_route *
-ss7_route_alloc(struct osmo_ss7_route_table *rtbl, uint32_t pc, uint32_t mask);
-int ss7_route_set_linkset(struct osmo_ss7_route *rt, const char *linkset_name);
-int ss7_route_insert(struct osmo_ss7_route *rt);

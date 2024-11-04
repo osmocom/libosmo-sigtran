@@ -181,37 +181,10 @@ osmo_ss7_linkset_find_or_create(struct osmo_ss7_instance *inst, const char *name
  * SS7 Routes
  ***********************************************************************/
 
-struct osmo_ss7_route {
-	/*! member in \ref osmo_ss7_route_table.routes */
-	struct llist_head list;
-	/*! \ref osmo_ss7_route_table to which we belong */
-	struct osmo_ss7_route_table *rtable;
-
-	struct {
-		/*! pointer to linkset (destination) of route */
-		struct osmo_ss7_linkset *linkset;
-		/*! pointer to Application Server */
-		struct osmo_ss7_as *as;
-	} dest;
-
-	struct {
-		/* FIXME: presence? */
-		uint32_t pc;
-		uint32_t mask;
-		/*! human-specified linkset name */
-		char *linkset_name;
-		/*! lower priority is higher */
-		uint32_t priority;
-		uint8_t qos_class;
-	} cfg;
-};
+struct osmo_ss7_route;
 
 struct osmo_ss7_route *
 osmo_ss7_route_lookup(struct osmo_ss7_instance *inst, uint32_t dpc);
-struct osmo_ss7_route *
-osmo_ss7_route_create(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
-			uint32_t mask, const char *linkset_name);
-void osmo_ss7_route_destroy(struct osmo_ss7_route *rt);
 const char *osmo_ss7_route_print(const struct osmo_ss7_route *rt);
 const char *osmo_ss7_route_name(struct osmo_ss7_route *rt, bool list_asps);
 struct osmo_ss7_as *

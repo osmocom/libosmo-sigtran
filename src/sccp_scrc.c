@@ -33,7 +33,9 @@
 #include <osmocom/sigtran/protocol/mtp.h>
 
 #include "sccp_internal.h"
+#include "ss7_route.h"
 #include "xua_internal.h"
+
 
 /***********************************************************************
  * Helper Functions

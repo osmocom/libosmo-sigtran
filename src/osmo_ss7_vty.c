@@ -46,6 +46,7 @@
 #include "xua_internal.h"
 #include <osmocom/sigtran/sccp_sap.h>
 #include "sccp_internal.h"
+#include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"
 
@@ -443,7 +444,7 @@ DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
 	return CMD_SUCCESS;
 
 destroy_warning:
-	osmo_ss7_route_destroy(rt);
+	ss7_route_destroy(rt);
 	return CMD_WARNING;
 }
 
@@ -477,7 +478,7 @@ DEFUN_ATTR(cs7_rt_rem, cs7_rt_rem_cmd,
 		return CMD_WARNING;
 	}
 
-	osmo_ss7_route_destroy(rt);
+	ss7_route_destroy(rt);
 	return CMD_SUCCESS;
 }
 
@@ -2025,7 +2026,7 @@ static int _rout_key(struct vty *vty,
 	if (cs7_role == CS7_ROLE_ASP) {
 		rt = ss7_route_table_find_route_by_dpc_mask(as->inst->rtable_system, rkey->pc, 0xffffff);
 		if (rt)
-			osmo_ss7_route_destroy(rt);
+			ss7_route_destroy(rt);
 	}
 
 	rkey->pc = pc;
@@ -2036,7 +2037,7 @@ static int _rout_key(struct vty *vty,
 
 	/* automatically add new route (see also comment above) */
 	if (cs7_role == CS7_ROLE_ASP) {
-		if (!osmo_ss7_route_create(as->inst->rtable_system, rkey->pc, 0xffffff, as->cfg.name)) {
+		if (!ss7_route_create(as->inst->rtable_system, rkey->pc, 0xffffff, as->cfg.name)) {
 			vty_out(vty, "Cannot create route (pc=%s, linkset=%s) to AS %s", dpc, as->cfg.name, VTY_NEWLINE);
 			return CMD_WARNING;
 		}

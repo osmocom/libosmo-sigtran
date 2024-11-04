@@ -23,6 +23,7 @@
 #include <osmocom/sigtran/protocol/sua.h>
 #include <osmocom/sigtran/protocol/m3ua.h>
 
+#include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "xua_asp_fsm.h"
 #include "xua_as_fsm.h"
@@ -236,7 +237,7 @@ static void ipa_add_route(struct osmo_fsm_inst *fi)
 
 	/* As opposed to M3UA, there is no RKM and we have to implicitly
 	 * automatically add a route once an IPA connection has come up */
-	if (osmo_ss7_route_create(inst->rtable_system, as->cfg.routing_key.pc, 0xffffff, as->cfg.name))
+	if (ss7_route_create(inst->rtable_system, as->cfg.routing_key.pc, 0xffffff, as->cfg.name))
 		xafp->ipa_route_created = true;
 }
 
@@ -269,7 +270,7 @@ static void ipa_del_route(struct osmo_fsm_inst *fi)
 		return;
 	}
 
-	osmo_ss7_route_destroy(rt);
+	ss7_route_destroy(rt);
 	xafp->ipa_route_created = false;
 }
 

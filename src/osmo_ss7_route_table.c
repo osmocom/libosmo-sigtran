@@ -24,6 +24,7 @@
 #include <osmocom/sigtran/mtp_sap.h>
 #include <osmocom/sigtran/osmo_ss7.h>
 
+#include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"
 

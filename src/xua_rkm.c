@@ -28,6 +28,7 @@
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <osmocom/sigtran/protocol/m3ua.h>
 
+#include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "xua_internal.h"
 #include "xua_as_fsm.h"
@@ -260,7 +261,7 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 		as->cfg.routing_key.context = rctx;
 
 		/* add route for that routing key */
-		rt = osmo_ss7_route_create(as->inst->rtable_system, dpc, 0xFFFFFF, namebuf);
+		rt = ss7_route_create(as->inst->rtable_system, dpc, 0xFFFFFF, namebuf);
 		if (!rt) {
 			LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: Cannot insert route for DPC %s / as %s\n",
 				osmo_ss7_pointcode_print(asp->inst, dpc), namebuf);
@@ -271,7 +272,7 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 
 		/* append to list of newly assigned as */
 		if (*nas_idx >= max_nas_idx) {
-			osmo_ss7_route_destroy(rt);
+			ss7_route_destroy(rt);
 			osmo_ss7_as_destroy(as);
 			LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: not enough room for newly assigned AS (max %u AS)\n",
 				max_nas_idx+1);
@@ -392,7 +393,7 @@ static int handle_rkey_dereg(struct osmo_ss7_asp *asp, uint32_t rctx,
 	 * route and destroy the AS */
 	if (as->rkm_dyn_allocated) {
 		/* remove route + AS definition */
-		osmo_ss7_route_destroy(rt);
+		ss7_route_destroy(rt);
 		osmo_ss7_as_destroy(as);
 	}
 	/* report success */

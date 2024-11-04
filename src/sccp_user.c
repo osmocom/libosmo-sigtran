@@ -39,6 +39,7 @@
 
 #include "sccp_internal.h"
 #include "xua_internal.h"
+#include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"
 
@@ -589,7 +590,7 @@ osmo_sccp_simple_client_on_ss7_id(void *ctx, uint32_t ss7_id, const char *name,
 	rt = ss7_route_table_find_route_by_dpc_mask(ss7->rtable_system, 0, 0);
 	if (!rt) {
 		LOGP(DLSCCP, LOGL_NOTICE, "%s: Creating default route\n", name);
-		rt = osmo_ss7_route_create(ss7->rtable_system, 0, 0,
+		rt = ss7_route_create(ss7->rtable_system, 0, 0,
 					   as->cfg.name);
 		if (!rt)
 			goto out_as;
@@ -711,7 +712,7 @@ out_asp:
 		osmo_ss7_asp_destroy(asp);
 out_rt:
 	if (rt_created)
-		osmo_ss7_route_destroy(rt);
+		ss7_route_destroy(rt);
 out_as:
 	if (as_created)
 		osmo_ss7_as_destroy(as);
@@ -838,7 +839,7 @@ osmo_sccp_simple_server_add_clnt(struct osmo_sccp_instance *inst,
 		goto out_strings;
 
 	/* route only selected PC to the client */
-	rt = osmo_ss7_route_create(ss7->rtable_system, pc, 0xffff, as_name);
+	rt = ss7_route_create(ss7->rtable_system, pc, 0xffff, as_name);
 	if (!rt)
 		goto out_as;
 
@@ -868,7 +869,7 @@ osmo_sccp_simple_server_add_clnt(struct osmo_sccp_instance *inst,
 out_asp:
 	osmo_ss7_asp_destroy(asp);
 out_rt:
-	osmo_ss7_route_destroy(rt);
+	ss7_route_destroy(rt);
 out_as:
 	osmo_ss7_as_destroy(as);
 out_strings:

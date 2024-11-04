@@ -33,6 +33,7 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/logging.h>
 
+#include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"
 #include "xua_as_fsm.h"
@@ -166,7 +167,7 @@ void osmo_ss7_as_destroy(struct osmo_ss7_as *as)
 	/* find any routes pointing to this AS and remove them */
 	llist_for_each_entry_safe(rt, rt2, &as->inst->rtable_system->routes, list) {
 		if (rt->dest.as == as)
-			osmo_ss7_route_destroy(rt);
+			ss7_route_destroy(rt);
 	}
 
 	as->inst = NULL;
