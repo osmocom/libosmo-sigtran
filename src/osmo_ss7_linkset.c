@@ -25,6 +25,7 @@
 #include <osmocom/core/logging.h>
 #include <osmocom/sigtran/osmo_ss7.h>
 
+#include "ss7_link.h"
 #include "ss7_linkset.h"
 #include "ss7_route.h"
 #include "ss7_route_table.h"
@@ -55,7 +56,7 @@ void ss7_linkset_destroy(struct osmo_ss7_linkset *lset)
 		struct osmo_ss7_link *link = lset->links[i];
 		if (!link)
 			continue;
-		osmo_ss7_link_destroy(link);
+		ss7_link_destroy(link);
 	}
 	llist_del(&lset->list);
 	talloc_free(lset);

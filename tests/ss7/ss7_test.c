@@ -1,3 +1,4 @@
+#include "../src/ss7_link.h"
 #include "../src/ss7_linkset.h"
 #include "../src/ss7_route.h"
 #include "../src/ss7_route_table.h"
@@ -220,18 +221,18 @@ static void test_linkset(void)
 	OSMO_ASSERT(lset_b);
 	OSMO_ASSERT(ss7_linkset_find_by_name(s7i, "b") == lset_b);
 
-	l_a1 = osmo_ss7_link_find_or_create(lset_a, 1);
+	l_a1 = ss7_link_find_or_create(lset_a, 1);
 	OSMO_ASSERT(l_a1);
-	l_a2 = osmo_ss7_link_find_or_create(lset_a, 2);
+	l_a2 = ss7_link_find_or_create(lset_a, 2);
 	OSMO_ASSERT(l_a2);
 
 	/* ID too high */
-	OSMO_ASSERT(osmo_ss7_link_find_or_create(lset_a, 1000) == NULL);
+	OSMO_ASSERT(ss7_link_find_or_create(lset_a, 1000) == NULL);
 	/* already exists */
-	OSMO_ASSERT(osmo_ss7_link_find_or_create(lset_a, 1) == l_a1);
+	OSMO_ASSERT(ss7_link_find_or_create(lset_a, 1) == l_a1);
 
-	osmo_ss7_link_destroy(l_a1);
-	osmo_ss7_link_destroy(l_a2);
+	ss7_link_destroy(l_a1);
+	ss7_link_destroy(l_a2);
 
 	ss7_linkset_destroy(lset_a);
 	ss7_linkset_destroy(lset_b);
