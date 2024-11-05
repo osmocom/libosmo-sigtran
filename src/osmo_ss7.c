@@ -315,20 +315,10 @@ osmo_ss7_instance_find(uint32_t id)
 	return NULL;
 }
 
-/*! \brief Find or create a SS7 Instance
- *  \param[in] ctx talloc allocation context to use for allocations
- *  \param[in] id ID of SS7 Instance
- *  \returns \ref osmo_ss7_instance on success; NULL on error */
-struct osmo_ss7_instance *
-osmo_ss7_instance_find_or_create(void *ctx, uint32_t id)
+static struct osmo_ss7_instance *
+ss7_instance_alloc(void *ctx, uint32_t id)
 {
 	struct osmo_ss7_instance *inst;
-
-	OSMO_ASSERT(ss7_initialized);
-
-	inst = osmo_ss7_instance_find(id);
-	if (inst)
-		return inst;
 
 	inst = talloc_zero(ctx, struct osmo_ss7_instance);
 	if (!inst)
@@ -357,6 +347,23 @@ osmo_ss7_instance_find_or_create(void *ctx, uint32_t id)
 
 	INIT_LLIST_HEAD(&inst->cfg.sccp_address_book);
 
+	return inst;
+}
+
+/*! \brief Find or create a SS7 Instance
+ *  \param[in] ctx talloc allocation context to use for allocations
+ *  \param[in] id ID of SS7 Instance
+ *  \returns \ref osmo_ss7_instance on success; NULL on error */
+struct osmo_ss7_instance *
+osmo_ss7_instance_find_or_create(void *ctx, uint32_t id)
+{
+	struct osmo_ss7_instance *inst;
+
+	OSMO_ASSERT(ss7_initialized);
+
+	inst = osmo_ss7_instance_find(id);
+	if (!inst)
+		inst = ss7_instance_alloc(ctx, id);
 	return inst;
 }
 
