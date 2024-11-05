@@ -62,6 +62,16 @@
 bool ss7_initialized = false;
 
 LLIST_HEAD(osmo_ss7_instances);
+/* This API allows iterating over the public global list of ss7 instances,
+ * without knowing the structure internal layout.
+ */
+struct osmo_ss7_instance *osmo_ss7_instances_llist_entry(struct llist_head *list)
+{
+	struct osmo_ss7_instance *pos;
+	pos = llist_entry(list, struct osmo_ss7_instance, list);
+	return pos;
+}
+
 static int32_t next_rctx = 1;
 static int32_t next_l_rk_id = 1;
 

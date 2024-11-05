@@ -12,3 +12,4 @@ libosmo-sigtran add API osmo_sccp_{release,return,reset,error,refusal}_cause_nam
 libosmo-sigtran add API osmo_ss7_route_get_dest_as()
 libosmo-sigtran Make private  osmo_ss7_route
 libosmo-sigtran add API osmo_ss7_instance_get_id(), osmo_ss7_instance_get_name(), osmo_ss7_instance_get_pc_fmt(), osmo_ss7_instance_get_primary_pc(), osmo_ss7_get_sccp()
+libosmo-sigtran add API osmo_ss7_instances_llist_entry()

@@ -11,9 +11,12 @@
 #include <osmocom/core/socket.h>
 #include <osmocom/core/rate_ctr.h>
 
-extern struct llist_head osmo_ss7_instances;
-
 struct osmo_ss7_instance;
+
+extern struct llist_head osmo_ss7_instances;
+/* Get an entry pointer from a list item in osmo_ss7_instances: */
+struct osmo_ss7_instance *osmo_ss7_instances_llist_entry(struct llist_head *list);
+
 struct osmo_ss7_user;
 struct osmo_sccp_instance;
 struct osmo_mtp_prim;
