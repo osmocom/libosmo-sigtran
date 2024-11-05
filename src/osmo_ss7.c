@@ -419,6 +419,12 @@ int osmo_ss7_instance_set_pc_fmt(struct osmo_ss7_instance *inst,
 	return 0;
 }
 
+const struct osmo_ss7_pc_fmt *
+osmo_ss7_instance_get_pc_fmt(const struct osmo_ss7_instance *inst)
+{
+	return &inst->cfg.pc_fmt;
+}
+
 /*! Allocate an SCCP instance, if not present yet.
  * \returns inst->sccp. */
 struct osmo_sccp_instance *osmo_ss7_ensure_sccp(struct osmo_ss7_instance *inst)

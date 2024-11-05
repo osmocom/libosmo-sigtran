@@ -92,6 +92,8 @@ const char *osmo_ss7_instance_get_name(const struct osmo_ss7_instance *inst);
 
 int osmo_ss7_instance_set_pc_fmt(struct osmo_ss7_instance *inst,
 				uint8_t c0, uint8_t c1, uint8_t c2);
+const struct osmo_ss7_pc_fmt *
+osmo_ss7_instance_get_pc_fmt(const struct osmo_ss7_instance *inst);
 
 struct osmo_sccp_instance *osmo_ss7_ensure_sccp(struct osmo_ss7_instance *inst);
 
