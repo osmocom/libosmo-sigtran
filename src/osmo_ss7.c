@@ -396,6 +396,11 @@ uint32_t osmo_ss7_instance_get_id(const struct osmo_ss7_instance *inst)
 	return inst->cfg.id;
 }
 
+const char *osmo_ss7_instance_get_name(const struct osmo_ss7_instance *inst)
+{
+	return inst->cfg.name;
+}
+
 /*! \brief Set the point code format used in given SS7 instance */
 int osmo_ss7_instance_set_pc_fmt(struct osmo_ss7_instance *inst,
 				uint8_t c0, uint8_t c1, uint8_t c2)
