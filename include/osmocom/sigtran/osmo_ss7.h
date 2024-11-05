@@ -20,7 +20,6 @@ struct osmo_ss7_instance *osmo_ss7_instances_llist_entry(struct llist_head *list
 struct osmo_ss7_user;
 struct osmo_sccp_instance;
 struct osmo_mtp_prim;
-struct osmo_xua_layer_manager;
 struct osmo_ss7_route_table;
 
 int osmo_ss7_init(void);
@@ -40,6 +39,14 @@ static inline bool osmo_ss7_pc_is_valid(uint32_t pc)
 {
 	return pc <= 0x00ffffff;
 }
+
+/***********************************************************************
+ * xUA Servers
+ ***********************************************************************/
+
+struct osmo_xua_layer_manager;
+
+struct osmo_xua_server;
 
 /***********************************************************************
  * SS7 Instances
@@ -435,70 +442,6 @@ typedef int osmo_ss7_asp_rx_unknown_cb(struct osmo_ss7_asp *asp, int ppid_mux, s
 
 void osmo_ss7_register_rx_unknown_cb(osmo_ss7_asp_rx_unknown_cb *cb);
 
-/***********************************************************************
- * xUA Servers
- ***********************************************************************/
-
-struct osmo_xua_layer_manager {
-	osmo_prim_cb prim_cb;
-};
-
-struct osmo_xua_server {
-	struct llist_head list;
-	struct osmo_ss7_instance *inst;
-
-	/* list of ASPs established via this server */
-	struct llist_head asp_list;
-
-	struct osmo_stream_srv_link *server;
-
-	struct {
-		bool accept_dyn_reg;
-		struct osmo_ss7_asp_peer local;
-		enum osmo_ss7_asp_protocol proto;
-		struct {
-			bool num_ostreams_present;
-			bool max_instreams_present;
-			uint16_t num_ostreams_value;
-			uint16_t max_instreams_value;
-		} sctp_init;
-
-		/*! The underlaying transport protocol (one of IPPROTO_*) */
-		int trans_proto;
-	} cfg;
-};
-
-struct osmo_xua_server *
-osmo_ss7_xua_server_find(struct osmo_ss7_instance *inst,
-			 enum osmo_ss7_asp_protocol proto,
-			 uint16_t local_port)
-	OSMO_DEPRECATED("Use osmo_ss7_xua_server_find2() instead");
-struct osmo_xua_server *
-osmo_ss7_xua_server_find2(struct osmo_ss7_instance *inst,
-			  int trans_proto,
-			  enum osmo_ss7_asp_protocol proto,
-			  uint16_t local_port);
-
-struct osmo_xua_server *
-osmo_ss7_xua_server_create(struct osmo_ss7_instance *inst,
-			   enum osmo_ss7_asp_protocol proto,
-			   uint16_t local_port, const char *local_host)
-	OSMO_DEPRECATED("Use osmo_ss7_xua_server_create2() instead");
-struct osmo_xua_server *
-osmo_ss7_xua_server_create2(struct osmo_ss7_instance *inst,
-			    int trans_proto, enum osmo_ss7_asp_protocol proto,
-			    uint16_t local_port, const char *local_host);
-
-int
-osmo_ss7_xua_server_bind(struct osmo_xua_server *xs);
-
-int
-osmo_ss7_xua_server_set_local_host(struct osmo_xua_server *xs, const char *local_host);
-int
-osmo_ss7_xua_server_set_local_hosts(struct osmo_xua_server *xs, const char **local_hosts, size_t local_host_cnt);
-int osmo_ss7_xua_server_add_local_host(struct osmo_xua_server *xs, const char *local_host);
-int osmo_ss7_xua_server_del_local_host(struct osmo_xua_server *xs, const char *local_host);
-void osmo_ss7_xua_server_destroy(struct osmo_xua_server *xs);
 
 struct osmo_sccp_instance *
 osmo_sccp_simple_client(void *ctx, const char *name, uint32_t default_pc,

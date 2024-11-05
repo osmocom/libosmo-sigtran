@@ -42,6 +42,7 @@
 #include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"
+#include "ss7_xua_srv.h"
 
 /*! \brief Find a SCCP User registered for given PC+SSN or SSN only
  * First search all users with a valid PC for a full PC+SSN match.
@@ -682,7 +683,7 @@ osmo_sccp_simple_client_on_ss7_id(void *ctx, uint32_t ss7_id, const char *name,
 			LOGP(DLSCCP, LOGL_NOTICE,
 			     "%s: Requesting an SCCP simple client on ASP %s configured with 'transport-role server'\n",
 			     name, asp->cfg.name);
-			xs = osmo_ss7_xua_server_find2(ss7,
+			xs = ss7_xua_server_find2(ss7,
 						       asp->cfg.trans_proto, prot,
 						       asp->cfg.local.port);
 			if (!xs) {
@@ -775,11 +776,11 @@ osmo_sccp_simple_server_on_ss7_id(void *ctx, uint32_t ss7_id, uint32_t pc,
 		return NULL;
 	ss7->cfg.primary_pc = pc;
 
-	xs = osmo_ss7_xua_server_create2(ss7, trans_proto, prot, local_port, local_ip);
+	xs = ss7_xua_server_create2(ss7, trans_proto, prot, local_port, local_ip);
 	if (!xs)
 		goto out_ss7;
 
-	rc = osmo_ss7_xua_server_bind(xs);
+	rc = ss7_xua_server_bind(xs);
 	if (rc < 0)
 		goto out_xs;
 
@@ -791,7 +792,7 @@ osmo_sccp_simple_server_on_ss7_id(void *ctx, uint32_t ss7_id, uint32_t pc,
 	return ss7->sccp;
 
 out_xs:
-	osmo_ss7_xua_server_destroy(xs);
+	ss7_xua_server_destroy(xs);
 out_ss7:
 	osmo_ss7_instance_destroy(ss7);
 
@@ -848,7 +849,7 @@ osmo_sccp_simple_server_add_clnt(struct osmo_sccp_instance *inst,
 					   trans_proto, prot);
 	if (!asp)
 		goto out_rt;
-	oxs = osmo_ss7_xua_server_find2(ss7, asp->cfg.trans_proto, prot, local_port);
+	oxs = ss7_xua_server_find2(ss7, asp->cfg.trans_proto, prot, local_port);
 	if (!oxs)
 		goto out_asp;
 	if (osmo_ss7_asp_peer_set_hosts(&asp->cfg.local, asp,

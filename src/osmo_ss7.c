@@ -780,51 +780,6 @@ osmo_ss7_asp_find_or_create(struct osmo_ss7_instance *inst, const char *name,
 					    trans_proto, proto);
 }
 
-/*! \brief find an xUA server with the given parameters
- *  \param[in] inst SS7 Instance on which we operate
- *  \param[in] trans_proto transport protocol in use (one of IPPROTO_*)
- *  \param[in] proto protocol (xUA variant) in use
- *  \param[in] local_port local port of the server
- *  \returns \ref osmo_xua_server or NULL (not found)
- */
-struct osmo_xua_server *
-osmo_ss7_xua_server_find2(struct osmo_ss7_instance *inst,
-			  int trans_proto,
-			  enum osmo_ss7_asp_protocol proto,
-			  uint16_t local_port)
-{
-	struct osmo_xua_server *xs;
-
-	OSMO_ASSERT(ss7_initialized);
-	llist_for_each_entry(xs, &inst->xua_servers, list) {
-		if (trans_proto != xs->cfg.trans_proto)
-			continue;
-		if (proto != xs->cfg.proto)
-			continue;
-		if (local_port != xs->cfg.local.port)
-			continue;
-		return xs;
-	}
-
-	return NULL;
-}
-
-/*! \brief find an xUA server with the given parameters
- *  \param[in] inst SS7 Instance on which we operate
- *  \param[in] proto protocol (xUA variant) in use
- *  \param[in] local_port local port of the server
- *  \returns \ref osmo_xua_server or NULL (not found)
- */
-struct osmo_xua_server *
-osmo_ss7_xua_server_find(struct osmo_ss7_instance *inst,
-			 enum osmo_ss7_asp_protocol proto,
-			 uint16_t local_port)
-{
-	const int trans_proto = ss7_default_trans_proto_for_asp_proto(proto);
-
-	return osmo_ss7_xua_server_find2(inst, trans_proto, proto, local_port);
-}
-
 bool osmo_ss7_pc_is_local(const struct osmo_ss7_instance *inst, uint32_t pc)
 {
 	OSMO_ASSERT(ss7_initialized);

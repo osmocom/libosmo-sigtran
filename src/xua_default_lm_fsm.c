@@ -37,6 +37,7 @@
 
 #include "xua_internal.h"
 #include "xua_asp_fsm.h"
+#include "ss7_xua_srv.h"
 
 #define S(x)	(1 << (x))
 

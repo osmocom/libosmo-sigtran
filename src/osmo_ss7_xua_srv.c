@@ -54,6 +54,7 @@
 #include "ss7_internal.h"
 #include "xua_asp_fsm.h"
 #include "xua_as_fsm.h"
+#include "ss7_xua_srv.h"
 
 /***********************************************************************
  * SS7 xUA Server
@@ -196,7 +197,7 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
  *  \returns callee-allocated \ref osmo_xua_server in case of success
  */
 struct osmo_xua_server *
-osmo_ss7_xua_server_create2(struct osmo_ss7_instance *inst,
+ss7_xua_server_create2(struct osmo_ss7_instance *inst,
 			    int trans_proto, enum osmo_ss7_asp_protocol proto,
 			    uint16_t local_port, const char *local_host)
 {
@@ -232,7 +233,7 @@ osmo_ss7_xua_server_create2(struct osmo_ss7_instance *inst,
 	osmo_stream_srv_link_set_port(oxs->server, oxs->cfg.local.port);
 	osmo_stream_srv_link_set_proto(oxs->server, trans_proto);
 
-	osmo_ss7_xua_server_set_local_host(oxs, local_host);
+	ss7_xua_server_set_local_host(oxs, local_host);
 
 	LOGP(DLSS7, LOGL_INFO, "Created %s server on %s:%" PRIu16 "\n",
 		get_value_string(osmo_ss7_asp_protocol_vals, proto), local_host, local_port);
@@ -255,13 +256,13 @@ osmo_ss7_xua_server_create2(struct osmo_ss7_instance *inst,
  *  \returns callee-allocated \ref osmo_xua_server in case of success
  */
 struct osmo_xua_server *
-osmo_ss7_xua_server_create(struct osmo_ss7_instance *inst,
+ss7_xua_server_create(struct osmo_ss7_instance *inst,
 			   enum osmo_ss7_asp_protocol proto,
 			   uint16_t local_port, const char *local_host)
 {
 	const int trans_proto = ss7_default_trans_proto_for_asp_proto(proto);
 
-	return osmo_ss7_xua_server_create2(inst, trans_proto, proto,
+	return ss7_xua_server_create2(inst, trans_proto, proto,
 					   local_port, local_host);
 }
 
@@ -270,7 +271,7 @@ osmo_ss7_xua_server_create(struct osmo_ss7_instance *inst,
  *  \returns 0 on success, negative value on error.
  */
 int
-osmo_ss7_xua_server_bind(struct osmo_xua_server *xs)
+ss7_xua_server_bind(struct osmo_xua_server *xs)
 {
 	char buf[512];
 	int rc;
@@ -303,13 +304,13 @@ osmo_ss7_xua_server_bind(struct osmo_xua_server *xs)
 }
 
 int
-osmo_ss7_xua_server_set_local_host(struct osmo_xua_server *xs, const char *local_host)
+ss7_xua_server_set_local_host(struct osmo_xua_server *xs, const char *local_host)
 {
-	return osmo_ss7_xua_server_set_local_hosts(xs, &local_host, 1);
+	return ss7_xua_server_set_local_hosts(xs, &local_host, 1);
 }
 
 int
-osmo_ss7_xua_server_set_local_hosts(struct osmo_xua_server *xs, const char **local_hosts, size_t local_host_cnt)
+ss7_xua_server_set_local_hosts(struct osmo_xua_server *xs, const char **local_hosts, size_t local_host_cnt)
 {
 	int rc;
 	OSMO_ASSERT(ss7_initialized);
@@ -321,7 +322,7 @@ osmo_ss7_xua_server_set_local_hosts(struct osmo_xua_server *xs, const char **loc
 }
 
 int
-osmo_ss7_xua_server_add_local_host(struct osmo_xua_server *xs, const char *local_host)
+ss7_xua_server_add_local_host(struct osmo_xua_server *xs, const char *local_host)
 {
 	int rc;
 
@@ -332,7 +333,7 @@ osmo_ss7_xua_server_add_local_host(struct osmo_xua_server *xs, const char *local
 }
 
 int
-osmo_ss7_xua_server_del_local_host(struct osmo_xua_server *xs, const char *local_host)
+ss7_xua_server_del_local_host(struct osmo_xua_server *xs, const char *local_host)
 {
 	int rc;
 
@@ -348,15 +349,15 @@ bool ss7_xua_server_set_default_local_hosts(struct osmo_xua_server *oxs)
 	if (!oxs->cfg.local.host_cnt) {
 		/* "::" Covers both IPv4 and IPv6 */
 		if (ss7_ipv6_sctp_supported("::", true))
-			osmo_ss7_xua_server_set_local_host(oxs, "::");
+			ss7_xua_server_set_local_host(oxs, "::");
 		else
-			osmo_ss7_xua_server_set_local_host(oxs, "0.0.0.0");
+			ss7_xua_server_set_local_host(oxs, "0.0.0.0");
 		return true;
 	}
 	return false;
 }
 
-void osmo_ss7_xua_server_destroy(struct osmo_xua_server *xs)
+void ss7_xua_server_destroy(struct osmo_xua_server *xs)
 {
 	struct osmo_ss7_asp *asp, *asp2;
 
@@ -371,4 +372,49 @@ void osmo_ss7_xua_server_destroy(struct osmo_xua_server *xs)
 
 	llist_del(&xs->list);
 	talloc_free(xs);
+}
+
+/*! \brief find an xUA server with the given parameters
+ *  \param[in] inst SS7 Instance on which we operate
+ *  \param[in] trans_proto transport protocol in use (one of IPPROTO_*)
+ *  \param[in] proto protocol (xUA variant) in use
+ *  \param[in] local_port local port of the server
+ *  \returns \ref osmo_xua_server or NULL (not found)
+ */
+struct osmo_xua_server *
+ss7_xua_server_find2(struct osmo_ss7_instance *inst,
+			  int trans_proto,
+			  enum osmo_ss7_asp_protocol proto,
+			  uint16_t local_port)
+{
+	struct osmo_xua_server *xs;
+
+	OSMO_ASSERT(ss7_initialized);
+	llist_for_each_entry(xs, &inst->xua_servers, list) {
+		if (trans_proto != xs->cfg.trans_proto)
+			continue;
+		if (proto != xs->cfg.proto)
+			continue;
+		if (local_port != xs->cfg.local.port)
+			continue;
+		return xs;
+	}
+
+	return NULL;
+}
+
+/*! \brief find an xUA server with the given parameters
+ *  \param[in] inst SS7 Instance on which we operate
+ *  \param[in] proto protocol (xUA variant) in use
+ *  \param[in] local_port local port of the server
+ *  \returns \ref osmo_xua_server or NULL (not found)
+ */
+struct osmo_xua_server *
+ss7_xua_server_find(struct osmo_ss7_instance *inst,
+			 enum osmo_ss7_asp_protocol proto,
+			 uint16_t local_port)
+{
+	const int trans_proto = ss7_default_trans_proto_for_asp_proto(proto);
+
+	return ss7_xua_server_find2(inst, trans_proto, proto, local_port);
 }

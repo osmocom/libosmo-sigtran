@@ -36,8 +36,6 @@ int ss7_asp_apply_drop_local_address(const struct osmo_ss7_asp *asp, unsigned in
 bool ss7_asp_peer_match_host(const struct osmo_ss7_asp_peer *peer, const char *host, bool host_is_v6);
 int ss7_asp_peer_find_host(const struct osmo_ss7_asp_peer *peer, const char *host);
 
-bool ss7_xua_server_set_default_local_hosts(struct osmo_xua_server *oxs);
-
 int xua_tcp_segmentation_cb(struct msgb *msg);
 
 enum ss7_as_ctr {

@@ -49,6 +49,7 @@
 #include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"
+#include "ss7_xua_srv.h"
 
 #include <netinet/tcp.h>
 
@@ -583,13 +584,13 @@ DEFUN_ATTR(cs7_xua, cs7_xua_cmd,
 	if (trans_proto < 0)
 		return CMD_WARNING;
 
-	xs = osmo_ss7_xua_server_find2(inst, trans_proto, proto, port);
+	xs = ss7_xua_server_find2(inst, trans_proto, proto, port);
 	if (!xs) {
-		xs = osmo_ss7_xua_server_create2(inst, trans_proto, proto, port, NULL);
+		xs = ss7_xua_server_create2(inst, trans_proto, proto, port, NULL);
 		if (!xs)
 			return CMD_WARNING;
 		/* Drop first dummy address created automatically by _create(): */
-		osmo_ss7_xua_server_set_local_hosts(xs, NULL, 0);
+		ss7_xua_server_set_local_hosts(xs, NULL, 0);
 	}
 
 	vty->node = L_CS7_XUA_NODE;
@@ -618,12 +619,12 @@ DEFUN_ATTR(no_cs7_xua, no_cs7_xua_cmd,
 	if (trans_proto < 0)
 		return CMD_WARNING;
 
-	xs = osmo_ss7_xua_server_find2(inst, trans_proto, proto, port);
+	xs = ss7_xua_server_find2(inst, trans_proto, proto, port);
 	if (!xs) {
 		vty_out(vty, "No xUA server for port %u found%s", port, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
-	osmo_ss7_xua_server_destroy(xs);
+	ss7_xua_server_destroy(xs);
 	return CMD_SUCCESS;
 }
 
@@ -636,7 +637,7 @@ DEFUN_ATTR(xua_local_ip, xua_local_ip_cmd,
 {
 	struct osmo_xua_server *xs = vty->index;
 
-	osmo_ss7_xua_server_add_local_host(xs, argv[0]);
+	ss7_xua_server_add_local_host(xs, argv[0]);
 
 	return CMD_SUCCESS;
 }
@@ -650,7 +651,7 @@ DEFUN_ATTR(xua_no_local_ip, xua_no_local_ip_cmd,
 {
 	struct osmo_xua_server *xs = vty->index;
 
-	if (osmo_ss7_xua_server_del_local_host(xs, argv[0]) != 0) {
+	if (ss7_xua_server_del_local_host(xs, argv[0]) != 0) {
 		vty_out(vty, "%% Failed deleting local address '%s' from set%s", argv[0], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -2947,7 +2948,7 @@ int osmo_ss7_vty_go_parent(struct vty *vty)
 		oxs = vty->index;
 		/* If no local addr was set, or erased after _create(): */
 		ss7_xua_server_set_default_local_hosts(oxs);
-		if (osmo_ss7_xua_server_bind(oxs) < 0)
+		if (ss7_xua_server_bind(oxs) < 0)
 			vty_out(vty, "%% Unable to bind xUA server to IP(s)%s", VTY_NEWLINE);
 		vty->node = L_CS7_NODE;
 		vty->index = oxs->inst;
