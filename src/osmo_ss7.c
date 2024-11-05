@@ -205,7 +205,7 @@ static uint32_t pc_comp_shift_and_mask(const struct osmo_ss7_pc_fmt *pc_fmt,
 
 /* parse a point code according to the structure configured for this
  * ss7_instance */
-int osmo_ss7_pointcode_parse(struct osmo_ss7_instance *inst, const char *str)
+int osmo_ss7_pointcode_parse(const struct osmo_ss7_instance *inst, const char *str)
 {
 	unsigned int component[3];
 	const struct osmo_ss7_pc_fmt *pc_fmt = inst ? &inst->cfg.pc_fmt : &default_pc_fmt;
@@ -277,7 +277,7 @@ const char *osmo_ss7_pointcode_print2(const struct osmo_ss7_instance *inst, uint
 	return osmo_ss7_pointcode_print_buf(buf, sizeof(buf), inst, pc);
 }
 
-int osmo_ss7_pointcode_parse_mask_or_len(struct osmo_ss7_instance *inst, const char *in)
+int osmo_ss7_pointcode_parse_mask_or_len(const struct osmo_ss7_instance *inst, const char *in)
 {
 	unsigned int width = osmo_ss7_pc_width(inst ? &inst->cfg.pc_fmt : &default_pc_fmt);
 
@@ -778,7 +778,7 @@ osmo_ss7_xua_server_find(struct osmo_ss7_instance *inst,
 	return osmo_ss7_xua_server_find2(inst, trans_proto, proto, local_port);
 }
 
-bool osmo_ss7_pc_is_local(struct osmo_ss7_instance *inst, uint32_t pc)
+bool osmo_ss7_pc_is_local(const struct osmo_ss7_instance *inst, uint32_t pc)
 {
 	OSMO_ASSERT(ss7_initialized);
 	if (osmo_ss7_pc_is_valid(inst->cfg.primary_pc) && pc == inst->cfg.primary_pc)
