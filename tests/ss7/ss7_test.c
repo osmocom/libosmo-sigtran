@@ -1,3 +1,4 @@
+#include "../src/ss7_asp.h"
 #include "../src/ss7_link.h"
 #include "../src/ss7_linkset.h"
 #include "../src/ss7_route.h"

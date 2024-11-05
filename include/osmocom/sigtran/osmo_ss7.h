@@ -307,77 +307,7 @@ enum osmo_ss7_asp_role {
 
 extern const struct value_string osmo_ss7_asp_role_names[];
 
-struct osmo_ss7_asp {
-	/*! entry in \ref osmo_ss7_instance.asp_list */
-	struct llist_head list;
-	struct osmo_ss7_instance *inst;
-
-	/*! ASP FSM */
-	struct osmo_fsm_inst *fi;
-
-	/*! \ref osmo_xua_server over which we were established */
-	struct osmo_xua_server *xua_server;
-	struct llist_head siblings;
-
-	/*! osmo_stream / libosmo-netif handles */
-	struct osmo_stream_cli *client;
-	struct osmo_stream_srv *server;
-	/*! pre-formatted human readable local/remote socket name */
-	char *sock_name;
-
-	/* ASP Identifier for ASP-UP + NTFY */
-	uint32_t asp_id;
-	bool asp_id_present;
-
-	/* Layer Manager to which we talk */
-	const struct osmo_xua_layer_manager *lm;
-	void *lm_priv;
-
-	/*! Were we dynamically allocated */
-	bool dyn_allocated;
-
-	/*! Were we allocated by "simple client" support? */
-	bool simple_client_allocated;
-
-	/*! Rate Counter Group */
-	struct rate_ctr_group *ctrg;
-
-	/*! Pending message for non-blocking IPA read */
-	struct msgb *pending_msg;
-
-	struct {
-		char *name;
-		char *description;
-		enum osmo_ss7_asp_protocol proto;
-		enum osmo_ss7_asp_admin_state adm_state;
-		bool is_server;
-		enum osmo_ss7_asp_role role;
-		bool role_set_by_vty;
-		bool trans_role_set_by_vty;
-
-		struct osmo_ss7_asp_peer local;
-		struct osmo_ss7_asp_peer remote;
-		uint8_t qos_class;
-		uint32_t quirks;
-
-		/* T_defs used by the default_lm: */
-		struct osmo_tdef *T_defs_lm;
-
-		struct {
-			bool num_ostreams_present;
-			bool max_instreams_present;
-			bool max_attempts_present;
-			bool max_init_timeo_present;
-			uint16_t num_ostreams_value;
-			uint16_t max_instreams_value;
-			uint16_t max_attempts_value;
-			uint16_t max_init_timeo_value; /* ms */
-		} sctp_init;
-
-		/*! The underlaying transport protocol (one of IPPROTO_*) */
-		int trans_proto;
-	} cfg;
-};
+struct osmo_ss7_asp;
 
 /*! Peer SG doesn't send NTFY(AS-INACTIVE) after ASP-UP procedure */
 #define OSMO_SS7_ASP_QUIRK_NO_NOTIFY		0x00000001

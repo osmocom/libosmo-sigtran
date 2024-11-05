@@ -46,6 +46,7 @@
 #include "xua_internal.h"
 #include <osmocom/sigtran/sccp_sap.h>
 #include "sccp_internal.h"
+#include "ss7_asp.h"
 #include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"

@@ -33,6 +33,7 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/logging.h>
 
+#include "ss7_asp.h"
 #include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"

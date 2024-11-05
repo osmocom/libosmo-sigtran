@@ -50,6 +50,7 @@
 
 #include "sccp_internal.h"
 #include "xua_internal.h"
+#include "ss7_asp.h"
 #include "ss7_internal.h"
 #include "ss7_linkset.h"
 #include "ss7_route.h"

@@ -31,6 +31,7 @@
 #include <osmocom/sigtran/protocol/sua.h>
 #include <osmocom/sigtran/protocol/mtp.h>
 
+#include "ss7_asp.h"
 #include "ss7_internal.h"
 #include "xua_internal.h"
 #include "sccp_internal.h"
