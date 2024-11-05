@@ -1,0 +1,63 @@
+#pragma once
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <osmocom/core/linuxlist.h>
+
+/***********************************************************************
+ * SS7 Instances
+ ***********************************************************************/
+
+struct osmo_ss7_user;
+struct osmo_ss7_route_table;
+struct osmo_sccp_instance;
+
+struct osmo_ss7_pc_fmt {
+	char delimiter;
+	uint8_t component_len[3];
+};
+
+struct osmo_ss7_instance {
+	/*! member of global list of instances */
+	struct llist_head list;
+	/*! list of \ref osmo_ss7_linkset */
+	struct llist_head linksets;
+	/*! list of \ref osmo_ss7_as */
+	struct llist_head as_list;
+	/*! list of \ref osmo_ss7_asp */
+	struct llist_head asp_list;
+	/*! list of \ref osmo_ss7_route_table */
+	struct llist_head rtable_list;
+	/*! list of \ref osmo_xua_servers */
+	struct llist_head xua_servers;
+	/* array for faster lookup of user (indexed by service
+	 * indicator) */
+	const struct osmo_ss7_user *user[16];
+
+	struct osmo_ss7_route_table *rtable_system;
+
+	struct osmo_sccp_instance *sccp;
+
+	struct {
+		uint32_t id;
+		char *name;
+		char *description;
+		uint32_t primary_pc;
+		/* capability PCs */
+		uint8_t network_indicator;
+		struct osmo_ss7_pc_fmt pc_fmt;
+		bool permit_dyn_rkm_alloc;
+		struct llist_head sccp_address_book;
+		uint32_t secondary_pc;
+	} cfg;
+};
+
+struct osmo_ss7_instance *
+ss7_instance_alloc(void *ctx, uint32_t id);
+
+uint32_t ss7_find_free_l_rk_id(struct osmo_ss7_instance *inst);
+
+#define _LOGSS7(inst, subsys, level, fmt, args ...) \
+	LOGP(subsys, level, "%u: " fmt, inst ? (inst)->cfg.id : 0, ## args)
+#define LOGSS7(inst, level, fmt, args ...) \
+	_LOGSS7(inst, DLSS7, level, fmt, ## args)

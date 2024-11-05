@@ -63,6 +63,7 @@
 
 #include "xua_internal.h"
 #include "sccp_internal.h"
+#include "ss7_instance.h"
 
 #define S(x)	(1 << (x))
 #define SCU_MSGB_SIZE	1024

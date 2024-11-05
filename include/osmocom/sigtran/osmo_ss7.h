@@ -17,20 +17,7 @@ extern struct llist_head osmo_ss7_instances;
 /* Get an entry pointer from a list item in osmo_ss7_instances: */
 struct osmo_ss7_instance *osmo_ss7_instances_llist_entry(struct llist_head *list);
 
-struct osmo_ss7_user;
-struct osmo_sccp_instance;
-struct osmo_mtp_prim;
-struct osmo_ss7_route_table;
-
 int osmo_ss7_init(void);
-int osmo_ss7_find_free_rctx(struct osmo_ss7_instance *inst);
-
-bool osmo_ss7_pc_is_local(const struct osmo_ss7_instance *inst, uint32_t pc);
-int osmo_ss7_pointcode_parse(const struct osmo_ss7_instance *inst, const char *str);
-int osmo_ss7_pointcode_parse_mask_or_len(const struct osmo_ss7_instance *inst, const char *in);
-const char *osmo_ss7_pointcode_print_buf(char *buf, size_t buf_len, const struct osmo_ss7_instance *inst, uint32_t pc);
-const char *osmo_ss7_pointcode_print(const struct osmo_ss7_instance *inst, uint32_t pc);
-const char *osmo_ss7_pointcode_print2(const struct osmo_ss7_instance *inst, uint32_t pc);
 
 /* All known point-code formats have a length of or below 24 bit.
  * A point-code value exceeding that is used to indicate an unset PC. */
@@ -52,45 +39,8 @@ struct osmo_xua_server;
  * SS7 Instances
  ***********************************************************************/
 
-struct osmo_ss7_pc_fmt {
-	char delimiter;
-	uint8_t component_len[3];
-};
-
-struct osmo_ss7_instance {
-	/*! member of global list of instances */
-	struct llist_head list;
-	/*! list of \ref osmo_ss7_linkset */
-	struct llist_head linksets;
-	/*! list of \ref osmo_ss7_as */
-	struct llist_head as_list;
-	/*! list of \ref osmo_ss7_asp */
-	struct llist_head asp_list;
-	/*! list of \ref osmo_ss7_route_table */
-	struct llist_head rtable_list;
-	/*! list of \ref osmo_xua_servers */
-	struct llist_head xua_servers;
-	/* array for faster lookup of user (indexed by service
-	 * indicator) */
-	const struct osmo_ss7_user *user[16];
-
-	struct osmo_ss7_route_table *rtable_system;
-
-	struct osmo_sccp_instance *sccp;
-
-	struct {
-		uint32_t id;
-		char *name;
-		char *description;
-		uint32_t primary_pc;
-		/* capability PCs */
-		uint8_t network_indicator;
-		struct osmo_ss7_pc_fmt pc_fmt;
-		bool permit_dyn_rkm_alloc;
-		struct llist_head sccp_address_book;
-		uint32_t secondary_pc;
-	} cfg;
-};
+struct osmo_ss7_pc_fmt;
+struct osmo_ss7_instance;
 
 struct osmo_ss7_instance *osmo_ss7_instance_find(uint32_t id);
 struct osmo_ss7_instance *
@@ -110,6 +60,15 @@ uint32_t osmo_ss7_instance_get_primary_pc(const struct osmo_ss7_instance *inst);
 struct osmo_sccp_instance *osmo_ss7_ensure_sccp(struct osmo_ss7_instance *inst);
 struct osmo_sccp_instance *osmo_ss7_get_sccp(const struct osmo_ss7_instance *inst);
 
+int osmo_ss7_find_free_rctx(struct osmo_ss7_instance *inst);
+
+bool osmo_ss7_pc_is_local(const struct osmo_ss7_instance *inst, uint32_t pc);
+int osmo_ss7_pointcode_parse(const struct osmo_ss7_instance *inst, const char *str);
+int osmo_ss7_pointcode_parse_mask_or_len(const struct osmo_ss7_instance *inst, const char *in);
+const char *osmo_ss7_pointcode_print_buf(char *buf, size_t buf_len, const struct osmo_ss7_instance *inst, uint32_t pc);
+const char *osmo_ss7_pointcode_print(const struct osmo_ss7_instance *inst, uint32_t pc);
+const char *osmo_ss7_pointcode_print2(const struct osmo_ss7_instance *inst, uint32_t pc);
+
 uint8_t osmo_ss7_pc_width(const struct osmo_ss7_pc_fmt *pc_fmt);
 uint32_t osmo_ss7_pc_normalize(const struct osmo_ss7_pc_fmt *pc_fmt, uint32_t pc);
 
@@ -118,6 +77,7 @@ uint32_t osmo_ss7_pc_normalize(const struct osmo_ss7_pc_fmt *pc_fmt, uint32_t pc
  ***********************************************************************/
 
 struct osmo_ss7_user;
+struct osmo_mtp_prim;
 
 
 struct osmo_ss7_user *osmo_ss7_user_create(struct osmo_ss7_instance *inst, const char *name);
@@ -136,6 +96,15 @@ int osmo_ss7_user_unregister(struct osmo_ss7_instance *inst, uint8_t service_ind
 /* SS7 User wants to issue MTP-TRANSFER.req */
 int osmo_ss7_user_mtp_xfer_req(struct osmo_ss7_instance *inst,
 				struct osmo_mtp_prim *omp);
+
+
+/***********************************************************************
+ * SCCP Instance
+ ***********************************************************************/
+
+struct osmo_sccp_instance;
+
+void osmo_sccp_set_max_optional_data(struct osmo_sccp_instance *inst, int val);
 
 /***********************************************************************
  * SS7 Links
@@ -385,8 +354,6 @@ osmo_sccp_simple_server_add_clnt(struct osmo_sccp_instance *inst,
 				 const char *name, uint32_t pc,
 				 int local_port, int remote_port,
 				 const char *remote_ip);
-
-void osmo_sccp_set_max_optional_data(struct osmo_sccp_instance *inst, int val);
 
 enum osmo_ss7_as_traffic_mode osmo_ss7_tmode_from_xua(uint32_t in);
 int osmo_ss7_tmode_to_xua(enum osmo_ss7_as_traffic_mode tmod);

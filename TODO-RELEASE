@@ -15,3 +15,4 @@ libosmo-sigtran add API osmo_ss7_instance_get_id(), osmo_ss7_instance_get_name()
 libosmo-sigtran add API osmo_ss7_instances_llist_entry()
 libosmo-sigtran add API osmo_ss7_as_get_asp_protocol(), osmo_ss7_as_select_asp()
 libosmo-sigtran add API osmo_ss7_user: create(), get_instance(), set_prim_cb(), set_priv(), get_priv()
+libosmo-sigtran Make private  struct osmo_ss7_instance
