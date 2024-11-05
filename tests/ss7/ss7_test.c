@@ -1,3 +1,4 @@
+#include "../src/ss7_linkset.h"
 #include "../src/ss7_route.h"
 #include "../src/ss7_route_table.h"
 #include "../src/xua_internal.h"
@@ -156,9 +157,9 @@ static void test_route(void)
 	rtbl = ss7_route_table_find(s7i, "system");
 	OSMO_ASSERT(rtbl && rtbl == s7i->rtable_system);
 
-	lset_a = osmo_ss7_linkset_find_or_create(s7i, "a", 100);
+	lset_a = ss7_linkset_find_or_create(s7i, "a", 100);
 	OSMO_ASSERT(lset_a);
-	lset_b = osmo_ss7_linkset_find_or_create(s7i, "b", 200);
+	lset_b = ss7_linkset_find_or_create(s7i, "b", 200);
 	OSMO_ASSERT(lset_b);
 
 	/* route with full mask */
@@ -197,8 +198,8 @@ static void test_route(void)
 	printf("route with non-consecutive mask: %s\n", osmo_ss7_route_print(rt));
 	ss7_route_destroy(rt);
 
-	osmo_ss7_linkset_destroy(lset_a);
-	osmo_ss7_linkset_destroy(lset_b);
+	ss7_linkset_destroy(lset_a);
+	ss7_linkset_destroy(lset_b);
 }
 
 static void test_linkset(void)
@@ -208,16 +209,16 @@ static void test_linkset(void)
 
 	printf("Testing SS7 linkset/link\n");
 
-	OSMO_ASSERT(osmo_ss7_linkset_find_by_name(s7i, "a") == NULL);
-	OSMO_ASSERT(osmo_ss7_linkset_find_by_name(s7i, "b") == NULL);
+	OSMO_ASSERT(ss7_linkset_find_by_name(s7i, "a") == NULL);
+	OSMO_ASSERT(ss7_linkset_find_by_name(s7i, "b") == NULL);
 
-	lset_a = osmo_ss7_linkset_find_or_create(s7i, "a", 100);
+	lset_a = ss7_linkset_find_or_create(s7i, "a", 100);
 	OSMO_ASSERT(lset_a);
-	OSMO_ASSERT(osmo_ss7_linkset_find_by_name(s7i, "a") == lset_a);
+	OSMO_ASSERT(ss7_linkset_find_by_name(s7i, "a") == lset_a);
 
-	lset_b = osmo_ss7_linkset_find_or_create(s7i, "b", 200);
+	lset_b = ss7_linkset_find_or_create(s7i, "b", 200);
 	OSMO_ASSERT(lset_b);
-	OSMO_ASSERT(osmo_ss7_linkset_find_by_name(s7i, "b") == lset_b);
+	OSMO_ASSERT(ss7_linkset_find_by_name(s7i, "b") == lset_b);
 
 	l_a1 = osmo_ss7_link_find_or_create(lset_a, 1);
 	OSMO_ASSERT(l_a1);
@@ -232,8 +233,8 @@ static void test_linkset(void)
 	osmo_ss7_link_destroy(l_a1);
 	osmo_ss7_link_destroy(l_a2);
 
-	osmo_ss7_linkset_destroy(lset_a);
-	osmo_ss7_linkset_destroy(lset_b);
+	ss7_linkset_destroy(lset_a);
+	ss7_linkset_destroy(lset_b);
 }
 
 static void test_as(void)

@@ -5,6 +5,7 @@ AM_CFLAGS=-Wall $(LIBOSMOCORE_CFLAGS) $(LIBOSMOGSM_CFLAGS) $(LIBOSMOVTY_CFLAGS) 
 noinst_HEADERS = \
 	sccp_internal.h \
 	ss7_internal.h \
+	ss7_linkset.h \
 	ss7_route.h \
 	ss7_route_table.h \
 	xua_asp_fsm.h \
@@ -37,6 +38,7 @@ libosmo_sigtran_la_SOURCES = \
 	osmo_ss7_asp.c \
 	osmo_ss7_asp_peer.c \
 	osmo_ss7_hmrt.c \
+	osmo_ss7_linkset.c \
 	osmo_ss7_vty.c \
 	osmo_ss7_xua_srv.c \
 	osmo_ss7_route.c \

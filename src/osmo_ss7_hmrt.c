@@ -35,6 +35,7 @@
 #include <osmocom/sigtran/protocol/m3ua.h>
 
 #include "xua_internal.h"
+#include "ss7_linkset.h"
 #include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"

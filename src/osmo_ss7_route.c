@@ -26,6 +26,7 @@
 #include <osmocom/sigtran/mtp_sap.h>
 #include <osmocom/sigtran/osmo_ss7.h>
 
+#include "ss7_linkset.h"
 #include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"
@@ -107,7 +108,7 @@ ss7_route_set_linkset(struct osmo_ss7_route *rt, const char *linkset_name)
 		return -EALREADY;
 	}
 
-	lset = osmo_ss7_linkset_find_by_name(rtbl->inst, linkset_name);
+	lset = ss7_linkset_find_by_name(rtbl->inst, linkset_name);
 	if (!lset) {
 		as = osmo_ss7_as_find_by_name(rtbl->inst, linkset_name);
 		if (!as)
