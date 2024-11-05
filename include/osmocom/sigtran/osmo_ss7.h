@@ -86,6 +86,9 @@ struct osmo_ss7_instance *osmo_ss7_instance_find(uint32_t id);
 struct osmo_ss7_instance *
 osmo_ss7_instance_find_or_create(void *ctx, uint32_t id);
 void osmo_ss7_instance_destroy(struct osmo_ss7_instance *inst);
+
+uint32_t osmo_ss7_instance_get_id(const struct osmo_ss7_instance *inst);
+
 int osmo_ss7_instance_set_pc_fmt(struct osmo_ss7_instance *inst,
 				uint8_t c0, uint8_t c1, uint8_t c2);
 
