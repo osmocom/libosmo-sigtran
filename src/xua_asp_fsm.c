@@ -27,6 +27,7 @@
 #include "xua_msg.h"
 #include <osmocom/sigtran/protocol/sua.h>
 
+#include "ss7_internal.h"
 #include "xua_asp_fsm.h"
 #include "xua_as_fsm.h"
 #include "xua_internal.h"

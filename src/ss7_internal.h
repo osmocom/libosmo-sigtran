@@ -50,3 +50,13 @@ enum ss7_asp_ctr {
 	SS7_ASP_CTR_PKT_RX_UNKNOWN,
 	SS7_ASP_CTR_PKT_TX_TOTAL,
 };
+
+#define _LOGSS7(inst, subsys, level, fmt, args ...) \
+	LOGP(subsys, level, "%u: " fmt, inst ? (inst)->cfg.id : 0, ## args)
+#define LOGSS7(inst, level, fmt, args ...) \
+	_LOGSS7(inst, DLSS7, level, fmt, ## args)
+
+#define LOGPASP(asp, subsys, level, fmt, args ...) \
+	_LOGSS7((asp)->inst, subsys, level, "asp-%s: " fmt, (asp)->cfg.name, ## args)
+#define LOGPAS(as, subsys, level, fmt, args ...) \
+	_LOGSS7((as)->inst, subsys, level, "as-%s: " fmt, (as)->cfg.name, ## args)

@@ -34,6 +34,7 @@
 #include <osmocom/sigtran/protocol/m3ua.h>
 #include <osmocom/sigtran/protocol/sua.h>
 
+#include "ss7_internal.h"
 #include "xua_internal.h"
 
 /* if given ASP only has one AS, return that AS */
