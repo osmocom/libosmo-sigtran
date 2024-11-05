@@ -442,6 +442,15 @@ struct osmo_sccp_instance *osmo_ss7_ensure_sccp(struct osmo_ss7_instance *inst)
 	return inst->sccp;
 }
 
+/*! Get the SCCP instance, if present.
+ *  \param[in] inst SS7 Instance on which we operate
+ * \returns inst->sccp, may be NULL if no SCCP instance was created yet (see osmo_ss7_ensure_sccp()).
+ */
+struct osmo_sccp_instance *osmo_ss7_get_sccp(const struct osmo_ss7_instance *inst)
+{
+	return inst->sccp;
+}
+
 /***********************************************************************
  * MTP Users (Users of MTP, such as SCCP or ISUP)
  ***********************************************************************/
