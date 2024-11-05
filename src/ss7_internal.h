@@ -24,9 +24,6 @@ int ss7_asp_xua_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struct msg
 int ss7_asp_m3ua_tcp_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struct msgb *msg);
 int ss7_asp_xua_srv_conn_closed_cb(struct osmo_stream_srv *srv);
 
-bool ss7_asp_peer_match_host(const struct osmo_ss7_asp_peer *peer, const char *host, bool host_is_v6);
-int ss7_asp_peer_find_host(const struct osmo_ss7_asp_peer *peer, const char *host);
-
 int xua_tcp_segmentation_cb(struct msgb *msg);
 
 enum ss7_as_ctr {

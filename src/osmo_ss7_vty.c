@@ -751,7 +751,7 @@ static void vty_dump_xua_server(struct vty *vty, struct osmo_xua_server *xs)
 	int fd = xs->server ? osmo_stream_srv_link_get_fd(xs->server) : -1;
 
 	if (fd < 0) {
-		if (osmo_ss7_asp_peer_snprintf(buf, sizeof(buf), &xs->cfg.local) < 0)
+		if (ss7_asp_peer_snprintf(buf, sizeof(buf), &xs->cfg.local) < 0)
 			snprintf(buf, sizeof(buf), "<error>");
 	} else {
 		char hostbuf[OSMO_SOCK_MAX_ADDRS][INET6_ADDRSTRLEN];
@@ -965,7 +965,7 @@ DEFUN_ATTR(asp_local_ip, asp_local_ip_cmd,
 	int old_host_count = asp->cfg.local.host_cnt;
 	int rc;
 
-	if (osmo_ss7_asp_peer_add_host2(&asp->cfg.local, asp, argv[0], is_primary) != 0) {
+	if (ss7_asp_peer_add_host2(&asp->cfg.local, asp, argv[0], is_primary) != 0) {
 		vty_out(vty, "%% Failed adding host '%s' to set%s", argv[0], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -1027,7 +1027,7 @@ DEFUN_ATTR(asp_no_local_ip, asp_no_local_ip_cmd,
 		}
 	}
 
-	if (osmo_ss7_asp_peer_del_host(&asp->cfg.local, argv[0]) != 0) {
+	if (ss7_asp_peer_del_host(&asp->cfg.local, argv[0]) != 0) {
 		vty_out(vty, "%% Failed deleting local address '%s' from set%s", argv[0], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -1047,7 +1047,7 @@ DEFUN_ATTR(asp_remote_ip, asp_remote_ip_cmd,
 	int old_idx_primary = asp->cfg.remote.idx_primary;
 	int rc;
 
-	if (osmo_ss7_asp_peer_add_host2(&asp->cfg.remote, asp, argv[0], is_primary) != 0) {
+	if (ss7_asp_peer_add_host2(&asp->cfg.remote, asp, argv[0], is_primary) != 0) {
 		vty_out(vty, "%% Failed adding host '%s' to set%s", argv[0], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -1084,7 +1084,7 @@ DEFUN_ATTR(asp_no_remote_ip, asp_no_remote_ip_cmd,
 		return CMD_WARNING;
 	}
 
-	if (osmo_ss7_asp_peer_del_host(&asp->cfg.remote, argv[0]) != 0) {
+	if (ss7_asp_peer_del_host(&asp->cfg.remote, argv[0]) != 0) {
 		vty_out(vty, "%% Failed deleting remote address '%s' from set%s", argv[0], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -1390,8 +1390,8 @@ static void show_one_asp(struct vty *vty, struct osmo_ss7_asp *asp)
 		if (!get_sockname_buf(buf_rem, sizeof(buf_rem), fd, trans_proto, false))
 			OSMO_STRLCPY_ARRAY(buf_rem, "<sockname-error>");
 	} else {
-		osmo_ss7_asp_peer_snprintf(buf_loc, sizeof(buf_loc), &asp->cfg.local);
-		osmo_ss7_asp_peer_snprintf(buf_rem, sizeof(buf_rem), &asp->cfg.remote);
+		ss7_asp_peer_snprintf(buf_loc, sizeof(buf_loc), &asp->cfg.local);
+		ss7_asp_peer_snprintf(buf_rem, sizeof(buf_rem), &asp->cfg.remote);
 	}
 
 	vty_out(vty, "%-12s  %-12s  %-13s  %-4s  %-4s  %-9s  %-23s  %-23s%s",

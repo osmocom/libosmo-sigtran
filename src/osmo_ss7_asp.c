@@ -410,16 +410,16 @@ bool ss7_asp_set_default_peer_hosts(struct osmo_ss7_asp *asp)
 		 * address are set on the remote side, IPv4 on the local
 		 * side must be set too */
 		if (ss7_ipv6_sctp_supported("::", true) && !(rem_has_v4 && !rem_has_v6))
-			osmo_ss7_asp_peer_add_host(&asp->cfg.local, asp, "::");
+			ss7_asp_peer_add_host(&asp->cfg.local, asp, "::");
 		else
-			osmo_ss7_asp_peer_add_host(&asp->cfg.local, asp, "0.0.0.0");
+			ss7_asp_peer_add_host(&asp->cfg.local, asp, "0.0.0.0");
 		changed = true;
 	}
 	/* If no remote addr was set */
 	if (!asp->cfg.remote.host_cnt) {
-		osmo_ss7_asp_peer_add_host(&asp->cfg.remote, asp, "127.0.0.1");
+		ss7_asp_peer_add_host(&asp->cfg.remote, asp, "127.0.0.1");
 		if (ss7_ipv6_sctp_supported("::1", false))
-			osmo_ss7_asp_peer_add_host(&asp->cfg.remote, asp, "::1");
+			ss7_asp_peer_add_host(&asp->cfg.remote, asp, "::1");
 		changed = true;
 	}
 	return changed;
@@ -552,9 +552,9 @@ struct osmo_ss7_asp *ss7_asp_alloc(struct osmo_ss7_instance *inst, const char *n
 	}
 	rate_ctr_group_set_name(asp->ctrg, name);
 	asp->inst = inst;
-	osmo_ss7_asp_peer_init(&asp->cfg.remote);
+	ss7_asp_peer_init(&asp->cfg.remote);
 	asp->cfg.remote.port = remote_port;
-	osmo_ss7_asp_peer_init(&asp->cfg.local);
+	ss7_asp_peer_init(&asp->cfg.local);
 	asp->cfg.local.port = local_port;
 	asp->cfg.trans_proto = trans_proto;
 	asp->cfg.proto = proto;
@@ -617,8 +617,8 @@ int osmo_ss7_asp_restart(struct osmo_ss7_asp *asp)
 	uint8_t byte;
 
 	OSMO_ASSERT(ss7_initialized);
-	osmo_ss7_asp_peer_snprintf(bufloc, sizeof(bufloc), &asp->cfg.local);
-	osmo_ss7_asp_peer_snprintf(bufrem, sizeof(bufrem), &asp->cfg.remote);
+	ss7_asp_peer_snprintf(bufloc, sizeof(bufloc), &asp->cfg.local);
+	ss7_asp_peer_snprintf(bufrem, sizeof(bufrem), &asp->cfg.remote);
 	LOGPASP(asp, DLSS7, LOGL_INFO, "Restarting ASP %s, r=%s<->l=%s\n",
 	       asp->cfg.name, bufrem, bufloc);
 

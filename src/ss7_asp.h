@@ -9,6 +9,7 @@
 
 #include <osmocom/sigtran/osmo_ss7.h>
 
+#include "ss7_asp_peer.h"
 #include "ss7_internal.h"
 
 /***********************************************************************

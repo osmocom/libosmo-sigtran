@@ -37,6 +37,7 @@
 
 #include <osmocom/sigtran/osmo_ss7.h>
 
+#include "ss7_asp_peer.h"
 #include "ss7_internal.h"
 
 
@@ -44,13 +45,13 @@
  * SS7 Application Server Process peer
  ***********************************************************************/
 
-void osmo_ss7_asp_peer_init(struct osmo_ss7_asp_peer *peer)
+void ss7_asp_peer_init(struct osmo_ss7_asp_peer *peer)
 {
 	memset(peer, 0, sizeof(*peer));
 	peer->idx_primary = -1;
 }
 
-int osmo_ss7_asp_peer_snprintf(char *buf, size_t buf_len, struct osmo_ss7_asp_peer *peer)
+int ss7_asp_peer_snprintf(char *buf, size_t buf_len, struct osmo_ss7_asp_peer *peer)
 {
 	int len = 0, offset = 0, rem = buf_len;
 	int ret, i;
@@ -90,7 +91,7 @@ int osmo_ss7_asp_peer_snprintf(char *buf, size_t buf_len, struct osmo_ss7_asp_pe
  *  \param[in] host_cnt Number of strings in hosts
  *  \param[in] idx_primary Index in "hosts" array marking the SCTP Primary Address, -1 if no explicit Primary Address set
  *  \returns 0 on success; negative otherwise */
-int osmo_ss7_asp_peer_set_hosts2(struct osmo_ss7_asp_peer *peer, void *talloc_ctx, const char *const*hosts, size_t host_cnt, int idx_primary)
+int ss7_asp_peer_set_hosts2(struct osmo_ss7_asp_peer *peer, void *talloc_ctx, const char *const*hosts, size_t host_cnt, int idx_primary)
 {
 	int i = 0;
 
@@ -118,9 +119,9 @@ int osmo_ss7_asp_peer_set_hosts2(struct osmo_ss7_asp_peer *peer, void *talloc_ct
  *  \param[in] hosts Array of strings containing IP addresses.
  *  \param[in] host_cnt Number of strings in hosts
  *  \returns 0 on success; negative otherwise */
-int osmo_ss7_asp_peer_set_hosts(struct osmo_ss7_asp_peer *peer, void *talloc_ctx, const char *const*hosts, size_t host_cnt)
+int ss7_asp_peer_set_hosts(struct osmo_ss7_asp_peer *peer, void *talloc_ctx, const char *const*hosts, size_t host_cnt)
 {
-	return osmo_ss7_asp_peer_set_hosts2(peer, talloc_ctx, hosts, host_cnt, -1);
+	return ss7_asp_peer_set_hosts2(peer, talloc_ctx, hosts, host_cnt, -1);
 }
 
 /* Is string formatted IPv4/v6 addr considered IN(6)ADDR_ANY? */
@@ -139,7 +140,7 @@ static inline bool host_is_ip_anyaddr(const char *host, bool is_v6)
  *  \param[in] host string containing an IP address.
  *  \param[in] is_primary_addr whether this IP address is to be added as SCTP Primary Address
  *  \returns 0 on success; negative otherwise */
-int osmo_ss7_asp_peer_add_host2(struct osmo_ss7_asp_peer *peer, void *talloc_ctx,
+int ss7_asp_peer_add_host2(struct osmo_ss7_asp_peer *peer, void *talloc_ctx,
 			       const char *host, bool is_primary_addr)
 {
 	int i;
@@ -212,7 +213,7 @@ int osmo_ss7_asp_peer_add_host2(struct osmo_ss7_asp_peer *peer, void *talloc_ctx
  *  \param[in] peer Application Server Process peer the address is removed from.
  *  \param[in] host string containing an IP address.
  *  \returns 0 on success; negative otherwise */
-int osmo_ss7_asp_peer_del_host(struct osmo_ss7_asp_peer *peer, const char *host)
+int ss7_asp_peer_del_host(struct osmo_ss7_asp_peer *peer, const char *host)
 {
 	int i;
 	struct osmo_sockaddr_str addr_str;
@@ -257,10 +258,10 @@ int osmo_ss7_asp_peer_del_host(struct osmo_ss7_asp_peer *peer, const char *host)
  *  \param[in] talloc_ctx talloc context used to allocate new address.
  *  \param[in] host string containing an IP address.
  *  \returns 0 on success; negative otherwise */
-int osmo_ss7_asp_peer_add_host(struct osmo_ss7_asp_peer *peer, void *talloc_ctx,
+int ss7_asp_peer_add_host(struct osmo_ss7_asp_peer *peer, void *talloc_ctx,
 			       const char *host)
 {
-	return osmo_ss7_asp_peer_add_host2(peer, talloc_ctx, host, false);
+	return ss7_asp_peer_add_host2(peer, talloc_ctx, host, false);
 }
 
 bool ss7_asp_peer_match_host(const struct osmo_ss7_asp_peer *peer, const char *host, bool host_is_v6)

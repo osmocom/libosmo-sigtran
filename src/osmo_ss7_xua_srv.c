@@ -148,10 +148,10 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
 				asp->cfg.remote.port = atoi(portbuf);
 				asp->dyn_allocated = true;
 				asp->server = srv;
-				osmo_ss7_asp_peer_set_hosts(&asp->cfg.local, asp,
+				ss7_asp_peer_set_hosts(&asp->cfg.local, asp,
 							    (const char * const*)oxs->cfg.local.host,
 							    oxs->cfg.local.host_cnt);
-				osmo_ss7_asp_peer_set_hosts(&asp->cfg.remote, asp,
+				ss7_asp_peer_set_hosts(&asp->cfg.remote, asp,
 							    &hostbuf_ptr, 1);
 				osmo_ss7_asp_restart(asp);
 			}
@@ -279,7 +279,7 @@ ss7_xua_server_bind(struct osmo_xua_server *xs)
 	uint8_t byte;
 	const char *proto = get_value_string(osmo_ss7_asp_protocol_vals, xs->cfg.proto);
 
-	rc = osmo_ss7_asp_peer_snprintf(buf, sizeof(buf), &xs->cfg.local);
+	rc = ss7_asp_peer_snprintf(buf, sizeof(buf), &xs->cfg.local);
 	if (rc < 0) {
 		LOGP(DLSS7, LOGL_INFO, "Failed parsing %s Server osmo_ss7_asp_peer\n", proto);
 	} else {
@@ -316,7 +316,7 @@ ss7_xua_server_set_local_hosts(struct osmo_xua_server *xs, const char **local_ho
 	int rc;
 	OSMO_ASSERT(ss7_initialized);
 
-	rc = osmo_ss7_asp_peer_set_hosts(&xs->cfg.local, xs, local_hosts, local_host_cnt);
+	rc = ss7_asp_peer_set_hosts(&xs->cfg.local, xs, local_hosts, local_host_cnt);
 	if (rc < 0)
 		return rc;
 	return osmo_stream_srv_link_set_addrs(xs->server, (const char **)xs->cfg.local.host, xs->cfg.local.host_cnt);
@@ -327,7 +327,7 @@ ss7_xua_server_add_local_host(struct osmo_xua_server *xs, const char *local_host
 {
 	int rc;
 
-	rc = osmo_ss7_asp_peer_add_host(&xs->cfg.local, xs, local_host);
+	rc = ss7_asp_peer_add_host(&xs->cfg.local, xs, local_host);
 	if (rc < 0)
 		return rc;
 	return osmo_stream_srv_link_set_addrs(xs->server, (const char **)xs->cfg.local.host, xs->cfg.local.host_cnt);
@@ -338,7 +338,7 @@ ss7_xua_server_del_local_host(struct osmo_xua_server *xs, const char *local_host
 {
 	int rc;
 
-	rc = osmo_ss7_asp_peer_del_host(&xs->cfg.local, local_host);
+	rc = ss7_asp_peer_del_host(&xs->cfg.local, local_host);
 	if (rc < 0)
 		return rc;
 	return osmo_stream_srv_link_set_addrs(xs->server, (const char **)xs->cfg.local.host, xs->cfg.local.host_cnt);

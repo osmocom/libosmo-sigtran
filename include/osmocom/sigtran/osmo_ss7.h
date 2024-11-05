@@ -282,14 +282,6 @@ void osmo_ss7_asp_disconnect(struct osmo_ss7_asp *asp);
  * SS7 Application Server Processes
  ***********************************************************************/
 
-struct osmo_ss7_asp_peer {
-	char *host[OSMO_SOCK_MAX_ADDRS];
-	size_t host_cnt;
-	uint16_t port;
-	/* index in "hosts" array marking the SCTP Primary Address, -1 if no explicit Primary Address set */
-	int idx_primary;
-};
-
 enum osmo_ss7_asp_admin_state {
 	/*! no SCTP association with peer */
 	OSMO_SS7_ASP_ADM_S_SHUTDOWN,
@@ -315,16 +307,6 @@ struct osmo_ss7_asp;
 #define OSMO_SS7_ASP_QUIRK_DAUD_IN_ASP		0x00000002
 /*! Accept SSNM even if ASP is in AS-INACTIVE state */
 #define OSMO_SS7_ASP_QUIRK_SNM_INACTIVE		0x00000004
-
-int osmo_ss7_asp_peer_snprintf(char* buf, size_t buf_len, struct osmo_ss7_asp_peer *peer);
-void osmo_ss7_asp_peer_init(struct osmo_ss7_asp_peer *peer);
-int osmo_ss7_asp_peer_set_hosts(struct osmo_ss7_asp_peer *peer, void *talloc_ctx,
-				const char *const*hosts, size_t host_cnt);
-int osmo_ss7_asp_peer_set_hosts2(struct osmo_ss7_asp_peer *peer, void *talloc_ctx,
-				const char *const*hosts, size_t host_cnt, int idx_primary);
-int osmo_ss7_asp_peer_add_host(struct osmo_ss7_asp_peer *peer, void *talloc_ctx, const char *host);
-int osmo_ss7_asp_peer_add_host2(struct osmo_ss7_asp_peer *peer, void *talloc_ctx, const char *host, bool is_primary_addr);
-int osmo_ss7_asp_peer_del_host(struct osmo_ss7_asp_peer *peer, const char *host);
 
 
 struct osmo_ss7_asp *

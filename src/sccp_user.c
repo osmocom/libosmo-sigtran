@@ -646,9 +646,9 @@ osmo_sccp_simple_client_on_ss7_id(void *ctx, uint32_t ss7_id, const char *name,
 			/* Ensure that the ASP we use is set to role ASP. */
 			asp->cfg.role = OSMO_SS7_ASP_ROLE_ASP;
 			if (default_local_ip)
-				osmo_ss7_asp_peer_set_hosts(&asp->cfg.local, asp, &default_local_ip, 1);
+				ss7_asp_peer_set_hosts(&asp->cfg.local, asp, &default_local_ip, 1);
 			if (default_remote_ip)
-				osmo_ss7_asp_peer_set_hosts(&asp->cfg.remote, asp, &default_remote_ip, 1);
+				ss7_asp_peer_set_hosts(&asp->cfg.remote, asp, &default_remote_ip, 1);
 			/* Make sure proper defaults are applied if app didn't provide specific default values */
 			ss7_asp_set_default_peer_hosts(asp);
 			asp->simple_client_allocated = true;
@@ -854,11 +854,11 @@ osmo_sccp_simple_server_add_clnt(struct osmo_sccp_instance *inst,
 	oxs = ss7_xua_server_find2(ss7, asp->cfg.trans_proto, prot, local_port);
 	if (!oxs)
 		goto out_asp;
-	if (osmo_ss7_asp_peer_set_hosts(&asp->cfg.local, asp,
+	if (ss7_asp_peer_set_hosts(&asp->cfg.local, asp,
 					(const char* const*)oxs->cfg.local.host,
 					oxs->cfg.local.host_cnt) < 0)
 		goto out_asp;
-	if (osmo_ss7_asp_peer_add_host(&asp->cfg.remote, asp, remote_ip) < 0)
+	if (ss7_asp_peer_add_host(&asp->cfg.remote, asp, remote_ip) < 0)
 		goto out_asp;
 	asp->cfg.is_server = true;
 	asp->cfg.role = OSMO_SS7_ASP_ROLE_SG;
