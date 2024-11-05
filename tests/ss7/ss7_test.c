@@ -2,6 +2,7 @@
 #include "../src/ss7_linkset.h"
 #include "../src/ss7_route.h"
 #include "../src/ss7_route_table.h"
+#include "../src/ss7_user.h"
 #include "../src/xua_internal.h"
 #include "../src/xua_asp_fsm.h"
 
@@ -125,7 +126,7 @@ static void test_user(void)
 	OSMO_ASSERT(osmo_ss7_user_register(s7i, 255, NULL) == -EINVAL);
 
 	/* primitive delivery */
-	OSMO_ASSERT(osmo_ss7_mtp_to_user(s7i, &omp) == 23);
+	OSMO_ASSERT(ss7_mtp_to_user(s7i, &omp) == 23);
 
 	/* cleanup */
 	OSMO_ASSERT(osmo_ss7_user_unregister(s7i, 255, NULL) == -EINVAL);
@@ -134,11 +135,11 @@ static void test_user(void)
 	OSMO_ASSERT(osmo_ss7_user_unregister(s7i, 1, user) == 0);
 
 	/* primitive delivery should fail now */
-	OSMO_ASSERT(osmo_ss7_mtp_to_user(s7i, &omp) == -ENODEV);
+	OSMO_ASSERT(ss7_mtp_to_user(s7i, &omp) == -ENODEV);
 
 	/* wrong primitive delivery should also fail */
 	omp.oph.primitive = OSMO_MTP_PRIM_PAUSE;
-	OSMO_ASSERT(osmo_ss7_mtp_to_user(s7i, &omp) == -EINVAL);
+	OSMO_ASSERT(ss7_mtp_to_user(s7i, &omp) == -EINVAL);
 
 	osmo_ss7_user_destroy(user);
 	osmo_ss7_user_destroy(user2);

@@ -117,16 +117,8 @@ uint32_t osmo_ss7_pc_normalize(const struct osmo_ss7_pc_fmt *pc_fmt, uint32_t pc
  * MTP Users (Users of MTP, such as SCCP or ISUP)
  ***********************************************************************/
 
-struct osmo_ss7_user {
-	/* pointer back to SS7 instance */
-	struct osmo_ss7_instance *inst;
-	/* name of the user */
-	const char *name;
-	/* primitive call-back for incoming MTP primitives */
-	osmo_prim_cb prim_cb;
-	/* private data */
-	void *priv;
-};
+struct osmo_ss7_user;
+
 
 struct osmo_ss7_user *osmo_ss7_user_create(struct osmo_ss7_instance *inst, const char *name);
 void osmo_ss7_user_destroy(struct osmo_ss7_user *user);
@@ -140,8 +132,6 @@ int osmo_ss7_user_register(struct osmo_ss7_instance *inst, uint8_t service_ind,
 			   struct osmo_ss7_user *user);
 int osmo_ss7_user_unregister(struct osmo_ss7_instance *inst, uint8_t service_ind,
 			     struct osmo_ss7_user *user);
-
-int osmo_ss7_mtp_to_user(struct osmo_ss7_instance *inst, struct osmo_mtp_prim *omp);
 
 /* SS7 User wants to issue MTP-TRANSFER.req */
 int osmo_ss7_user_mtp_xfer_req(struct osmo_ss7_instance *inst,

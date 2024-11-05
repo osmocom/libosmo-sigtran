@@ -9,6 +9,7 @@ noinst_HEADERS = \
 	ss7_linkset.h \
 	ss7_route.h \
 	ss7_route_table.h \
+	ss7_user.h \
 	ss7_xua_srv.h \
 	xua_asp_fsm.h \
 	xua_as_fsm.h \

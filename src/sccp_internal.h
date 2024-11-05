@@ -11,6 +11,8 @@
 
 #define SCCP_STR "Signalling Connection Control Part\n"
 
+#include "ss7_user.h"
+
 /* Appendix C.4 of Q.714 */
 enum osmo_sccp_timer {
 	/* 0 kept unused on purpose since it's handled specially by osmo_fsm */

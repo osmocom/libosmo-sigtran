@@ -39,6 +39,7 @@
 #include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"
+#include "ss7_user.h"
 
 /* convert from M3UA message to MTP-TRANSFER.ind osmo_mtp_prim */
 struct osmo_mtp_prim *m3ua_to_xfer_ind(struct xua_msg *xua)
