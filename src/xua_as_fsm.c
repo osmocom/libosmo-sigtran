@@ -97,39 +97,6 @@ static int get_local_role(struct osmo_ss7_as *as)
 	return -1;
 }
 
-static struct osmo_ss7_asp *xua_as_select_asp_override(struct osmo_ss7_as *as)
-{
-	struct osmo_ss7_asp *asp;
-	unsigned int i;
-
-	/* FIXME: proper selection of the ASP based on the SLS! */
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		asp = as->cfg.asps[i];
-		if (asp && osmo_ss7_asp_active(asp))
-			break;
-	}
-	return asp;
-}
-
-static struct osmo_ss7_asp *xua_as_select_asp_roundrobin(struct osmo_ss7_as *as)
-{
-	struct osmo_ss7_asp *asp;
-	unsigned int i;
-	unsigned int first_idx;
-
-	first_idx = (as->cfg.last_asp_idx_sent + 1) % ARRAY_SIZE(as->cfg.asps);
-	i = first_idx;
-	do {
-		asp = as->cfg.asps[i];
-		if (asp && osmo_ss7_asp_active(asp))
-			break;
-		i = (i + 1) % ARRAY_SIZE(as->cfg.asps);
-	} while (i != first_idx);
-	as->cfg.last_asp_idx_sent = i;
-
-	return asp;
-}
-
 int xua_as_transmit_msg_broadcast(struct osmo_ss7_as *as, struct msgb *msg)
 {
 	struct osmo_ss7_asp *asp;
@@ -157,13 +124,12 @@ int xua_as_transmit_msg(struct osmo_ss7_as *as, struct msgb *msg)
 
 	switch (as->cfg.mode) {
 	case OSMO_SS7_AS_TMOD_OVERRIDE:
-		asp = xua_as_select_asp_override(as);
-		break;
 	case OSMO_SS7_AS_TMOD_LOADSHARE:
-		/* TODO: actually use the SLS value to ensure same SLS goes through same ASP. Not
-		 * strictly required by M3UA RFC, but would fit the overall principle. */
+		/* TODO: OSMO_SS7_AS_TMOD_LOADSHARE: actually use the SLS value
+		 * to ensure same SLS goes through same ASP. Not strictly
+		 * required by M3UA RFC, but would fit the overall principle. */
 	case OSMO_SS7_AS_TMOD_ROUNDROBIN:
-		asp = xua_as_select_asp_roundrobin(as);
+		asp = osmo_ss7_as_select_asp(as);
 		break;
 	case OSMO_SS7_AS_TMOD_BCAST:
 		return xua_as_transmit_msg_broadcast(as, msg);
