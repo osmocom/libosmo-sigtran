@@ -132,11 +132,8 @@ struct osmo_ss7_as *
 osmo_ss7_route_get_dest_as(struct osmo_ss7_route *rt);
 
 /***********************************************************************
- * SS7 Application Servers
+ * SS7 Routing key
  ***********************************************************************/
-
-struct osmo_ss7_as;
-struct osmo_ss7_asp;
 
 struct osmo_ss7_routing_key {
 	uint32_t context;
@@ -147,6 +144,33 @@ struct osmo_ss7_routing_key {
 	uint32_t ssn;
 	/* FIXME: more complex routing keys */
 };
+
+
+/***********************************************************************
+ * SS7 ASP Protocols
+ ***********************************************************************/
+
+enum osmo_ss7_asp_protocol {
+	OSMO_SS7_ASP_PROT_NONE,
+	OSMO_SS7_ASP_PROT_SUA,
+	OSMO_SS7_ASP_PROT_M3UA,
+	OSMO_SS7_ASP_PROT_IPA,
+	_NUM_OSMO_SS7_ASP_PROT
+};
+
+extern struct value_string osmo_ss7_asp_protocol_vals[];
+static inline const char *
+osmo_ss7_asp_protocol_name(enum osmo_ss7_asp_protocol mode)
+{
+	return get_value_string(osmo_ss7_asp_protocol_vals, mode);
+}
+
+int osmo_ss7_asp_protocol_port(enum osmo_ss7_asp_protocol prot);
+
+
+/***********************************************************************
+ * SS7 AS Traffic Mode
+ ***********************************************************************/
 
 enum osmo_ss7_as_traffic_mode {
 	OSMO_SS7_AS_TMOD_OVERRIDE = 0,	/* default */
@@ -164,23 +188,16 @@ osmo_ss7_as_traffic_mode_name(enum osmo_ss7_as_traffic_mode mode)
 	return get_value_string(osmo_ss7_as_traffic_mode_vals, mode);
 }
 
-enum osmo_ss7_asp_protocol {
-	OSMO_SS7_ASP_PROT_NONE,
-	OSMO_SS7_ASP_PROT_SUA,
-	OSMO_SS7_ASP_PROT_M3UA,
-	OSMO_SS7_ASP_PROT_IPA,
-	_NUM_OSMO_SS7_ASP_PROT
-};
+enum osmo_ss7_as_traffic_mode osmo_ss7_tmode_from_xua(uint32_t in);
+int osmo_ss7_tmode_to_xua(enum osmo_ss7_as_traffic_mode tmod);
 
-extern struct value_string osmo_ss7_asp_protocol_vals[];
 
-static inline const char *
-osmo_ss7_asp_protocol_name(enum osmo_ss7_asp_protocol mode)
-{
-	return get_value_string(osmo_ss7_asp_protocol_vals, mode);
-}
+/***********************************************************************
+ * SS7 Application Servers
+ ***********************************************************************/
 
-int osmo_ss7_asp_protocol_port(enum osmo_ss7_asp_protocol prot);
+struct osmo_ss7_as;
+struct osmo_ss7_asp;
 
 struct osmo_ss7_as *
 osmo_ss7_as_find_by_name(struct osmo_ss7_instance *inst, const char *name);
@@ -203,7 +220,6 @@ struct osmo_ss7_asp *osmo_ss7_as_select_asp(struct osmo_ss7_as *as);
 bool osmo_ss7_as_down(const struct osmo_ss7_as *as);
 bool osmo_ss7_as_active(const struct osmo_ss7_as *as);
 bool osmo_ss7_as_tmode_compatible_xua(struct osmo_ss7_as *as, uint32_t m3ua_tmt);
-void osmo_ss7_asp_disconnect(struct osmo_ss7_asp *asp);
 
 
 /***********************************************************************
@@ -260,6 +276,7 @@ struct osmo_ss7_asp *
 osmo_ss7_asp_find_or_create2(struct osmo_ss7_instance *inst, const char *name,
 			     uint16_t remote_port, uint16_t local_port,
 			     int trans_proto, enum osmo_ss7_asp_protocol proto);
+void osmo_ss7_asp_disconnect(struct osmo_ss7_asp *asp);
 void osmo_ss7_asp_destroy(struct osmo_ss7_asp *asp);
 int osmo_ss7_asp_send(struct osmo_ss7_asp *asp, struct msgb *msg);
 int osmo_ss7_asp_restart(struct osmo_ss7_asp *asp);
@@ -282,6 +299,10 @@ typedef int osmo_ss7_asp_rx_unknown_cb(struct osmo_ss7_asp *asp, int ppid_mux, s
 void osmo_ss7_register_rx_unknown_cb(osmo_ss7_asp_rx_unknown_cb *cb);
 
 
+/***********************************************************************
+ * Simple Client
+ ***********************************************************************/
+
 struct osmo_sccp_instance *
 osmo_sccp_simple_client(void *ctx, const char *name, uint32_t default_pc,
 			enum osmo_ss7_asp_protocol prot, int default_local_port,
@@ -296,6 +317,10 @@ osmo_sccp_simple_client_on_ss7_id(void *ctx, uint32_t ss7_id, const char *name,
 				  const char *default_local_ip,
 				  int default_remote_port,
 				  const char *default_remote_ip);
+
+/***********************************************************************
+ * Simple Server
+ ***********************************************************************/
 
 struct osmo_sccp_instance *
 osmo_sccp_simple_server(void *ctx, uint32_t pc,
@@ -313,9 +338,6 @@ osmo_sccp_simple_server_add_clnt(struct osmo_sccp_instance *inst,
 				 const char *name, uint32_t pc,
 				 int local_port, int remote_port,
 				 const char *remote_ip);
-
-enum osmo_ss7_as_traffic_mode osmo_ss7_tmode_from_xua(uint32_t in);
-int osmo_ss7_tmode_to_xua(enum osmo_ss7_as_traffic_mode tmod);
 
 /* VTY related */
 struct vty;
