@@ -268,6 +268,7 @@ struct osmo_ss7_as *osmo_ss7_as_find_by_proto(struct osmo_ss7_instance *inst,
 struct osmo_ss7_as *
 osmo_ss7_as_find_or_create(struct osmo_ss7_instance *inst, const char *name,
 			  enum osmo_ss7_asp_protocol proto);
+enum osmo_ss7_asp_protocol osmo_ss7_as_get_asp_protocol(const struct osmo_ss7_as *as);
 int osmo_ss7_as_add_asp(struct osmo_ss7_as *as, const char *asp_name);
 int osmo_ss7_as_del_asp(struct osmo_ss7_as *as, const char *asp_name);
 void osmo_ss7_as_destroy(struct osmo_ss7_as *as);

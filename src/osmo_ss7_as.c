@@ -95,6 +95,14 @@ struct osmo_ss7_as *ss7_as_alloc(struct osmo_ss7_instance *inst, const char *nam
 	return as;
 }
 
+/*! \brief Get asp_protocol configuration of a given AS
+ *  \param[in] as Application Server in which to look for \ref asp_protocol
+ *  \returns The asp_protocol this AS is configured with */
+enum osmo_ss7_asp_protocol osmo_ss7_as_get_asp_protocol(const struct osmo_ss7_as *as)
+{
+	return as->cfg.proto;
+}
+
 /*! \brief Add given ASP to given AS
  *  \param[in] as Application Server to which \ref asp is added
  *  \param[in] asp Application Server Process to be added to \ref as
