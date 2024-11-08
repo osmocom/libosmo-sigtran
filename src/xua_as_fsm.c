@@ -23,6 +23,7 @@
 #include <osmocom/sigtran/protocol/sua.h>
 #include <osmocom/sigtran/protocol/m3ua.h>
 
+#include "ss7_as.h"
 #include "ss7_asp.h"
 #include "ss7_route.h"
 #include "ss7_route_table.h"

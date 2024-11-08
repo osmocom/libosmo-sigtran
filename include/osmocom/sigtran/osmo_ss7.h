@@ -135,6 +135,9 @@ osmo_ss7_route_get_dest_as(struct osmo_ss7_route *rt);
  * SS7 Application Servers
  ***********************************************************************/
 
+struct osmo_ss7_as;
+struct osmo_ss7_asp;
+
 struct osmo_ss7_routing_key {
 	uint32_t context;
 	uint32_t l_rk_id;
@@ -178,50 +181,6 @@ osmo_ss7_asp_protocol_name(enum osmo_ss7_asp_protocol mode)
 }
 
 int osmo_ss7_asp_protocol_port(enum osmo_ss7_asp_protocol prot);
-
-enum osmo_ss7_as_patch_sccp_mode {
-	OSMO_SS7_PATCH_NONE,	/* no patching of SCCP */
-	OSMO_SS7_PATCH_BOTH,	/* patch both OPC and DPC into SCCP addresses */
-};
-
-struct osmo_ss7_as {
-	/*! entry in 'ref osmo_ss7_instance.as_list */
-	struct llist_head list;
-	struct osmo_ss7_instance *inst;
-
-	/*! AS FSM */
-	struct osmo_fsm_inst *fi;
-
-	/*! Were we dynamically allocated by RKM? */
-	bool rkm_dyn_allocated;
-
-	/*! Were we allocated by "simple client" support? */
-	bool simple_client_allocated;
-
-	/*! Rate Counter Group */
-	struct rate_ctr_group *ctrg;
-
-	struct {
-		char *name;
-		char *description;
-		enum osmo_ss7_asp_protocol proto;
-		struct osmo_ss7_routing_key routing_key;
-		enum osmo_ss7_as_traffic_mode mode;
-		/* traffic mode was configured by VTY / config file */
-		bool mode_set_by_vty;
-		/* traffic mode was configured by RKM (routing key management) or first ASPAC */
-		bool mode_set_by_peer;
-		uint32_t recovery_timeout_msec;
-		uint8_t qos_class;
-		struct {
-			uint32_t dpc;
-			enum osmo_ss7_as_patch_sccp_mode sccp_mode;
-		} pc_override;
-
-		struct osmo_ss7_asp *asps[16];
-		uint8_t last_asp_idx_sent; /* used for load-sharing traffic mode (round robin implementation) */
-	} cfg;
-};
 
 struct osmo_ss7_as *
 osmo_ss7_as_find_by_name(struct osmo_ss7_instance *inst, const char *name);

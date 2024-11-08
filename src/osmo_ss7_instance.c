@@ -33,6 +33,7 @@
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <osmocom/sigtran/sccp_sap.h>
 
+#include "ss7_as.h"
 #include "ss7_asp.h"
 #include "ss7_internal.h"
 #include "ss7_instance.h"

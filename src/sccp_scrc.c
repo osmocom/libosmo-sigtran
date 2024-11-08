@@ -33,6 +33,7 @@
 #include <osmocom/sigtran/protocol/mtp.h>
 
 #include "sccp_internal.h"
+#include "ss7_as.h"
 #include "ss7_instance.h"
 #include "ss7_linkset.h"
 #include "ss7_route.h"

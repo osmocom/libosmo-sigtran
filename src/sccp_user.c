@@ -39,6 +39,7 @@
 
 #include "sccp_internal.h"
 #include "xua_internal.h"
+#include "ss7_as.h"
 #include "ss7_asp.h"
 #include "ss7_route.h"
 #include "ss7_route_table.h"

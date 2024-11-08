@@ -27,6 +27,7 @@
 #include <osmocom/sigtran/osmo_ss7.h>
 
 #include "ss7_linkset.h"
+#include "ss7_as.h"
 #include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"

@@ -34,6 +34,7 @@
 #include <osmocom/sigtran/protocol/m3ua.h>
 #include <osmocom/sigtran/protocol/sua.h>
 
+#include "ss7_as.h"
 #include "ss7_asp.h"
 #include "ss7_internal.h"
 #include "xua_internal.h"

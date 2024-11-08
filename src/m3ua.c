@@ -44,6 +44,7 @@
 #include "xua_as_fsm.h"
 #include "xua_asp_fsm.h"
 #include "xua_internal.h"
+#include "ss7_as.h"
 #include "ss7_asp.h"
 #include "ss7_internal.h"
 

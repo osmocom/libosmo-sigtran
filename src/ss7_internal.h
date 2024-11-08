@@ -28,11 +28,3 @@ int ss7_asp_m3ua_tcp_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struc
 int ss7_asp_xua_srv_conn_closed_cb(struct osmo_stream_srv *srv);
 
 int xua_tcp_segmentation_cb(struct msgb *msg);
-
-enum ss7_as_ctr {
-	SS7_AS_CTR_RX_MSU_TOTAL,
-	SS7_AS_CTR_TX_MSU_TOTAL,
-};
-
-#define LOGPAS(as, subsys, level, fmt, args ...) \
-	_LOGSS7((as)->inst, subsys, level, "as-%s: " fmt, (as)->cfg.name, ## args)

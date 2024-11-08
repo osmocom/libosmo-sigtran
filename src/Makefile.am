@@ -4,6 +4,7 @@ AM_CFLAGS=-Wall $(LIBOSMOCORE_CFLAGS) $(LIBOSMOGSM_CFLAGS) $(LIBOSMOVTY_CFLAGS) 
 
 noinst_HEADERS = \
 	sccp_internal.h \
+	ss7_as.h \
 	ss7_asp.h \
 	ss7_asp_peer.h \
 	ss7_instance.h \
