@@ -7,6 +7,7 @@ noinst_HEADERS = \
 	ss7_as.h \
 	ss7_asp.h \
 	ss7_asp_peer.h \
+	ss7_combined_linkset.h \
 	ss7_instance.h \
 	ss7_internal.h \
 	ss7_link.h \
@@ -44,6 +45,7 @@ libosmo_sigtran_la_SOURCES = \
 	osmo_ss7_as.c \
 	osmo_ss7_asp.c \
 	osmo_ss7_asp_peer.c \
+	osmo_ss7_combined_linkset.c \
 	osmo_ss7_hmrt.c \
 	osmo_ss7_instance.c \
 	osmo_ss7_link.c \

@@ -26,6 +26,7 @@
 #include <osmocom/sigtran/mtp_sap.h>
 #include <osmocom/sigtran/osmo_ss7.h>
 
+#include "ss7_combined_linkset.h"
 #include "ss7_linkset.h"
 #include "ss7_as.h"
 #include "ss7_asp.h"
@@ -132,34 +133,6 @@ ss7_route_set_linkset(struct osmo_ss7_route *rt, const char *linkset_name)
 	return 0;
 }
 
-/* insert the route in the ordered list of routes. The list is sorted by
- * mask length, so that the more specific (longer mask) routes are
- * first, while the less specific routes with shorter masks are last.
- * Within the same mask length, the routes are ordered by priority.
- * Hence, the first matching route in a linear iteration is the most
- * specific match. */
-static void route_insert_sorted(struct osmo_ss7_route_table *rtbl,
-				struct osmo_ss7_route *cmp)
-{
-	struct osmo_ss7_route *rt;
-
-	llist_for_each_entry(rt, &rtbl->routes, list) {
-		if (rt->cfg.mask == cmp->cfg.mask &&
-		    rt->cfg.priority > cmp->cfg.priority) {
-			/* insert before the current entry */
-			llist_add(&cmp->list, rt->list.prev);
-			return;
-		}
-		if (rt->cfg.mask < cmp->cfg.mask) {
-			/* insert before the current entry */
-			llist_add(&cmp->list, rt->list.prev);
-			return;
-		}
-	}
-	/* not added, i.e. no smaller mask length and priority found: we are the
-	 * smallest mask and priority and thus should go last */
-	llist_add_tail(&cmp->list, &rtbl->routes);
-}
 
 /*! \brief Insert route into its routing table
  *  \param[in] rt Route to be inserted into its routing table
@@ -170,7 +143,7 @@ static void route_insert_sorted(struct osmo_ss7_route_table *rtbl,
 int
 ss7_route_insert(struct osmo_ss7_route *rt)
 {
-	struct osmo_ss7_route *prev_rt;
+	struct osmo_ss7_combined_linkset *clset;
 	struct osmo_ss7_route_table *rtbl = rt->rtable;
 
 	if (ss7_route_inserted(rt)) {
@@ -183,17 +156,24 @@ ss7_route_insert(struct osmo_ss7_route *rt)
 		return -EINVAL;
 	}
 
-	/* check for duplicates */
-	prev_rt = ss7_route_table_find_route_by_dpc_mask(rtbl, rt->cfg.pc, rt->cfg.mask);
-	if (prev_rt && !strcmp(prev_rt->cfg.linkset_name, rt->cfg.linkset_name)) {
-		LOGSS7(rtbl->inst, LOGL_ERROR,
-		       "Refusing to create route with existing linkset name: pc=%u=%s mask=0x%x via linkset/AS '%s'\n",
-		       rt->cfg.pc, osmo_ss7_pointcode_print(rtbl->inst, rt->cfg.pc),
-		       rt->cfg.mask, rt->cfg.linkset_name);
-		return -EADDRINUSE;
+	clset = ss7_route_table_find_combined_linkset(rtbl, rt->cfg.pc, rt->cfg.mask, rt->cfg.priority);
+	if (clset) { /* check for duplicates */
+		struct osmo_ss7_route *prev_rt;
+		llist_for_each_entry(prev_rt, &clset->routes, list) {
+			if (!strcmp(prev_rt->cfg.linkset_name, rt->cfg.linkset_name)) {
+				LOGSS7(rtbl->inst, LOGL_ERROR,
+				       "Refusing to create route with existing linkset name: pc=%u=%s mask=0x%x via linkset/AS '%s'\n",
+				       rt->cfg.pc, osmo_ss7_pointcode_print(rtbl->inst, rt->cfg.pc),
+				       rt->cfg.mask, rt->cfg.linkset_name);
+				return -EADDRINUSE;
+			}
+		}
+	} else {
+		clset = ss7_combined_linkset_alloc(rtbl, rt->cfg.pc, rt->cfg.mask, rt->cfg.priority);
+		OSMO_ASSERT(clset);
 	}
 
-	route_insert_sorted(rtbl, rt);
+	ss7_combined_linkset_add_route(clset, rt);
 	return 0;
 }
 
@@ -250,7 +230,7 @@ void ss7_route_destroy(struct osmo_ss7_route *rt)
 			"Destroying route: pc=%u=%s mask=0x%x via linkset/ASP '%s'\n",
 			rt->cfg.pc, osmo_ss7_pointcode_print(inst, rt->cfg.pc),
 			rt->cfg.mask, rt->cfg.linkset_name);
-		llist_del(&rt->list);
+		ss7_combined_linkset_del_route(rt);
 	}
 	talloc_free(rt);
 }

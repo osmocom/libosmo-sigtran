@@ -15,10 +15,12 @@ struct osmo_ss7_as;
 #define OSMO_SS7_ROUTE_PRIO_DEFAULT 5
 
 struct osmo_ss7_route {
-	/*! member in \ref osmo_ss7_route_table.routes */
+	/*! member in \ref osmo_ss7_combined_linkset.routes */
 	struct llist_head list;
 	/*! \ref osmo_ss7_route_table to which we belong */
 	struct osmo_ss7_route_table *rtable;
+	/* Combined linkset this route is part of */
+	struct osmo_ss7_combined_linkset *clset;
 
 	struct {
 		/*! pointer to linkset (destination) of route */

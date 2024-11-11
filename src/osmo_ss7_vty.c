@@ -48,6 +48,7 @@
 #include "sccp_internal.h"
 #include "ss7_as.h"
 #include "ss7_asp.h"
+#include "ss7_combined_linkset.h"
 #include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"
@@ -487,27 +488,31 @@ DEFUN_ATTR(cs7_rt_rem, cs7_rt_rem_cmd,
 
 static void write_one_rtable(struct vty *vty, struct osmo_ss7_route_table *rtable)
 {
+	struct osmo_ss7_combined_linkset *clset;
 	struct osmo_ss7_route *rt;
 
 	vty_out(vty, " route-table %s%s", rtable->cfg.name, VTY_NEWLINE);
 	if (rtable->cfg.description)
 		vty_out(vty, "  description %s%s", rtable->cfg.description, VTY_NEWLINE);
-	llist_for_each_entry(rt, &rtable->routes, list) {
-		vty_out(vty, "  update route %s %s linkset %s",
-			osmo_ss7_pointcode_print(rtable->inst, rt->cfg.pc),
-			osmo_ss7_pointcode_print2(rtable->inst, rt->cfg.mask),
-			rt->cfg.linkset_name);
-		if (rt->cfg.priority != OSMO_SS7_ROUTE_PRIO_DEFAULT)
-			vty_out(vty, " priority %u", rt->cfg.priority);
-		if (rt->cfg.qos_class)
-			vty_out(vty, " qos-class %u", rt->cfg.qos_class);
-		vty_out(vty, "%s", VTY_NEWLINE);
+	llist_for_each_entry(clset, &rtable->combined_linksets, list) {
+		llist_for_each_entry(rt, &clset->routes, list) {
+			vty_out(vty, "  update route %s %s linkset %s",
+				osmo_ss7_pointcode_print(rtable->inst, rt->cfg.pc),
+				osmo_ss7_pointcode_print2(rtable->inst, rt->cfg.mask),
+				rt->cfg.linkset_name);
+			if (rt->cfg.priority != OSMO_SS7_ROUTE_PRIO_DEFAULT)
+				vty_out(vty, " priority %u", rt->cfg.priority);
+			if (rt->cfg.qos_class)
+				vty_out(vty, " qos-class %u", rt->cfg.qos_class);
+			vty_out(vty, "%s", VTY_NEWLINE);
+		}
 	}
 }
 
 /* "filter_pc == OSMO_SS7_PC_INVALID" means "show all" */
 static void vty_dump_rtable(struct vty *vty, struct osmo_ss7_route_table *rtbl, uint32_t filter_pc)
 {
+	struct osmo_ss7_combined_linkset *clset;
 	struct osmo_ss7_route *rt;
 
 	vty_out(vty, "Routing table = %s%s", rtbl->cfg.name, VTY_NEWLINE);
@@ -516,23 +521,25 @@ static void vty_dump_rtable(struct vty *vty, struct osmo_ss7_route_table *rtbl, 
 	vty_out(vty, "Destination            C Q P Linkset Name        Linkset Non-adj Route%s", VTY_NEWLINE);
 	vty_out(vty, "---------------------- - - - ------------------- ------- ------- -------%s", VTY_NEWLINE);
 
-	llist_for_each_entry(rt, &rtbl->routes, list) {
-		if ((filter_pc != OSMO_SS7_PC_INVALID) && ((filter_pc & rt->cfg.mask) != rt->cfg.pc))
-			continue; /* Skip routes not matching destination */
+	llist_for_each_entry(clset, &rtbl->combined_linksets, list) {
+		if ((filter_pc != OSMO_SS7_PC_INVALID) && ((filter_pc & clset->cfg.mask) != clset->cfg.pc))
+			continue; /* Skip combined linksets not matching destination */
 
-		bool rt_avail = ss7_route_is_available(rt);
+		llist_for_each_entry(rt, &clset->routes, list) {
+			bool rt_avail = ss7_route_is_available(rt);
 
-		vty_out(vty, "%-16s %-5s %c %c %u %-19s %-7s %-7s %-7s%s",
-			osmo_ss7_route_print(rt),
-			rt_avail ? "acces" : "INACC",
-			' ',
-			'0' + rt->cfg.qos_class,
-			rt->cfg.priority,
-			rt->cfg.linkset_name,
-			rt_avail ? "avail" : "UNAVAIL",
-			"?",
-			rt_avail ? "avail" : "UNAVAIL",
-			VTY_NEWLINE);
+			vty_out(vty, "%-16s %-5s %c %c %u %-19s %-7s %-7s %-7s%s",
+				osmo_ss7_route_print(rt),
+				rt_avail ? "acces" : "INACC",
+				' ',
+				'0' + rt->cfg.qos_class,
+				rt->cfg.priority,
+				rt->cfg.linkset_name,
+				rt_avail ? "avail" : "UNAVAIL",
+				"?",
+				rt_avail ? "avail" : "UNAVAIL",
+				VTY_NEWLINE);
+		}
 	}
 }
 

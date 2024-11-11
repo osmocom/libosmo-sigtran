@@ -24,6 +24,7 @@
 #include <osmocom/sigtran/mtp_sap.h>
 #include <osmocom/sigtran/osmo_ss7.h>
 
+#include "ss7_combined_linkset.h"
 #include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"
@@ -44,7 +45,7 @@ static struct osmo_ss7_route_table *ss7_route_table_alloc(struct osmo_ss7_instan
 
 	rtbl->inst = inst;
 	rtbl->cfg.name = talloc_strdup(rtbl, name);
-	INIT_LLIST_HEAD(&rtbl->routes);
+	INIT_LLIST_HEAD(&rtbl->combined_linksets);
 	llist_add_tail(&rtbl->list, &inst->rtable_list);
 	return rtbl;
 }
@@ -77,8 +78,8 @@ void
 ss7_route_table_destroy(struct osmo_ss7_route_table *rtbl)
 {
 	llist_del(&rtbl->list);
-	/* routes are allocated as children of route table, will be
-	 * automatically freed() */
+	/* combined links & routes are allocated as children of route table,
+	 * will be automatically freed() */
 	talloc_free(rtbl);
 }
 
@@ -86,20 +87,18 @@ ss7_route_table_destroy(struct osmo_ss7_route_table *rtbl)
 struct osmo_ss7_route *
 ss7_route_table_find_route_by_dpc(struct osmo_ss7_route_table *rtbl, uint32_t dpc)
 {
+	struct osmo_ss7_combined_linkset *clset;
 	struct osmo_ss7_route *rt;
 
 	OSMO_ASSERT(ss7_initialized);
 
 	dpc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, dpc);
 
-	/* we assume the routes are sorted by mask length, i.e. more
-	 * specific routes first, and less specific routes with shorter
-	 * mask later */
-	llist_for_each_entry(rt, &rtbl->routes, list) {
-		if ((dpc & rt->cfg.mask) == rt->cfg.pc)
-			return rt;
-	}
-	return NULL;
+	clset = ss7_route_table_find_combined_linkset_by_dpc(rtbl, dpc);
+	if (!clset)
+		return NULL;
+	rt = llist_first_entry_or_null(&clset->routes, struct osmo_ss7_route, list);
+	return rt;
 }
 
 /*! \brief Find a SS7 route for given destination point code + mask in given table */
@@ -107,40 +106,124 @@ struct osmo_ss7_route *
 ss7_route_table_find_route_by_dpc_mask(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
 				uint32_t mask)
 {
+	struct osmo_ss7_combined_linkset *clset;
 	struct osmo_ss7_route *rt;
 
 	OSMO_ASSERT(ss7_initialized);
-	mask = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, mask);
-	dpc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, dpc);
 
-	/* we assume the routes are sorted by mask length, i.e. more
-	 * specific routes first, and less specific routes with shorter
+	dpc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, dpc);
+	mask = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, mask);
+
+	clset = ss7_route_table_find_combined_linkset_by_dpc_mask(rtbl, dpc, mask);
+	if (!clset)
+		return NULL;
+	rt = llist_first_entry_or_null(&clset->routes, struct osmo_ss7_route, list);
+	return rt;
+}
+
+struct osmo_ss7_combined_linkset *
+ss7_route_table_find_combined_linkset_by_dpc(struct osmo_ss7_route_table *rtbl, uint32_t dpc)
+{
+	struct osmo_ss7_combined_linkset *clset;
+
+	OSMO_ASSERT(ss7_initialized);
+
+	dpc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, dpc);
+	/* we assume the combined_links are sorted by mask length, i.e. more
+	 * specific combined links first, and less specific combined links with shorter
 	 * mask later */
-	llist_for_each_entry(rt, &rtbl->routes, list) {
-		if (dpc == rt->cfg.pc && mask == rt->cfg.mask)
-			return rt;
+	llist_for_each_entry(clset, &rtbl->combined_linksets, list) {
+		if ((dpc & clset->cfg.mask) != clset->cfg.pc)
+			continue;
+		return clset;
 	}
 	return NULL;
 }
 
-/* find any routes pointing to this linkset and remove them */
-void ss7_route_table_del_routes_by_linkset(struct osmo_ss7_route_table *rtbl, struct osmo_ss7_linkset *lset)
+struct osmo_ss7_combined_linkset *
+ss7_route_table_find_combined_linkset_by_dpc_mask(struct osmo_ss7_route_table *rtbl, uint32_t dpc, uint32_t mask)
 {
-	struct osmo_ss7_route *rt, *rt2;
+	struct osmo_ss7_combined_linkset *clset;
 
-	llist_for_each_entry_safe(rt, rt2, &rtbl->routes, list) {
-		if (rt->dest.linkset == lset)
-			ss7_route_destroy(rt);
+	OSMO_ASSERT(ss7_initialized);
+
+	dpc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, dpc);
+	/* we assume the combined_links are sorted by mask length, i.e. more
+	 * specific combined links first, and less specific combined links with shorter
+	 * mask later */
+	llist_for_each_entry(clset, &rtbl->combined_linksets, list) {
+		if ((dpc & clset->cfg.mask) != clset->cfg.pc)
+			continue;
+		if (mask != clset->cfg.mask)
+			continue;
+		return clset;
 	}
+	return NULL;
+}
+
+struct osmo_ss7_combined_linkset *
+ss7_route_table_find_combined_linkset(struct osmo_ss7_route_table *rtbl, uint32_t dpc, uint32_t mask, uint32_t prio)
+{
+	struct osmo_ss7_combined_linkset *clset;
+
+	/* we assume the combined_links are sorted by mask length, i.e. more
+	 * specific routes first, and less specific routes with shorter
+	 * mask later */
+	llist_for_each_entry(clset, &rtbl->combined_linksets, list) {
+		if (mask < clset->cfg.mask)
+			break;
+		if (dpc == clset->cfg.pc && mask == clset->cfg.mask) {
+			if (prio > clset->cfg.priority)
+				break;
+			if (prio == clset->cfg.priority)
+				return clset;
+		}
+	}
+	return NULL;
+}
+
+struct osmo_ss7_combined_linkset *
+ss7_route_table_find_or_create_combined_linkset(struct osmo_ss7_route_table *rtable, uint32_t pc, uint32_t mask, uint32_t prio)
+{
+	struct osmo_ss7_combined_linkset *clset;
+	clset = ss7_route_table_find_combined_linkset(rtable, pc, mask, prio);
+	if (!clset)
+		clset = ss7_combined_linkset_alloc(rtable, pc, mask, prio);
+	return clset;
 }
 
 /* find any routes pointing to this AS and remove them */
 void ss7_route_table_del_routes_by_as(struct osmo_ss7_route_table *rtbl, struct osmo_ss7_as *as)
 {
-	struct osmo_ss7_route *rt, *rt2;
+	struct osmo_ss7_combined_linkset *clset, *clset2;
 
-	llist_for_each_entry_safe(rt, rt2, &rtbl->routes, list) {
-		if (rt->dest.as == as)
-			ss7_route_destroy(rt);
+	llist_for_each_entry_safe(clset, clset2, &rtbl->combined_linksets, list) {
+		struct osmo_ss7_route *rt;
+		llist_for_each_entry(rt, &clset->routes, list) {
+			if (rt->dest.as == as) {
+				ss7_route_destroy(rt);
+				/* clset may have been freed here. Same AS can't be twice in a combined
+				 * linkset, so simply continue iterating in the upper loop. */
+				break;
+			}
+		}
+	}
+}
+
+/* find any routes pointing to this linkset and remove them */
+void ss7_route_table_del_routes_by_linkset(struct osmo_ss7_route_table *rtbl, struct osmo_ss7_linkset *lset)
+{
+	struct osmo_ss7_combined_linkset *clset, *clset2;
+
+	llist_for_each_entry_safe(clset, clset2, &rtbl->combined_linksets, list) {
+		struct osmo_ss7_route *rt;
+		llist_for_each_entry(rt, &clset->routes, list) {
+			if (rt->dest.linkset == lset) {
+				ss7_route_destroy(rt);
+				/* clset may have been freed here. Same linkset can't be twice in a combined
+				 * linkset, so simply continue iterating in the upper loop. */
+				break;
+			}
+		}
 	}
 }
