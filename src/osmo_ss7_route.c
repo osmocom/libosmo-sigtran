@@ -228,7 +228,7 @@ ss7_route_create(struct osmo_ss7_route_table *rtbl, uint32_t pc,
 	/* Keep old behavior, return already existing route: */
 	if (rc == -EADDRINUSE) {
 		talloc_free(rt);
-		return ss7_route_table_find_route_by_dpc_mask(rtbl, rt->cfg.pc, rt->cfg.mask);
+		return ss7_route_table_find_route_by_dpc_mask(rtbl, pc, mask);
 	}
 
 	return rt;
