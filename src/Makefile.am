@@ -46,6 +46,7 @@ libosmo_sigtran_la_SOURCES = \
 	osmo_ss7_xua_srv.c \
 	osmo_ss7_route.c \
 	osmo_ss7_route_table.c \
+	osmo_ss7_user.c \
 	sccp2sua.c \
 	sccp_helpers.c \
 	sccp_lbcs.c \

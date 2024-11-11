@@ -98,7 +98,7 @@ static int test_user_prim_cb(struct osmo_prim_hdr *oph, void *priv)
 
 static void test_user(void)
 {
-	struct osmo_ss7_user user, user2;
+	struct osmo_ss7_user *user, *user2;
 	struct osmo_mtp_prim omp = {
 		.oph = {
 			.sap = MTP_SAP_USER,
@@ -111,13 +111,16 @@ static void test_user(void)
 	};
 
 	printf("Testing SS7 user\n");
+	user = osmo_ss7_user_create(s7i, "testuser");
+	osmo_ss7_user_set_prim_cb(user, test_user_prim_cb);
+	osmo_ss7_user_set_priv(user, (void *) 0x1234);
 
-	user.name = "testuser";
-	user.priv = (void *) 0x1234;
-	user.prim_cb = test_user_prim_cb;
+	user2 = osmo_ss7_user_create(s7i, "testuser_notregistered");
+	osmo_ss7_user_set_prim_cb(user, test_user_prim_cb);
+	osmo_ss7_user_set_priv(user, (void *) 0x1234);
 
 	/* registration */
-	OSMO_ASSERT(osmo_ss7_user_register(s7i, 1, &user) == 0);
+	OSMO_ASSERT(osmo_ss7_user_register(s7i, 1, user) == 0);
 	OSMO_ASSERT(osmo_ss7_user_register(s7i, 1, NULL) == -EBUSY);
 	OSMO_ASSERT(osmo_ss7_user_register(s7i, 255, NULL) == -EINVAL);
 
@@ -127,8 +130,8 @@ static void test_user(void)
 	/* cleanup */
 	OSMO_ASSERT(osmo_ss7_user_unregister(s7i, 255, NULL) == -EINVAL);
 	OSMO_ASSERT(osmo_ss7_user_unregister(s7i, 10, NULL) == -ENODEV);
-	OSMO_ASSERT(osmo_ss7_user_unregister(s7i, 1, &user2) == -EINVAL);
-	OSMO_ASSERT(osmo_ss7_user_unregister(s7i, 1, &user) == 0);
+	OSMO_ASSERT(osmo_ss7_user_unregister(s7i, 1, user2) == -EINVAL);
+	OSMO_ASSERT(osmo_ss7_user_unregister(s7i, 1, user) == 0);
 
 	/* primitive delivery should fail now */
 	OSMO_ASSERT(osmo_ss7_mtp_to_user(s7i, &omp) == -ENODEV);
@@ -136,6 +139,9 @@ static void test_user(void)
 	/* wrong primitive delivery should also fail */
 	omp.oph.primitive = OSMO_MTP_PRIM_PAUSE;
 	OSMO_ASSERT(osmo_ss7_mtp_to_user(s7i, &omp) == -EINVAL);
+
+	osmo_ss7_user_destroy(user);
+	osmo_ss7_user_destroy(user2);
 }
 
 static void test_route(void)

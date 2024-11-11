@@ -48,7 +48,7 @@ struct osmo_sccp_instance {
 	struct osmo_ss7_instance *ss7;
 	void *priv;
 
-	struct osmo_ss7_user ss7_user;
+	struct osmo_ss7_user *ss7_user;
 
 	struct osmo_tdef *tdefs;
 

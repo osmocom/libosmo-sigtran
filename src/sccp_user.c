@@ -235,10 +235,6 @@ osmo_sccp_instance_create(struct osmo_ss7_instance *ss7, void *priv)
 	inst->priv = priv;
 	INIT_LLIST_HEAD(&inst->users);
 
-	inst->ss7_user.inst = ss7;
-	inst->ss7_user.name = "SCCP";
-	inst->ss7_user.prim_cb = mtp_user_prim_cb;
-	inst->ss7_user.priv = inst;
 	inst->max_optional_data = SCCP_MAX_OPTIONAL_DATA;
 
 	inst->tdefs = talloc_memdup(inst, osmo_sccp_timer_defaults,
@@ -251,7 +247,10 @@ osmo_sccp_instance_create(struct osmo_ss7_instance *ss7, void *priv)
 		return NULL;
 	}
 
-	osmo_ss7_user_register(ss7, MTP_SI_SCCP, &inst->ss7_user);
+	inst->ss7_user = osmo_ss7_user_create(ss7, "SCCP");
+	osmo_ss7_user_set_prim_cb(inst->ss7_user, mtp_user_prim_cb);
+	osmo_ss7_user_set_priv(inst->ss7_user, inst);
+	osmo_ss7_user_register(ss7, MTP_SI_SCCP, inst->ss7_user);
 
 	llist_add_tail(&inst->list, &sccp_instances);
 
@@ -263,7 +262,9 @@ void osmo_sccp_instance_destroy(struct osmo_sccp_instance *inst)
 	struct osmo_sccp_user *scu, *scu2;
 
 	inst->ss7->sccp = NULL;
-	osmo_ss7_user_unregister(inst->ss7, MTP_SI_SCCP, &inst->ss7_user);
+	osmo_ss7_user_unregister(inst->ss7, MTP_SI_SCCP, inst->ss7_user);
+	osmo_ss7_user_destroy(inst->ss7_user);
+	inst->ss7_user = NULL;
 
 	llist_for_each_entry_safe(scu, scu2, &inst->users, list) {
 		osmo_sccp_user_unbind(scu);

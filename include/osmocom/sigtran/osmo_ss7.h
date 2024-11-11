@@ -128,9 +128,16 @@ struct osmo_ss7_user {
 	void *priv;
 };
 
+struct osmo_ss7_user *osmo_ss7_user_create(struct osmo_ss7_instance *inst, const char *name);
+void osmo_ss7_user_destroy(struct osmo_ss7_user *user);
+
+struct osmo_ss7_instance *osmo_ss7_user_get_instance(const struct osmo_ss7_user *user);
+void osmo_ss7_user_set_prim_cb(struct osmo_ss7_user *user, osmo_prim_cb prim_cb);
+void osmo_ss7_user_set_priv(struct osmo_ss7_user *user, void *priv);
+void *osmo_ss7_user_get_priv(const struct osmo_ss7_user *user);
+
 int osmo_ss7_user_register(struct osmo_ss7_instance *inst, uint8_t service_ind,
 			   struct osmo_ss7_user *user);
-
 int osmo_ss7_user_unregister(struct osmo_ss7_instance *inst, uint8_t service_ind,
 			     struct osmo_ss7_user *user);
 
