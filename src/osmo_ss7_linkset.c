@@ -39,18 +39,14 @@
  *  \param[in] lset Linkset to be destroyed */
 void ss7_linkset_destroy(struct osmo_ss7_linkset *lset)
 {
-	struct osmo_ss7_route *rt, *rt2;
 	unsigned int i;
 
 	OSMO_ASSERT(ss7_initialized);
 	LOGSS7(lset->inst, LOGL_INFO, "Destroying Linkset %s\n",
 		lset->cfg.name);
 
-	/* find any routes pointing to this AS and remove them */
-	llist_for_each_entry_safe(rt, rt2, &lset->inst->rtable_system->routes, list) {
-		if (rt->dest.linkset == lset)
-			ss7_route_destroy(rt);
-	}
+	/* find any routes pointing to this linkset and remove them */
+	ss7_route_table_del_routes_by_linkset(lset->inst->rtable_system, lset);
 
 	for (i = 0; i < ARRAY_SIZE(lset->links); i++) {
 		struct osmo_ss7_link *link = lset->links[i];

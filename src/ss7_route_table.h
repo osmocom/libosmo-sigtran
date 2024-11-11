@@ -34,3 +34,6 @@ ss7_route_table_find_route_by_dpc(struct osmo_ss7_route_table *rtbl, uint32_t dp
 struct osmo_ss7_route *
 ss7_route_table_find_route_by_dpc_mask(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
 			uint32_t mask);
+
+void ss7_route_table_del_routes_by_as(struct osmo_ss7_route_table *rtbl, struct osmo_ss7_as *as);
+void ss7_route_table_del_routes_by_linkset(struct osmo_ss7_route_table *rtbl, struct osmo_ss7_linkset *lset);

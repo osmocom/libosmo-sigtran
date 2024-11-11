@@ -122,3 +122,25 @@ ss7_route_table_find_route_by_dpc_mask(struct osmo_ss7_route_table *rtbl, uint32
 	}
 	return NULL;
 }
+
+/* find any routes pointing to this linkset and remove them */
+void ss7_route_table_del_routes_by_linkset(struct osmo_ss7_route_table *rtbl, struct osmo_ss7_linkset *lset)
+{
+	struct osmo_ss7_route *rt, *rt2;
+
+	llist_for_each_entry_safe(rt, rt2, &rtbl->routes, list) {
+		if (rt->dest.linkset == lset)
+			ss7_route_destroy(rt);
+	}
+}
+
+/* find any routes pointing to this AS and remove them */
+void ss7_route_table_del_routes_by_as(struct osmo_ss7_route_table *rtbl, struct osmo_ss7_as *as)
+{
+	struct osmo_ss7_route *rt, *rt2;
+
+	llist_for_each_entry_safe(rt, rt2, &rtbl->routes, list) {
+		if (rt->dest.as == as)
+			ss7_route_destroy(rt);
+	}
+}

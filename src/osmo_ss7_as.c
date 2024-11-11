@@ -167,8 +167,6 @@ int osmo_ss7_as_del_asp(struct osmo_ss7_as *as, const char *asp_name)
  *  \param[in] as Application Server to destroy */
 void osmo_ss7_as_destroy(struct osmo_ss7_as *as)
 {
-	struct osmo_ss7_route *rt, *rt2;
-
 	OSMO_ASSERT(ss7_initialized);
 	LOGPAS(as, DLSS7, LOGL_INFO, "Destroying AS\n");
 
@@ -176,10 +174,7 @@ void osmo_ss7_as_destroy(struct osmo_ss7_as *as)
 		osmo_fsm_inst_term(as->fi, OSMO_FSM_TERM_REQUEST, NULL);
 
 	/* find any routes pointing to this AS and remove them */
-	llist_for_each_entry_safe(rt, rt2, &as->inst->rtable_system->routes, list) {
-		if (rt->dest.as == as)
-			ss7_route_destroy(rt);
-	}
+	ss7_route_table_del_routes_by_as(as->inst->rtable_system, as);
 
 	as->inst = NULL;
 	llist_del(&as->list);
