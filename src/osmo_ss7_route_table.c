@@ -32,6 +32,23 @@
  * SS7 Route Tables
  ***********************************************************************/
 
+static struct osmo_ss7_route_table *ss7_route_table_alloc(struct osmo_ss7_instance *inst, const char *name)
+{
+	struct osmo_ss7_route_table *rtbl;
+
+	OSMO_ASSERT(name);
+	LOGSS7(inst, LOGL_INFO, "Creating Route Table %s\n", name);
+
+	rtbl = talloc_zero(inst, struct osmo_ss7_route_table);
+	OSMO_ASSERT(rtbl);
+
+	rtbl->inst = inst;
+	rtbl->cfg.name = talloc_strdup(rtbl, name);
+	INIT_LLIST_HEAD(&rtbl->routes);
+	llist_add_tail(&rtbl->list, &inst->rtable_list);
+	return rtbl;
+}
+
 struct osmo_ss7_route_table *
 ss7_route_table_find(struct osmo_ss7_instance *inst, const char *name)
 {
@@ -51,14 +68,8 @@ ss7_route_table_find_or_create(struct osmo_ss7_instance *inst, const char *name)
 
 	OSMO_ASSERT(ss7_initialized);
 	rtbl = ss7_route_table_find(inst, name);
-	if (!rtbl) {
-		LOGSS7(inst, LOGL_INFO, "Creating Route Table %s\n", name);
-		rtbl = talloc_zero(inst, struct osmo_ss7_route_table);
-		rtbl->inst = inst;
-		rtbl->cfg.name = talloc_strdup(rtbl, name);
-		INIT_LLIST_HEAD(&rtbl->routes);
-		llist_add_tail(&rtbl->list, &inst->rtable_list);
-	}
+	if (!rtbl)
+		rtbl = ss7_route_table_alloc(inst, name);
 	return rtbl;
 }
 
