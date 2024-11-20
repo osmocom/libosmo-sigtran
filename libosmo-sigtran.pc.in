@@ -8,3 +8,4 @@ Description: Osmocom implementation of (parts of) SIGTRAN
 Version: @VERSION@
 Libs: -L${libdir} -losmo-sigtran
 Cflags: -I${includedir}/
+Requires.private: libosmo-netif libosmocore
