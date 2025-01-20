@@ -290,6 +290,41 @@ DEFUN_ATTR(cs7_permit_dyn_rkm, cs7_permit_dyn_rkm_cmd,
 	return CMD_SUCCESS;
 }
 
+
+DEFUN_ATTR(cs7_opc_dpc_shift, cs7_opc_dpc_shift_cmd,
+	   "sls-opc-dpc [opc-shift] [<0-8>] [dpc-shift] [<0-8>]",
+	   "Shift OPC and DPC bits used during routing decision\n"
+	   "Shift OPC bits used during routing decision\n"
+	   "How many bits from ITU OPC field (starting from least-significant-bit) to skip (default=0). 6 bits are always used\n"
+	   "Shift DPC bits used during routing decision\n"
+	   "How many bits from ITU DPC field (starting from least-significant-bit) to skip (default=0). 6 bits are always used\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct osmo_ss7_instance *inst = vty->index;
+	if (argc == 4)
+		inst->cfg.dpc_shift = atoi(argv[3]);
+	else if (argc == 3)
+		inst->cfg.dpc_shift = 0;
+	if (argc >= 2)
+		inst->cfg.opc_shift = atoi(argv[1]);
+	else if (argc == 1)
+		inst->cfg.opc_shift = 0;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cs7_sls_shift, cs7_sls_shift_cmd,
+	   "sls-shift <0-6>",
+	   "Shift SLS bits used during routing decision\n"
+	   "How many bits from derivated 7-bit extended-SLS (OPC, DPC, SLS) field (starting from least-significant-bit) to skip\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct osmo_ss7_instance *inst = vty->index;
+	inst->cfg.sls_shift = atoi(argv[0]);
+
+	return CMD_SUCCESS;
+}
+
 static void write_one_cs7(struct vty *vty, struct osmo_ss7_instance *inst, bool show_dyn_config);
 
 static int write_all_cs7(struct vty *vty, bool show_dyn_config)
@@ -584,7 +619,7 @@ DEFUN(show_cs7_route_lookup, show_cs7_route_lookup_cmd,
 	bool list_asps = argc > 4;
 	struct osmo_ss7_instance *inst;
 	struct osmo_ss7_route *rt;
-	uint32_t dpc;
+	struct osmo_ss7_route_label rtlabel = {};
 	int pc;
 
 	inst = osmo_ss7_instance_find(id);
@@ -598,18 +633,22 @@ DEFUN(show_cs7_route_lookup, show_cs7_route_lookup_cmd,
 		vty_out(vty, "Invalid point code (%s)%s", argv[1], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
-	dpc = pc;
+	rtlabel.dpc = pc;
 
 	pc = osmo_ss7_pointcode_parse(inst, argv[2]);
 	if (pc < 0 || !osmo_ss7_pc_is_valid((uint32_t)pc)) {
 		vty_out(vty, "Invalid point code (%s)%s", argv[2], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
+	rtlabel.opc = pc;
 
-	rt = osmo_ss7_route_lookup(inst, dpc);
+	rtlabel.sls = atoi(argv[3]);
+
+	rt = ss7_instance_lookup_route(inst, &rtlabel);
 	if (!rt) {
-		vty_out(vty, "No route found for DPC %s%s",
-			osmo_ss7_pointcode_print(inst, dpc), VTY_NEWLINE);
+		char buf[256];
+		vty_out(vty, "No route found for label '%s'%s",
+			ss7_route_label_to_str(buf, sizeof(buf), inst, &rtlabel), VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -2971,6 +3010,13 @@ static void write_one_cs7(struct vty *vty, struct osmo_ss7_instance *inst, bool 
 	if (inst->cfg.permit_dyn_rkm_alloc)
 		vty_out(vty, " xua rkm routing-key-allocation dynamic-permitted%s", VTY_NEWLINE);
 
+	if (inst->cfg.opc_shift != 0 || inst->cfg.dpc_shift != 0)
+		vty_out(vty, " sls-opc-dpc opc-shift %u dpc-shift %u%s",
+			inst->cfg.opc_shift, inst->cfg.dpc_shift, VTY_NEWLINE);
+
+	if (inst->cfg.sls_shift != 0)
+		vty_out(vty, " sls-shift %u%s", inst->cfg.sls_shift, VTY_NEWLINE);
+
 	/* first dump ASPs, as ASs reference them */
 	llist_for_each_entry(asp, &inst->asp_list, list)
 		write_one_asp(vty, asp, show_dyn_config);
@@ -3133,6 +3179,8 @@ static void vty_init_shared(void *ctx)
 	install_lib_element(L_CS7_NODE, &cs7_pc_format_def_cmd);
 	install_lib_element(L_CS7_NODE, &cs7_pc_delimiter_cmd);
 	install_lib_element(L_CS7_NODE, &cs7_permit_dyn_rkm_cmd);
+	install_lib_element(L_CS7_NODE, &cs7_opc_dpc_shift_cmd);
+	install_lib_element(L_CS7_NODE, &cs7_sls_shift_cmd);
 
 	install_node(&asp_node, NULL);
 	install_lib_element_ve(&show_cs7_asp_cmd);

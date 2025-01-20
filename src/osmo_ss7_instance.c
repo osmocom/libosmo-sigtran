@@ -202,6 +202,15 @@ uint32_t ss7_find_free_l_rk_id(struct osmo_ss7_instance *inst)
 	return -1;
 }
 
+/*! \brief Find a SS7 route for given destination point code in given SS7 */
+struct osmo_ss7_route *
+ss7_instance_lookup_route(struct osmo_ss7_instance *inst, const struct osmo_ss7_route_label *rtlabel)
+{
+	OSMO_ASSERT(ss7_initialized);
+	return ss7_route_table_lookup_route(inst->rtable_system, rtlabel);
+}
+
+
 /***********************************************************************
  * SS7 Application Server
  ***********************************************************************/

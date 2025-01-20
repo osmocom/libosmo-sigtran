@@ -335,12 +335,21 @@ out:
 	return buf;
 }
 
-/*! \brief Find a SS7 route for given destination point code in given SS7 */
+/*! \brief Find a SS7 route for given destination point code in given SS7
+ *
+ *   NOTE: DEPRECATED, use ss7_instance_lookup_route() instead
+ */
 struct osmo_ss7_route *
 osmo_ss7_route_lookup(struct osmo_ss7_instance *inst, uint32_t dpc)
 {
 	OSMO_ASSERT(ss7_initialized);
-	return ss7_route_table_find_route_by_dpc(inst->rtable_system, dpc);
+	struct osmo_ss7_route_label rtlb = {
+		.opc = 0,
+		.dpc = dpc,
+		.sls = 0,
+	};
+
+	return ss7_instance_lookup_route(inst, &rtlb);
 }
 
 /*! \brief Get destination AS of route
@@ -352,7 +361,6 @@ osmo_ss7_route_get_dest_as(struct osmo_ss7_route *rt)
 {
 	return rt->dest.as;
 }
-
 
 /* Whether route is available, ITU Q.704 */
 bool ss7_route_is_available(const struct osmo_ss7_route *rt)

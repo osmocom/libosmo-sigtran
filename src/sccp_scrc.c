@@ -37,6 +37,7 @@
 #include "ss7_instance.h"
 #include "ss7_linkset.h"
 #include "ss7_route.h"
+#include "ss7_route_table.h"
 #include "xua_internal.h"
 
 
@@ -120,6 +121,7 @@ static int gen_mtp_transfer_req_xua(struct osmo_sccp_instance *inst,
 				    const struct osmo_sccp_addr *called)
 {
 	struct osmo_ss7_route *rt;
+	struct osmo_ss7_route_label rtlabel;
 
 	/* this is a bit fishy due to the different requirements of
 	 * classic SSCP/MTP compared to various SIGTRAN stackings.
@@ -144,7 +146,13 @@ static int gen_mtp_transfer_req_xua(struct osmo_sccp_instance *inst,
 		return -1;
 	}
 
-	rt = osmo_ss7_route_lookup(inst->ss7, xua->mtp.dpc);
+	rtlabel = (struct osmo_ss7_route_label){
+		.opc = xua->mtp.opc,
+		.dpc = xua->mtp.dpc,
+		.sls = xua->mtp.sls,
+	};
+
+	rt = ss7_instance_lookup_route(inst->ss7, &rtlabel);
 	if (!rt) {
 		LOGP(DLSCCP, LOGL_ERROR, "MTP-TRANSFER.req from SCCP for "
 			"DPC %u: no route!\n", xua->mtp.dpc);

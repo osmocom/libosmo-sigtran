@@ -153,11 +153,16 @@ static int hmrt_message_for_routing(struct osmo_ss7_instance *inst,
 				    struct xua_msg *xua)
 {
 	uint32_t dpc = xua->mtp.dpc;
+	struct osmo_ss7_route_label rtlabel = {
+		.opc = xua->mtp.opc,
+		.dpc = xua->mtp.dpc,
+		.sls = xua->mtp.sls,
+	};
 	struct osmo_ss7_route *rt;
 
-	/* find route for DPC */
+	/* find route for OPC+DPC+SLS: */
 	/* FIXME: unify with gen_mtp_transfer_req_xua() */
-	rt = osmo_ss7_route_lookup(inst, dpc);
+	rt = ss7_instance_lookup_route(inst, &rtlabel);
 	if (rt) {
 		/* FIXME: DPC SP restart? */
 		/* FIXME: DPC Congested? */

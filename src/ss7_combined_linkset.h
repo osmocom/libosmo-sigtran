@@ -10,6 +10,17 @@
 
 struct osmo_ss7_instance;
 struct osmo_ss7_link;
+struct osmo_ss7_route_label;
+
+#define NUM_EXT_SLS 128
+typedef uint8_t ext_sls_t; /* range: 0-127, 7 bit */
+
+struct osmo_ss7_esls_entry {
+	/* ITU Q.704 4.2.1: "normal link set (combined link set)" */
+	struct osmo_ss7_route *normal_rt;
+	/* ITU Q.704 4.2.1: "alternative link set (combined link set)" */
+	struct osmo_ss7_route *alt_rt;
+};
 
 struct osmo_ss7_combined_linkset {
 	/*! member in \ref osmo_ss7_route_table.combined_linksets */
@@ -17,6 +28,7 @@ struct osmo_ss7_combined_linkset {
 
 	/*! \ref osmo_ss7_route_table to which we belong */
 	struct osmo_ss7_route_table *rtable;
+	struct osmo_ss7_esls_entry esls_table[NUM_EXT_SLS];
 
 	/*! list of \ref osmo_ss7_route */
 	struct llist_head routes;
@@ -41,3 +53,5 @@ void
 ss7_combined_linkset_add_route(struct osmo_ss7_combined_linkset *clset, struct osmo_ss7_route *rt);
 void
 ss7_combined_linkset_del_route(struct osmo_ss7_route *rt);
+struct osmo_ss7_route *
+ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const struct osmo_ss7_route_label *rtlabel);

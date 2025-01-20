@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <unistd.h>
 #include <osmocom/core/linuxlist.h>
 
 /***********************************************************************
@@ -8,6 +9,13 @@
  ***********************************************************************/
 
 struct osmo_ss7_instance;
+
+struct osmo_ss7_route_label {
+	uint32_t opc;
+	uint32_t dpc;
+	uint8_t sls;
+};
+char *ss7_route_label_to_str(char *buf, size_t buf_len, const struct osmo_ss7_instance *inst, const struct osmo_ss7_route_label *rtlb);
 
 struct osmo_ss7_route_table {
 	/*! member in list of routing tables */
@@ -30,10 +38,10 @@ ss7_route_table_find_or_create(struct osmo_ss7_instance *inst, const char *name)
 void ss7_route_table_destroy(struct osmo_ss7_route_table *rtbl);
 
 struct osmo_ss7_route *
-ss7_route_table_find_route_by_dpc(struct osmo_ss7_route_table *rtbl, uint32_t dpc);
-struct osmo_ss7_route *
 ss7_route_table_find_route_by_dpc_mask(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
 			uint32_t mask);
+struct osmo_ss7_route *
+ss7_route_table_lookup_route(struct osmo_ss7_route_table *rtbl, const struct osmo_ss7_route_label *rtlabel);
 
 struct osmo_ss7_combined_linkset *
 ss7_route_table_find_combined_linkset(struct osmo_ss7_route_table *rtbl, uint32_t dpc, uint32_t mask, uint32_t prio);

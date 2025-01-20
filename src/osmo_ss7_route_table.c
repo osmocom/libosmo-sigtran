@@ -19,6 +19,8 @@
  *
  */
 
+ #include <stdio.h>
+
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/logging.h>
 #include <osmocom/sigtran/mtp_sap.h>
@@ -28,6 +30,22 @@
 #include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"
+
+
+/***********************************************************************
+ * SS7 Route Label
+ ***********************************************************************/
+
+char *ss7_route_label_to_str(char *buf, size_t buf_len, const struct osmo_ss7_instance *inst, const struct osmo_ss7_route_label *rtlb)
+{
+	if (buf_len == 0)
+		return NULL;
+	snprintf(buf, buf_len, "OPC=%u=%s,DPC=%u=%s,SLS=%u",
+		 rtlb->opc, osmo_ss7_pointcode_print(inst, rtlb->opc),
+		 rtlb->dpc, osmo_ss7_pointcode_print2(inst, rtlb->dpc),
+		 rtlb->sls);
+	return buf;
+}
 
 /***********************************************************************
  * SS7 Route Tables
@@ -83,25 +101,10 @@ ss7_route_table_destroy(struct osmo_ss7_route_table *rtbl)
 	talloc_free(rtbl);
 }
 
-/*! \brief Find a SS7 route for given destination point code in given table */
-struct osmo_ss7_route *
-ss7_route_table_find_route_by_dpc(struct osmo_ss7_route_table *rtbl, uint32_t dpc)
-{
-	struct osmo_ss7_combined_linkset *clset;
-	struct osmo_ss7_route *rt;
-
-	OSMO_ASSERT(ss7_initialized);
-
-	dpc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, dpc);
-
-	clset = ss7_route_table_find_combined_linkset_by_dpc(rtbl, dpc);
-	if (!clset)
-		return NULL;
-	rt = llist_first_entry_or_null(&clset->routes, struct osmo_ss7_route, list);
-	return rt;
-}
-
-/*! \brief Find a SS7 route for given destination point code + mask in given table */
+/*! \brief Find a SS7 route for given destination point code + mask in given table.
+ *
+ * This function is used for route management procedures, not for packet routing lookup procedures!
+ */
 struct osmo_ss7_route *
 ss7_route_table_find_route_by_dpc_mask(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
 				uint32_t mask)
@@ -226,4 +229,28 @@ void ss7_route_table_del_routes_by_linkset(struct osmo_ss7_route_table *rtbl, st
 			}
 		}
 	}
+}
+
+struct osmo_ss7_route *
+ss7_route_table_lookup_route(struct osmo_ss7_route_table *rtbl, const struct osmo_ss7_route_label *rtlabel)
+{
+	struct osmo_ss7_combined_linkset *clset;
+	struct osmo_ss7_route *rt;
+	struct osmo_ss7_route_label rtlb = {
+		.opc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, rtlabel->opc),
+		.dpc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, rtlabel->dpc),
+		.sls = rtlabel->sls,
+	};
+	/* we assume the combined_links are sorted by mask length, i.e. more
+	 * specific combined links first, and less specific combined links with shorter
+	 * mask later */
+	llist_for_each_entry(clset, &rtbl->combined_linksets, list) {
+		if ((rtlb.dpc & clset->cfg.mask) != clset->cfg.pc)
+			continue;
+		rt = ss7_combined_linkset_lookup_route(clset, &rtlb);
+		if (!rt)
+			continue;
+		return rt;
+	}
+	return NULL;
 }

@@ -112,6 +112,8 @@ OsmoSTP(config-cs7)# list
   point-code format default
   point-code delimiter (default|dash)
   xua rkm routing-key-allocation (static-only|dynamic-permitted)
+  sls-opc-dpc [opc-shift] [<0-8>] [dpc-shift] [<0-8>]
+  sls-shift <0-6>
   asp NAME <0-65535> <0-65535> (sua|m3ua|ipa)
   asp NAME <0-65535> <0-65535> (sua|m3ua|ipa) (sctp|tcp)
   no asp NAME
@@ -132,6 +134,8 @@ OsmoSTP(config-cs7)# ?
   point-code         Configure the local Point Code
   secondary-pc       Configure the local Secondary Point Code
   xua                SIGTRAN xxxUA related
+  sls-opc-dpc        Shift OPC and DPC bits used during routing decision
+  sls-shift          Shift SLS bits used during routing decision
   asp                Configure Application Server Process
   no                 Negate a command or set its defaults
   as                 Configure an Application Server

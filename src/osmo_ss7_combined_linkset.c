@@ -126,9 +126,86 @@ void ss7_combined_linkset_add_route(struct osmo_ss7_combined_linkset *clset, str
 void ss7_combined_linkset_del_route(struct osmo_ss7_route *rt)
 {
 	struct osmo_ss7_combined_linkset *clset = rt->clset;
+
+	/* Remove route from eSLS table: */
+	for (unsigned int i = 0; i < ARRAY_SIZE(clset->esls_table); i++) {
+		if (clset->esls_table[i].normal_rt == rt)
+			clset->esls_table[i].normal_rt = NULL;
+		if (clset->esls_table[i].alt_rt == rt)
+			clset->esls_table[i].alt_rt = NULL;
+	}
+
 	llist_del(&rt->list);
 	rt->clset = NULL;
 	clset->num_routes--;
 	if (clset->num_routes == 0)
 		ss7_combined_linkset_free(clset);
+}
+
+static ext_sls_t osmo_ss7_instance_calc_itu_ext_sls(const struct osmo_ss7_instance *inst, const struct osmo_ss7_route_label *rtlabel)
+{
+	/* Take 6 bits from OPC and DPC according to config: */
+	uint8_t opc6 = (uint8_t)((rtlabel->opc >> inst->cfg.opc_shift) & 0x3f);
+	uint8_t dpc6 = (uint8_t)((rtlabel->dpc >> inst->cfg.dpc_shift) & 0x3f);
+
+	/* Derivate 3-bit value from OPC and DPC: */
+	uint8_t opc3 = ((opc6 >> 3) ^ (opc6 & 0x07)) & 0x07;
+	uint8_t dpc3 = ((dpc6 >> 3) ^ (dpc6 & 0x07)) & 0x07;
+	uint8_t opc_dpc3 = (opc3 ^ dpc3) & 0x07;
+
+	/* Generate 7 bit extended-SLS: 3-bit OPC-DPC + 4 bit SLS: */
+	uint8_t ext_sls = (opc_dpc3 << 4) | ((rtlabel->sls) & 0x0f);
+	OSMO_ASSERT(ext_sls < NUM_EXT_SLS);
+
+	/* Pick extended-SLS bits according to config: */
+	ext_sls = ext_sls >> inst->cfg.sls_shift;
+	return ext_sls;
+}
+
+/* ITU Q.704 4.2.1: "current link set (combined link set)". Pick available already selected route */
+struct osmo_ss7_route *current_rt(const struct osmo_ss7_esls_entry *eslse)
+{
+	if (eslse->normal_rt && ss7_route_is_available(eslse->normal_rt))
+		return eslse->normal_rt;
+	if (eslse->alt_rt && ss7_route_is_available(eslse->alt_rt))
+		return eslse->alt_rt;
+	return NULL;
+}
+
+struct osmo_ss7_route *
+ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const struct osmo_ss7_route_label *rtlabel)
+{
+	struct osmo_ss7_route *rt;
+	ext_sls_t esls = osmo_ss7_instance_calc_itu_ext_sls(clset->rtable->inst, rtlabel);
+	struct osmo_ss7_esls_entry *eslse = &clset->esls_table[esls];
+
+	/* First check if we have a cached route for this ESLS */
+	rt = current_rt(eslse);
+	if (rt) {
+		if (rt == eslse->normal_rt) {
+			/* We can transmit over normal route.
+			 * Clean up alternative route since it's not needed anymore */
+			eslse->alt_rt = NULL;
+			return rt;
+		}
+		/* We can transmit over alternative route: */
+		return rt;
+	}
+
+	/* TODO: Check if the AS/linkset in rt is actually UP and can be
+	* used, otherwise start ITU Q.704 section 7 "forced rerouting" prcoedure:
+	* we need to pick a temporary dst (update the esls_table entry) while the
+	* original one is DOWN. */
+
+	/* We need to pick a new AS/linkset from the combined linkset and cache
+	 * it so it is always used for this eSLS: */
+	/* FIXME: for now we simply take the first AS in the combined linksed, to be improved later... */
+	rt = llist_first_entry_or_null(&clset->routes, struct osmo_ss7_route, list);
+
+	/* TODO: here we'd need to actually check if dst AS/linkset in the route
+	 * is actually UP, otherwise pick next one in the roundrobin list... */
+	if (rt)
+		clset->esls_table[esls].normal_rt = rt;
+
+	return rt;
 }

@@ -34,6 +34,7 @@
 #include "ss7_as.h"
 #include "ss7_asp.h"
 #include "ss7_internal.h"
+#include "ss7_route_table.h"
 #include "xua_internal.h"
 #include "sccp_internal.h"
 
@@ -340,8 +341,14 @@ void xua_snm_rx_daud(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		if (mask == 0) {
 			/* one single point code */
 
+			struct osmo_ss7_route_label rtlabel = {
+				.opc = xua->mtp.opc, /* Use OPC of received DAUD. FIXME: is this correct? */
+				.dpc = pc,
+				.sls = 0,
+			};
+
 			/* FIXME: don't just check for a route; but also check if the route is "active" */
-			if (osmo_ss7_route_lookup(s7i, pc))
+			if (ss7_instance_lookup_route(s7i, &rtlabel))
 				is_available = true;
 
 			xua_tx_snm_available(asp, rctx, num_rctx, &aff_pc[i], 1, "Response to DAUD",

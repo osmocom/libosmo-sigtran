@@ -125,7 +125,8 @@ struct osmo_ss7_linkset;
 struct osmo_ss7_route;
 
 struct osmo_ss7_route *
-osmo_ss7_route_lookup(struct osmo_ss7_instance *inst, uint32_t dpc);
+osmo_ss7_route_lookup(struct osmo_ss7_instance *inst, uint32_t dpc)
+	OSMO_DEPRECATED("Use internal ss7_instance_lookup_route() instead");
 const char *osmo_ss7_route_print(const struct osmo_ss7_route *rt);
 const char *osmo_ss7_route_name(struct osmo_ss7_route *rt, bool list_asps);
 struct osmo_ss7_as *

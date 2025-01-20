@@ -393,7 +393,7 @@ static int handle_rkey_dereg(struct osmo_ss7_asp *asp, uint32_t rctx,
 		return -1;
 	}
 
-	rt = ss7_route_table_find_route_by_dpc(inst->rtable_system, as->cfg.routing_key.pc);
+	rt = ss7_route_table_find_route_by_dpc_mask(inst->rtable_system, as->cfg.routing_key.pc, 0xffffff);
 	if (!rt) {
 		msgb_append_dereg_res(resp, M3UA_RKM_DEREG_ERR_UNKNOWN, 0);
 		return -1;

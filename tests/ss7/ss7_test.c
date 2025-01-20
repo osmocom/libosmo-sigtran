@@ -147,11 +147,15 @@ static void test_user(void)
 	osmo_ss7_user_destroy(user2);
 }
 
+#define RT_LABEL(opc_val, dpc_val, sls_val) \
+	(struct osmo_ss7_route_label){ .opc = (opc_val), .dpc = (dpc_val), .sls = (sls_val) }
+
 static void test_route(void)
 {
 	struct osmo_ss7_route_table *rtbl;
 	struct osmo_ss7_linkset *lset_a, *lset_b;
 	struct osmo_ss7_route *rt, *rt12, *rtdef;
+	struct osmo_ss7_route_label route_label;
 
 	printf("Testing SS7 routing\n");
 
@@ -173,32 +177,45 @@ static void test_route(void)
 	OSMO_ASSERT(lset_b);
 
 	/* route with full mask */
-	OSMO_ASSERT(ss7_route_table_find_route_by_dpc(rtbl, 12) == NULL);
+	route_label = RT_LABEL(0, 12, 0);
+	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == NULL);
 	rt = ss7_route_create(rtbl, 12, 0xffff, "a");
 	printf("route with full mask: %s\n", osmo_ss7_route_print(rt));
 	OSMO_ASSERT(rt);
-	OSMO_ASSERT(ss7_route_table_find_route_by_dpc(rtbl, 12) == rt);
+	route_label = RT_LABEL(0, 12, 0);
+	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == rt);
 	ss7_route_destroy(rt);
 
 	/* route with partial mask */
 	rt = ss7_route_create(rtbl, 8, 0xfff8, "a");
 	printf("route with partial mask: %s\n", osmo_ss7_route_print(rt));
-	OSMO_ASSERT(ss7_route_table_find_route_by_dpc(rtbl, 8) == rt);
-	OSMO_ASSERT(ss7_route_table_find_route_by_dpc(rtbl, 9) == rt);
-	OSMO_ASSERT(ss7_route_table_find_route_by_dpc(rtbl, 12) == rt);
-	OSMO_ASSERT(ss7_route_table_find_route_by_dpc(rtbl, 15) == rt);
-	OSMO_ASSERT(ss7_route_table_find_route_by_dpc(rtbl, 16) == NULL);
+	route_label = RT_LABEL(0, 8, 0);
+	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == rt);
+	route_label = RT_LABEL(0, 9, 0);
+	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == rt);
+	route_label = RT_LABEL(0, 12, 0);
+	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == rt);
+	route_label = RT_LABEL(0, 15, 0);
+	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == rt);
+	route_label = RT_LABEL(0, 16, 0);
+	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == NULL);
 	/* insert more specific route for 12, must have higher priority
 	 * than existing one */
 	rt12 = ss7_route_create(rtbl, 12, 0xffff, "b");
-	OSMO_ASSERT(ss7_route_table_find_route_by_dpc(rtbl, 12) == rt12);
-	OSMO_ASSERT(ss7_route_table_find_route_by_dpc(rtbl, 15) == rt);
-	OSMO_ASSERT(ss7_route_table_find_route_by_dpc(rtbl, 16) == NULL);
+	route_label = RT_LABEL(0, 12, 0);
+	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == rt12);
+	route_label = RT_LABEL(0, 15, 0);
+	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == rt);
+	route_label = RT_LABEL(0, 16, 0);
+	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == NULL);
 	/* add a default route, which should have lowest precedence */
 	rtdef = ss7_route_create(rtbl, 0, 0, "a");
-	OSMO_ASSERT(ss7_route_table_find_route_by_dpc(rtbl, 12) == rt12);
-	OSMO_ASSERT(ss7_route_table_find_route_by_dpc(rtbl, 15) == rt);
-	OSMO_ASSERT(ss7_route_table_find_route_by_dpc(rtbl, 16) == rtdef);
+	route_label = RT_LABEL(0, 12, 0);
+	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == rt12);
+	route_label = RT_LABEL(0, 15, 0);
+	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == rt);
+	route_label = RT_LABEL(0, 16, 0);
+	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == rtdef);
 
 	ss7_route_destroy(rtdef);
 	ss7_route_destroy(rt12);

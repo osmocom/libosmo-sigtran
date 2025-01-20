@@ -10,6 +10,7 @@
 
 struct osmo_ss7_user;
 struct osmo_ss7_route_table;
+struct osmo_ss7_route_label;
 struct osmo_sccp_instance;
 
 struct osmo_ss7_pc_fmt {
@@ -49,6 +50,15 @@ struct osmo_ss7_instance {
 		bool permit_dyn_rkm_alloc;
 		struct llist_head sccp_address_book;
 		uint32_t secondary_pc;
+		/* How many bits from ITU OPC/DPC field (starting from least-significant-bit)
+		 * to skip for routing decisions (always takes 6 bits).
+		 * range 0-8, defaults to 0, which means take least significant 6 bits. */
+		uint8_t opc_shift;
+		uint8_t dpc_shift;
+		/* How many bits from ITU SLS field (starting from least-significant-bit)
+		 * to skip for routing decisions.
+		 * range 0-3, defaults to 0, which means take all 4 bits. */
+		uint8_t sls_shift;
 	} cfg;
 };
 
@@ -56,6 +66,8 @@ struct osmo_ss7_instance *
 ss7_instance_alloc(void *ctx, uint32_t id);
 
 uint32_t ss7_find_free_l_rk_id(struct osmo_ss7_instance *inst);
+struct osmo_ss7_route *
+ss7_instance_lookup_route(struct osmo_ss7_instance *inst, const struct osmo_ss7_route_label *rtlabel);
 
 #define _LOGSS7(inst, subsys, level, fmt, args ...) \
 	LOGP(subsys, level, "%u: " fmt, inst ? (inst)->cfg.id : 0, ## args)
