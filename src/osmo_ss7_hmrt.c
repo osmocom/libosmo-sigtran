@@ -246,13 +246,12 @@ static int hmrt_message_for_routing(struct osmo_ss7_instance *inst,
 			case OSMO_SS7_ASP_PROT_M3UA:
 				DEBUGP(DLSS7, "rt->dest.as proto is M3UA for dpc=%u=%s\n",
 				       dpc, osmo_ss7_pointcode_print(inst, dpc));
-				return m3ua_tx_xua_as(as,xua);
+				return m3ua_tx_xua_as(as, xua);
 			case OSMO_SS7_ASP_PROT_IPA:
 				return ipa_tx_xua_as(as, xua);
 			default:
-				LOGP(DLSS7, LOGL_ERROR, "MTP message "
-					"for ASP of unknown protocol %u\n",
-					as->cfg.proto);
+				LOGP(DLSS7, LOGL_ERROR, "MTP message for ASP of unknown protocol %u\n",
+				     as->cfg.proto);
 				break;
 			}
 		} else if (rt->dest.linkset) {
@@ -262,15 +261,13 @@ static int hmrt_message_for_routing(struct osmo_ss7_instance *inst,
 				 * overwritten. */
 				const char *rt_name = osmo_ss7_route_name(rt, false);
 				LOGP(DLSS7, LOGL_ERROR,
-				     "Found route for dpc=%u=%s: %s,"
-				     " but MTP-TRANSFER.req unsupported for linkset.\n",
+				     "Found route for dpc=%u=%s: %s, but MTP-TRANSFER.req unsupported for linkset.\n",
 				     dpc, osmo_ss7_pointcode_print(inst, dpc), rt_name);
 			}
 		} else
 			OSMO_ASSERT(0);
 	} else {
-		LOGP(DLSS7, LOGL_ERROR, "MTP-TRANSFER.req for DPC %u: "
-			"no route!\n", dpc);
+		LOGP(DLSS7, LOGL_ERROR, "MTP-TRANSFER.req for DPC %u: no route!\n", dpc);
 		/* DPC unknown HMRT -> MGMT */
 		/* Message Received for inaccesible SP HMRT ->RTPC */
 		/* Discard Message */
