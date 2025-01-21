@@ -49,6 +49,20 @@
  * link set) or of an alternative link set (combined link set)."
  *****************************************************************************/
 
+static inline struct llist_head *_ss7_llist_round_robin(struct llist_head *list, void **state)
+{
+	struct llist_head *e = *state;
+	if (!e || e->next == list)
+		e = list;
+	e = e->next;
+	if (e == list)
+		e = NULL;
+	*state = e;
+	return e;
+}
+#define ss7_llist_round_robin(list, state, struct_type, entry_name) \
+	llist_entry(_ss7_llist_round_robin(list, state), struct_type, entry_name)
+
 /*! \brief Insert combined_link into its routing table
  *  \param[in] clset Combined link to be inserted into its routing table
  *  \returns 0 on success, negative on error
@@ -135,6 +149,14 @@ void ss7_combined_linkset_del_route(struct osmo_ss7_route *rt)
 			clset->esls_table[i].alt_rt = NULL;
 	}
 
+	/* Update round robin state */
+	if (rt == clset->last_route_roundrobin) {
+		ss7_llist_round_robin(&clset->routes, &clset->last_route_roundrobin, struct osmo_ss7_route, list);
+		/* If there's only one left, remove state: */
+		if (rt == clset->last_route_roundrobin)
+			clset->last_route_roundrobin = NULL;
+	}
+
 	llist_del(&rt->list);
 	rt->clset = NULL;
 	clset->num_routes--;
@@ -172,6 +194,27 @@ struct osmo_ss7_route *current_rt(const struct osmo_ss7_esls_entry *eslse)
 	return NULL;
 }
 
+static struct osmo_ss7_route *ss7_combined_linkset_select_route_roundrobin(struct osmo_ss7_combined_linkset *clset)
+{
+	struct osmo_ss7_route *rt;
+	struct osmo_ss7_route *rt_found = NULL;
+	unsigned int i = 0;
+
+	while (i < clset->num_routes) {
+		i++;
+		rt = ss7_llist_round_robin(&clset->routes, &clset->last_route_roundrobin, struct osmo_ss7_route, list);
+		if (ss7_route_is_available(rt)) {
+			rt_found = rt;
+			break;
+		}
+	}
+
+	if (!rt_found)
+		return NULL;
+
+	return rt_found;
+}
+
 struct osmo_ss7_route *
 ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const struct osmo_ss7_route_label *rtlabel)
 {
@@ -192,20 +235,20 @@ ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const
 		return rt;
 	}
 
-	/* TODO: Check if the AS/linkset in rt is actually UP and can be
-	* used, otherwise start ITU Q.704 section 7 "forced rerouting" prcoedure:
-	* we need to pick a temporary dst (update the esls_table entry) while the
-	* original one is DOWN. */
+	/* No current route available, try to find a new current route: */
 
-	/* We need to pick a new AS/linkset from the combined linkset and cache
-	 * it so it is always used for this eSLS: */
-	/* FIXME: for now we simply take the first AS in the combined linksed, to be improved later... */
-	rt = llist_first_entry_or_null(&clset->routes, struct osmo_ss7_route, list);
+	/* No normal route selected yet: */
+	if (!eslse->normal_rt) {
+		rt = ss7_combined_linkset_select_route_roundrobin(clset);
+		/* Either a normal route was selected or none found: */
+		eslse->normal_rt = rt;
+		return rt;
+	}
 
-	/* TODO: here we'd need to actually check if dst AS/linkset in the route
-	 * is actually UP, otherwise pick next one in the roundrobin list... */
+	/* Normal route unavailable and no alternative route (or unavailable too).
+	 * start ITU Q.704 section 7 "forced rerouting" procedure: */
+	rt = ss7_combined_linkset_select_route_roundrobin(clset);
 	if (rt)
-		clset->esls_table[esls].normal_rt = rt;
-
+		eslse->alt_rt = rt;
 	return rt;
 }

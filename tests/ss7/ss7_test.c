@@ -154,6 +154,7 @@ static void test_route(void)
 {
 	struct osmo_ss7_route_table *rtbl;
 	struct osmo_ss7_linkset *lset_a, *lset_b;
+	struct osmo_ss7_link *l_a, *l_b;
 	struct osmo_ss7_route *rt, *rt12, *rtdef;
 	struct osmo_ss7_route_label route_label;
 
@@ -173,8 +174,15 @@ static void test_route(void)
 
 	lset_a = ss7_linkset_find_or_create(s7i, "a", 100);
 	OSMO_ASSERT(lset_a);
+	l_a = ss7_link_find_or_create(lset_a, 0);
+	OSMO_ASSERT(l_a);
+	l_a->cfg.adm_state = OSMO_SS7_LS_ENABLED;
+
 	lset_b = ss7_linkset_find_or_create(s7i, "b", 200);
 	OSMO_ASSERT(lset_b);
+	l_b = ss7_link_find_or_create(lset_b, 0);
+	OSMO_ASSERT(l_b);
+	l_b->cfg.adm_state = OSMO_SS7_LS_ENABLED;
 
 	/* route with full mask */
 	route_label = RT_LABEL(0, 12, 0);

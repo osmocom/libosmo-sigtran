@@ -347,7 +347,7 @@ void xua_snm_rx_daud(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 				.sls = 0,
 			};
 
-			/* FIXME: don't just check for a route; but also check if the route is "active" */
+			/* Check if there's an "active" route available: */
 			if (ss7_instance_lookup_route(s7i, &rtlabel))
 				is_available = true;
 
