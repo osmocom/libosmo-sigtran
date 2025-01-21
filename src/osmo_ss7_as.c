@@ -33,6 +33,7 @@
 
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <osmocom/sigtran/protocol/m3ua.h>
+#include <osmocom/sigtran/mtp_sap.h>
 
 #include "ss7_as.h"
 #include "ss7_asp.h"
@@ -198,6 +199,14 @@ int osmo_ss7_as_del_asp(struct osmo_ss7_as *as, const char *asp_name)
 
 	LOGPAS(as, DLSS7, LOGL_INFO, "Removing ASP %s from AS\n", asp->cfg.name);
 
+	/* Remove route from AS-eSLS table: */
+	for (unsigned int i = 0; i < ARRAY_SIZE(as->aesls_table); i++) {
+		if (as->aesls_table[i].normal_asp == asp)
+			as->aesls_table[i].normal_asp = NULL;
+		if (as->aesls_table[i].alt_asp == asp)
+			as->aesls_table[i].alt_asp = NULL;
+	}
+
 	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
 		if (as->cfg.asps[i] == asp) {
 			as->cfg.asps[i] = NULL;
@@ -314,6 +323,106 @@ static struct osmo_ss7_asp *ss7_as_select_asp_roundrobin(struct osmo_ss7_as *as)
 	return asp;
 }
 
+static as_ext_sls_t osmo_ss7_instance_calc_itu_as_ext_sls(const struct osmo_ss7_as *as, uint32_t opc, uint8_t sls)
+{
+	uint16_t opc12;
+	uint8_t opc3;
+	as_ext_sls_t as_ext_sls;
+
+	if (as->cfg.loadshare.opc_sls) {
+		/* Take 12 bits from OPC according to config: */
+		opc12 = (uint16_t)((opc >> as->cfg.loadshare.opc_shift) & 0x3fff);
+
+		/* Derivate 3-bit value from 12-bit value: */
+		opc3 = ((opc12 >> 9) & 0x07) ^
+		       ((opc12 >> 6) & 0x07) ^
+		       ((opc12 >> 3) & 0x07) ^
+		       (opc12 & 0x07);
+		opc3 &= 0x07;
+
+		/* Generate 7 bit AS-extended-SLS: 3-bit OPC + 4 bit SLS: */
+		as_ext_sls = (opc3 << 4) | ((sls) & 0x0f);
+		OSMO_ASSERT(as_ext_sls < NUM_AS_EXT_SLS);
+	} else {
+		as_ext_sls = sls;
+	}
+
+	/* Pick extended-SLS bits according to config: */
+	as_ext_sls = as_ext_sls >> as->cfg.loadshare.sls_shift;
+	return as_ext_sls;
+}
+
+/* ITU Q.704 4.2.1: "current signalling link". Pick available already selected ASP */
+static struct osmo_ss7_asp *current_asp(const struct osmo_ss7_as *as, const struct osmo_ss7_as_esls_entry *aeslse)
+{
+	if (aeslse->normal_asp && osmo_ss7_asp_active(aeslse->normal_asp))
+		return aeslse->normal_asp;
+	if (aeslse->alt_asp && osmo_ss7_asp_active(aeslse->alt_asp))
+		return aeslse->alt_asp;
+	return NULL;
+}
+
+static struct osmo_ss7_asp *ss7_as_select_asp_loadshare(struct osmo_ss7_as *as, const struct osmo_mtp_transfer_param *mtp)
+{
+	as_ext_sls_t as_ext_sls;
+	struct osmo_ss7_asp *asp;
+
+	as_ext_sls = osmo_ss7_instance_calc_itu_as_ext_sls(as, mtp->opc, mtp->sls);
+	struct osmo_ss7_as_esls_entry *aeslse = &as->aesls_table[as_ext_sls];
+
+	/* First check if we have a cached route for this ESLS */
+	asp = current_asp(as, aeslse);
+	if (asp) {
+		if (asp == aeslse->normal_asp) {
+			/* We can transmit over normal ASP.
+			 * Clean up alternative ASP since it's not needed anymore */
+			if (aeslse->alt_asp) {
+				LOGPAS(as, DLSS7, LOGL_NOTICE, "Tx Loadshare: OPC=%u=%s,SLS=%u -> eSLS=%u: "
+				       "Normal ASP '%s' became available, drop use of Alternative ASP '%s'\n",
+				       mtp->opc, osmo_ss7_pointcode_print(as->inst, mtp->opc),
+				       mtp->sls, as_ext_sls, asp->cfg.name, aeslse->alt_asp->cfg.name);
+				aeslse->alt_asp = NULL;
+			}
+			LOGPAS(as, DLSS7, LOGL_DEBUG, "Tx Loadshare: OPC=%u=%s,SLS=%u -> eSLS=%u: use Normal ASP '%s'\n",
+			       mtp->opc, osmo_ss7_pointcode_print(as->inst, mtp->opc),
+			       mtp->sls, as_ext_sls, asp->cfg.name);
+			return asp;
+		}
+		/* We can transmit over alternative ASP: */
+		LOGPAS(as, DLSS7, LOGL_INFO, "Tx Loadshare: OPC=%u=%s,SLS=%u -> eSLS=%u: use Alternative ASP '%s'\n",
+		       mtp->opc, osmo_ss7_pointcode_print(as->inst, mtp->opc),
+		       mtp->sls, as_ext_sls, asp->cfg.name);
+		return asp;
+	}
+
+	/* No current ASP available, try to find a new current ASP: */
+
+	/* No normal route selected yet: */
+	if (!aeslse->normal_asp) {
+		asp = ss7_as_select_asp_roundrobin(as);
+		/* Either a normal route was selected or none found: */
+		aeslse->normal_asp = asp;
+		if (asp)
+			LOGPAS(as, DLSS7, LOGL_DEBUG, "Tx Loadshare: OPC=%u=%s,SLS=%u -> eSLS=%u: "
+			       "picked Normal ASP '%s' round-robin style\n",
+				mtp->opc, osmo_ss7_pointcode_print(as->inst, mtp->opc),
+				mtp->sls, as_ext_sls, asp->cfg.name);
+		return asp;
+	}
+
+	/* Normal ASP unavailable and no alternative ASP (or unavailable too).
+	 * start ITU Q.704 section 7 "forced rerouting" procedure: */
+	asp = ss7_as_select_asp_roundrobin(as);
+	if (asp) {
+		aeslse->alt_asp = asp;
+		LOGPAS(as, DLSS7, LOGL_NOTICE, "Tx Loadshare: OPC=%u=%s,SLS=%u -> eSLS=%u: "
+			"Normal ASP '%s' unavailable, picked Alternative ASP '%s' round-robin style\n",
+			 mtp->opc, osmo_ss7_pointcode_print(as->inst, mtp->opc),
+			 mtp->sls, as_ext_sls, aeslse->normal_asp->cfg.name, asp->cfg.name);
+	}
+	return asp;
+}
+
 /* returns NULL if multiple ASPs would need to be selected. */
 static struct osmo_ss7_asp *ss7_as_select_asp_broadcast(struct osmo_ss7_as *as)
 {
@@ -338,7 +447,7 @@ static struct osmo_ss7_asp *ss7_as_select_asp_broadcast(struct osmo_ss7_as *as)
  *  This function returns NULL too if multiple ASPs would be selected, ie. AS is
  *  configured in broadcast mode and more than one ASP is configured.
  */
-struct osmo_ss7_asp *osmo_ss7_as_select_asp(struct osmo_ss7_as *as)
+struct osmo_ss7_asp *ss7_as_select_asp(struct osmo_ss7_as *as, const struct osmo_mtp_transfer_param *mtp)
 {
 	struct osmo_ss7_asp *asp = NULL;
 
@@ -347,9 +456,46 @@ struct osmo_ss7_asp *osmo_ss7_as_select_asp(struct osmo_ss7_as *as)
 		asp = ss7_as_select_asp_override(as);
 		break;
 	case OSMO_SS7_AS_TMOD_LOADSHARE:
-		/* TODO: actually use the SLS value to ensure same SLS goes
-		 * through same ASP. Not strictly required by M3UA RFC, but
-		 * would fit the overall principle. */
+		asp = ss7_as_select_asp_loadshare(as, mtp);
+		break;
+	case OSMO_SS7_AS_TMOD_ROUNDROBIN:
+		asp = ss7_as_select_asp_roundrobin(as);
+		break;
+	case OSMO_SS7_AS_TMOD_BCAST:
+		return ss7_as_select_asp_broadcast(as);
+	case _NUM_OSMO_SS7_ASP_TMOD:
+		OSMO_ASSERT(false);
+	}
+
+	if (!asp) {
+		LOGPFSM(as->fi, "No selectable ASP in AS\n");
+		return NULL;
+	}
+	return asp;
+}
+/*! Select an AS to transmit a message, according to AS configuration and ASP availability.
+ *  \param[in] as Application Server.
+ *  \returns asp to send the message to, NULL if no possible asp found
+ *
+ *  This function returns NULL too if multiple ASPs would be selected, ie. AS is
+ *  configured in broadcast mode and more than one ASP is configured.
+ */
+struct osmo_ss7_asp *osmo_ss7_as_select_asp(struct osmo_ss7_as *as)
+{
+	struct osmo_ss7_asp *asp = NULL;
+	struct osmo_mtp_transfer_param mtp;
+
+	switch (as->cfg.mode) {
+	case OSMO_SS7_AS_TMOD_OVERRIDE:
+		asp = ss7_as_select_asp_override(as);
+		break;
+	case OSMO_SS7_AS_TMOD_LOADSHARE:
+		/* We don't have OPC and SLS information in this API (which is
+		actually only used to route IPA msgs nowadays by osmo-bsc, so we
+		don't care. Use hardcoded value to provide some fallback for this scenario: */
+		mtp = (struct osmo_mtp_transfer_param){0};
+		asp = ss7_as_select_asp_loadshare(as, &mtp);
+		break;
 	case OSMO_SS7_AS_TMOD_ROUNDROBIN:
 		asp = ss7_as_select_asp_roundrobin(as);
 		break;

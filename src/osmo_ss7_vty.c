@@ -2033,10 +2033,9 @@ DEFUN_ATTR(as_no_asp, as_no_asp_cmd,
 
 DEFUN_USRATTR(as_traf_mode, as_traf_mode_cmd,
 	      OSMO_SCCP_LIB_ATTR_RSTRT_ASP,
-	      "traffic-mode (broadcast | loadshare | roundrobin | override)",
+	      "traffic-mode (broadcast | roundrobin | override)",
 	      "Specifies traffic mode of operation of the ASP within the AS\n"
 	      "Broadcast to all ASP within AS\n"
-	      "Share Load among all ASP within AS\n"
 	      "Round-Robin between all ASP within AS\n"
 	      "Override\n")
 {
@@ -2044,6 +2043,36 @@ DEFUN_USRATTR(as_traf_mode, as_traf_mode_cmd,
 
 	as->cfg.mode = get_string_value(osmo_ss7_as_traffic_mode_vals, argv[0]);
 	as->cfg.mode_set_by_vty = true;
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(as_traf_mode_loadshare, as_traf_mode_loadshare_cmd,
+	      OSMO_SCCP_LIB_ATTR_RSTRT_ASP,
+	      "traffic-mode loadshare [bindings] [sls] [opc-sls] [opc-shift] [<0-2>]",
+	      "Specifies traffic mode of operation of the ASP within the AS\n"
+	      "Share Load among all ASP within AS\n"
+	      "Configure Loadshare parameters\n"
+	      "Configure Loadshare SLS generation parameters\n"
+	      "Generate extended SLS with OPC information\n"
+	      "Shift OPC bits used during routing decision\n"
+	      "How many bits from ITU OPC field (starting from least-significant-bit) to skip (default=0). 6 bits are always used\n"
+	      )
+{
+	struct osmo_ss7_as *as = vty->index;
+
+	as->cfg.mode = OSMO_SS7_AS_TMOD_LOADSHARE;
+	as->cfg.mode_set_by_vty = true;
+	if (argc < 3) {
+		as->cfg.loadshare.opc_sls = false;
+		as->cfg.loadshare.opc_shift = 0;
+		return CMD_SUCCESS;
+	}
+	as->cfg.loadshare.opc_sls = true;
+	if (argc < 5) {
+		as->cfg.loadshare.opc_shift = 0;
+		return CMD_SUCCESS;
+	}
+	as->cfg.loadshare.opc_shift = atoi(argv[4]);
 	return CMD_SUCCESS;
 }
 
@@ -2056,6 +2085,22 @@ DEFUN_USRATTR(as_no_traf_mode, as_no_traf_mode_cmd,
 
 	as->cfg.mode = 0;
 	as->cfg.mode_set_by_vty = false;
+
+	as->cfg.loadshare.sls_shift = 0;
+	as->cfg.loadshare.opc_sls = false;
+	as->cfg.loadshare.opc_shift = 0;
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(as_sls_shift, as_sls_shift_cmd,
+	   "sls-shift <0-3>",
+	   "Shift SLS bits used during routing decision\n"
+	   "How many bits from SLS field (starting from least-significant-bit) to skip\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct osmo_ss7_as *as = vty->index;
+	as->cfg.loadshare.sls_shift = atoi(argv[0]);
+
 	return CMD_SUCCESS;
 }
 
@@ -2274,9 +2319,21 @@ static void write_one_as(struct vty *vty, struct osmo_ss7_as *as, bool show_dyn_
 			continue;
 		vty_out(vty, "  asp %s%s", asp->cfg.name, VTY_NEWLINE);
 	}
-	if (as->cfg.mode_set_by_vty)
-		vty_out(vty, "  traffic-mode %s%s",
-			osmo_ss7_as_traffic_mode_name(as->cfg.mode), VTY_NEWLINE);
+	if (as->cfg.mode_set_by_vty) {
+		vty_out(vty, "  traffic-mode %s%s", osmo_ss7_as_traffic_mode_name(as->cfg.mode), VTY_NEWLINE);
+		if (as->cfg.mode == OSMO_SS7_AS_TMOD_LOADSHARE) {
+			if (as->cfg.loadshare.opc_sls) {
+				vty_out(vty, " bindings sls opc-sls");
+				if (as->cfg.loadshare.opc_shift != 0)
+					vty_out(vty, " opc-shift %u", as->cfg.loadshare.opc_shift);
+			}
+			vty_out(vty, "%s", VTY_NEWLINE);
+		}
+
+		if (as->cfg.loadshare.sls_shift != 0)
+			vty_out(vty, "  sls-shift %u%s", as->cfg.loadshare.sls_shift, VTY_NEWLINE);
+	}
+
 	if (as->cfg.recovery_timeout_msec != 2000) {
 		vty_out(vty, "  recovery-timeout %u%s",
 			as->cfg.recovery_timeout_msec, VTY_NEWLINE);
@@ -3218,7 +3275,9 @@ static void vty_init_shared(void *ctx)
 	install_lib_element(L_CS7_AS_NODE, &as_asp_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_no_asp_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_traf_mode_cmd);
+	install_lib_element(L_CS7_AS_NODE, &as_traf_mode_loadshare_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_no_traf_mode_cmd);
+	install_lib_element(L_CS7_AS_NODE, &as_sls_shift_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_recov_tout_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_qos_class_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_rout_key_cmd);

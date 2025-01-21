@@ -351,8 +351,10 @@ OsmoSTP(config-cs7-as)# list
   description .TEXT
   asp NAME
   no asp NAME
-  traffic-mode (broadcast | loadshare | roundrobin | override)
+  traffic-mode (broadcast | roundrobin | override)
+  traffic-mode loadshare [bindings] [sls] [opc-sls] [opc-shift] [<0-2>]
   no traffic-mode
+  sls-shift <0-3>
   recovery-timeout <1-2000>
   qos-class <0-7>
   routing-key RCONTEXT DPC
@@ -368,6 +370,7 @@ OsmoSTP(config-cs7-as)# ?
   asp               Specify that a given ASP is part of this AS
   no                Negate a command or set its defaults
   traffic-mode      Specifies traffic mode of operation of the ASP within the AS
+  sls-shift         Shift SLS bits used during routing decision
   recovery-timeout  Specifies the recovery timeout value in milliseconds
   qos-class         Specity QoS Class of AS
   routing-key       Define a routing key
