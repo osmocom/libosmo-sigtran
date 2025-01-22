@@ -317,8 +317,10 @@ int sua_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
 		xua_msg_add_u32(xua, SUA_IEI_ROUTE_CTX, as->cfg.routing_key.context);
 
 	msg = sua_to_msg(xua);
-	if (!msg)
+	if (!msg) {
+		LOGPAS(as, DLSUA, LOGL_ERROR, "Error encoding SUA Msg\n");
 		return -1;
+	}
 
 	/* send the msg to the AS for transmission.  The AS FSM might
 	 * (depending on its state) enqueue it before transmission */

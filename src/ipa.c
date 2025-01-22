@@ -52,12 +52,7 @@
 #include "ss7_internal.h"
 #include "xua_asp_fsm.h"
 
-
-/*! \brief Send a given xUA message via a given IPA "Application Server"
- *  \param[in] as Application Server through which to send \a xua
- *  \param[in] xua xUA message to be sent
- *  \return 0 on success; negative on error */
-int ipa_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
+static struct msgb *ipa_to_msg(struct xua_msg *xua)
 {
 	struct xua_msg_part *data_ie;
 	struct m3ua_data_hdr *data_hdr;
@@ -66,18 +61,16 @@ int ipa_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
 	const uint8_t *src;
 	uint8_t *dst;
 
-	OSMO_ASSERT(as->cfg.proto == OSMO_SS7_ASP_PROT_IPA);
-
 	/* we're actually only interested in the data part */
 	data_ie = xua_msg_find_tag(xua, M3UA_IEI_PROT_DATA);
 	if (!data_ie || data_ie->len < sizeof(struct m3ua_data_hdr))
-		return -1;
+		return NULL;
 	data_hdr = (struct m3ua_data_hdr *) data_ie->dat;
 
 	if (data_hdr->si != MTP_SI_SCCP) {
-		LOGPAS(as, DLSS7, LOGL_ERROR, "Cannot transmit non-SCCP SI (%u) to IPA peer\n",
-			data_hdr->si);
-		return -1;
+		LOGP(DLSS7, LOGL_ERROR, "Cannot transmit non-SCCP SI (%u) to IPA peer\n",
+		     data_hdr->si);
+		return NULL;
 	}
 
 	/* and even the data part still has the header prepended */
@@ -87,7 +80,7 @@ int ipa_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
 	/* sufficient headroom for osmo_ipa_msg_push_header() */
 	msg = ipa_msg_alloc(16);
 	if (!msg)
-		return -1;
+		return NULL;
 
 	dst = msgb_put(msg, src_len);
 	memcpy(dst, src, src_len);
@@ -95,6 +88,23 @@ int ipa_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
 	/* TODO: if we ever need something beyond SCCP, we can use the
 	 * M3UA SIO to determine the protocol */
 	osmo_ipa_msg_push_header(msg, IPAC_PROTO_SCCP);
+	return msg;
+}
+
+/*! \brief Send a given xUA message via a given IPA "Application Server"
+ *  \param[in] as Application Server through which to send \a xua
+ *  \param[in] xua xUA message to be sent
+ *  \return 0 on success; negative on error */
+int ipa_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
+{
+	struct msgb *msg;
+	OSMO_ASSERT(as->cfg.proto == OSMO_SS7_ASP_PROT_IPA);
+
+	msg = ipa_to_msg(xua);
+	if (!msg) {
+		LOGPAS(as, DLSS7, LOGL_ERROR, "Error encoding IPA Msg\n");
+		return -1;
+	}
 
 	return xua_as_transmit_msg(as, msg);
 }
