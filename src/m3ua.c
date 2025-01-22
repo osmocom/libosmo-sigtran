@@ -486,7 +486,7 @@ int m3ua_decode_notify(struct osmo_xlm_prim_notify *npar, void *ctx,
  ***********************************************************************/
 
 /* Convert M3UA from xua_msg to msgb and set PPID/stream */
-static struct msgb *m3ua_to_msg(struct xua_msg *xua)
+struct msgb *m3ua_to_msg(struct xua_msg *xua)
 {
 	struct msgb *msg = xua_to_msg(M3UA_VERSION, xua);
 
@@ -533,7 +533,6 @@ static int m3ua_tx_xua_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
  */
 int m3ua_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
 {
-	struct msgb *msg;
 	int rc;
 
 	OSMO_ASSERT(as->cfg.proto == OSMO_SS7_ASP_PROT_M3UA);
@@ -542,18 +541,11 @@ int m3ua_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
 	if (as->cfg.routing_key.context)
 		xua_msg_add_u32(xua, M3UA_IEI_ROUTE_CTX, as->cfg.routing_key.context);
 
-	msg = m3ua_to_msg(xua);
-	xua_msg_free(xua);
-	if (!msg) {
-		LOGPAS(as, DLM3UA, LOGL_ERROR, "Error encoding M3UA Msg\n");
-		return -1;
-	}
-
 	/* send the msg to the AS for transmission.  The AS FSM might
 	 * (depending on its state) enqueue it before transmission */
-	rc = osmo_fsm_inst_dispatch(as->fi, XUA_AS_E_TRANSFER_REQ, msg);
+	rc = osmo_fsm_inst_dispatch(as->fi, XUA_AS_E_TRANSFER_REQ, xua);
 	if (rc < 0)
-		msgb_free(msg);
+		xua_msg_free(xua);
 	return rc;
 }
 

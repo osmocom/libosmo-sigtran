@@ -24,7 +24,7 @@ enum xua_as_event {
 	XUA_ASPAS_ASP_DOWN_IND,
 	XUA_ASPAS_ASP_ACTIVE_IND,
 	XUA_AS_E_RECOVERY_EXPD,
-	XUA_AS_E_TRANSFER_REQ,
+	XUA_AS_E_TRANSFER_REQ, /* param: struct xua_msg*, ownership transferred. */
 };
 
 extern struct osmo_fsm xua_as_fsm;

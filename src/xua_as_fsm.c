@@ -121,12 +121,28 @@ static int get_local_role(struct osmo_ss7_as *as)
 	return -1;
 }
 
-int xua_as_transmit_msg_broadcast(struct osmo_ss7_as *as, struct msgb *msg)
+static struct msgb *xua_as_encode_msg(const struct osmo_ss7_as *as, struct xua_msg *xua)
+{
+	switch (as->cfg.proto) {
+	case OSMO_SS7_ASP_PROT_M3UA:
+		return m3ua_to_msg(xua);
+	case OSMO_SS7_ASP_PROT_IPA:
+		return ipa_to_msg(xua);
+	default:
+		OSMO_ASSERT(0);
+	}
+}
+
+int xua_as_transmit_msg_broadcast(struct osmo_ss7_as *as, struct xua_msg *xua)
 {
 	struct osmo_ss7_asp *asp;
 	unsigned int i;
+	struct msgb *msg;
 	struct msgb *msg_cpy;
 	bool sent = false;
+
+	msg = xua_as_encode_msg(as, xua);
+	OSMO_ASSERT(msg);
 
 	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
 		asp = as->cfg.asps[i];
@@ -138,35 +154,41 @@ int xua_as_transmit_msg_broadcast(struct osmo_ss7_as *as, struct msgb *msg)
 	}
 
 	msgb_free(msg);
+	xua_msg_free(xua);
 	return sent ? 0 : -1;
 }
 
 /* actually transmit a message through this AS */
-int xua_as_transmit_msg(struct osmo_ss7_as *as, struct msgb *msg)
+int xua_as_transmit_msg(struct osmo_ss7_as *as, struct xua_msg *xua)
 {
 	struct osmo_ss7_asp *asp = NULL;
+	struct msgb *msg;
 
 	switch (as->cfg.mode) {
 	case OSMO_SS7_AS_TMOD_OVERRIDE:
 	case OSMO_SS7_AS_TMOD_LOADSHARE:
 		/* TODO: OSMO_SS7_AS_TMOD_LOADSHARE: actually use the SLS value
-		 * to ensure same SLS goes through same ASP. Not strictly
-		 * required by M3UA RFC, but would fit the overall principle. */
+		 * in xua->mtp.sls to ensure same SLS goes through same ASP. Not
+		 * strictly required by M3UA RFC, but would fit the overall
+		 * principle. */
 	case OSMO_SS7_AS_TMOD_ROUNDROBIN:
 		asp = osmo_ss7_as_select_asp(as);
 		break;
 	case OSMO_SS7_AS_TMOD_BCAST:
-		return xua_as_transmit_msg_broadcast(as, msg);
+		return xua_as_transmit_msg_broadcast(as, xua);
 	case _NUM_OSMO_SS7_ASP_TMOD:
 		OSMO_ASSERT(false);
 	}
 
 	if (!asp) {
 		LOGPFSM(as->fi, "No ASP in AS, dropping message\n");
-		msgb_free(msg);
+		xua_msg_free(xua);
 		return -1;
 	}
 
+	msg = xua_as_encode_msg(as, xua);
+	OSMO_ASSERT(msg);
+	xua_msg_free(xua);
 	return osmo_ss7_asp_send(asp, msg);
 }
 
@@ -192,7 +214,7 @@ struct xua_as_fsm_priv {
 	struct osmo_ss7_as *as;
 	struct {
 		struct osmo_timer_list t_r;
-		struct llist_head queued_msgs;
+		struct llist_head queued_xua_msgs;
 	} recovery;
 	bool ipa_route_created;
 };
@@ -481,7 +503,7 @@ static void xua_as_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *da
 	struct xua_as_fsm_priv *xafp = (struct xua_as_fsm_priv *) fi->priv;
 	struct osmo_ss7_asp *asp;
 	struct xua_as_event_asp_inactive_ind_pars *inact_ind_pars;
-	struct msgb *msg;
+	struct xua_msg *xua;
 	struct osmo_xlm_prim_notify npar;
 
 	switch (event) {
@@ -510,8 +532,8 @@ static void xua_as_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *da
 		break;
 	case XUA_AS_E_TRANSFER_REQ:
 		/* message for transmission */
-		msg = data;
-		xua_as_transmit_msg(xafp->as, msg);
+		xua = data;
+		xua_as_transmit_msg(xafp->as, xua);
 		break;
 	}
 }
@@ -520,7 +542,7 @@ static void xua_as_fsm_pending(struct osmo_fsm_inst *fi, uint32_t event, void *d
 {
 	struct xua_as_fsm_priv *xafp = (struct xua_as_fsm_priv *) fi->priv;
 	struct xua_as_event_asp_inactive_ind_pars *inact_ind_pars;
-	struct msgb *msg;
+	struct xua_msg *xua;
 	struct osmo_xlm_prim_notify npar;
 
 	switch (event) {
@@ -529,8 +551,12 @@ static void xua_as_fsm_pending(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		osmo_timer_del(&xafp->recovery.t_r);
 		osmo_fsm_inst_state_chg(fi, XUA_AS_S_ACTIVE, 0, 0);
 		/* push out any pending queued messages */
-		while ((msg = msgb_dequeue(&xafp->recovery.queued_msgs)))
-			xua_as_transmit_msg(xafp->as, msg);
+		while (!llist_empty(&xafp->recovery.queued_xua_msgs)) {
+			struct xua_msg *xua;
+			xua = llist_first_entry(&xafp->recovery.queued_xua_msgs, struct xua_msg, entry);
+			llist_del(&xua->entry);
+			xua_as_transmit_msg(xafp->as, xua);
+		}
 		break;
 	case XUA_ASPAS_ASP_INACTIVE_IND:
 		inact_ind_pars = data;
@@ -544,8 +570,12 @@ static void xua_as_fsm_pending(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		break;
 	case XUA_AS_E_RECOVERY_EXPD:
 		LOGPFSM(fi, "T(r) expired; dropping queued messages\n");
-		while ((msg = msgb_dequeue(&xafp->recovery.queued_msgs)))
-			talloc_free(msg);
+		while (!llist_empty(&xafp->recovery.queued_xua_msgs)) {
+			struct xua_msg *xua;
+			xua = llist_first_entry(&xafp->recovery.queued_xua_msgs, struct xua_msg, entry);
+			llist_del(&xua->entry);
+			xua_msg_free(xua);
+		}
 		if (check_any_other_asp_not_down(xafp->as, NULL))
 			osmo_fsm_inst_state_chg(fi, XUA_AS_S_INACTIVE, 0, 0);
 		else
@@ -553,8 +583,8 @@ static void xua_as_fsm_pending(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		break;
 	case XUA_AS_E_TRANSFER_REQ:
 		/* enqueue the to-be-transferred message */
-		msg = data;
-		msgb_enqueue(&xafp->recovery.queued_msgs, msg);
+		xua = data;
+		llist_add_tail(&xua->entry, &xafp->recovery.queued_xua_msgs);
 		break;
 	}
 }
@@ -642,7 +672,7 @@ struct osmo_fsm_inst *xua_as_fsm_start(struct osmo_ss7_as *as, int log_level)
 	xafp->as = as;
 	xafp->recovery.t_r.cb = t_r_callback;
 	xafp->recovery.t_r.data = fi;
-	INIT_LLIST_HEAD(&xafp->recovery.queued_msgs);
+	INIT_LLIST_HEAD(&xafp->recovery.queued_xua_msgs);
 
 	fi->priv = xafp;
 

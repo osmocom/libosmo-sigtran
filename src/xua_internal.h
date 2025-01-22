@@ -33,6 +33,7 @@ void sua_tx_dupu(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int nu
 
 struct osmo_mtp_prim *m3ua_to_xfer_ind(struct xua_msg *xua);
 int m3ua_hmdc_rx_from_l2(struct osmo_ss7_instance *inst, struct xua_msg *xua);
+struct msgb *m3ua_to_msg(struct xua_msg *xua);
 int m3ua_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua);
 void m3ua_tx_snm_available(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int num_rctx,
 			   const uint32_t *aff_pc, unsigned int num_aff_pc,
@@ -114,11 +115,12 @@ extern const struct value_string m3ua_rkm_dereg_status_vals[];
 #define PC_STR	"Point Code\n"
 #define INST_STR "An instance of the SS7 stack\n"
 
-int xua_as_transmit_msg(struct osmo_ss7_as *as, struct msgb *msg);
+int xua_as_transmit_msg(struct osmo_ss7_as *as, struct xua_msg *xua);
 
 int xua_find_as_for_asp(struct osmo_ss7_as **as, const struct osmo_ss7_asp *asp,
 			const struct xua_msg_part *rctx_ie);
 
+struct msgb *ipa_to_msg(struct xua_msg *xua);
 int ipa_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua);
 int ipa_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t sls);
 struct osmo_ss7_as *ipa_find_as_for_asp(struct osmo_ss7_asp *asp);

@@ -310,7 +310,6 @@ static int sua_tx_xua_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
  *  \return 0 on success; negative on error */
 int sua_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
 {
-	struct msgb *msg;
 	int rc;
 
 	OSMO_ASSERT(as->cfg.proto == OSMO_SS7_ASP_PROT_SUA);
@@ -319,18 +318,11 @@ int sua_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
 	if (as->cfg.routing_key.context)
 		xua_msg_add_u32(xua, SUA_IEI_ROUTE_CTX, as->cfg.routing_key.context);
 
-	msg = sua_to_msg(xua);
-	xua_msg_free(xua);
-	if (!msg) {
-		LOGPAS(as, DLSUA, LOGL_ERROR, "Error encoding SUA Msg\n");
-		return -1;
-	}
-
 	/* send the msg to the AS for transmission.  The AS FSM might
 	 * (depending on its state) enqueue it before transmission */
-	rc = osmo_fsm_inst_dispatch(as->fi, XUA_AS_E_TRANSFER_REQ, msg);
+	rc = osmo_fsm_inst_dispatch(as->fi, XUA_AS_E_TRANSFER_REQ, xua);
 	if (rc < 0)
-		msgb_free(msg);
+		xua_msg_free(xua);
 	return rc;
 }
 

@@ -52,7 +52,7 @@
 #include "ss7_internal.h"
 #include "xua_asp_fsm.h"
 
-static struct msgb *ipa_to_msg(struct xua_msg *xua)
+struct msgb *ipa_to_msg(struct xua_msg *xua)
 {
 	struct xua_msg_part *data_ie;
 	struct m3ua_data_hdr *data_hdr;
@@ -100,17 +100,9 @@ static struct msgb *ipa_to_msg(struct xua_msg *xua)
  */
 int ipa_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
 {
-	struct msgb *msg;
 	OSMO_ASSERT(as->cfg.proto == OSMO_SS7_ASP_PROT_IPA);
 
-	msg = ipa_to_msg(xua);
-	xua_msg_free(xua);
-	if (!msg) {
-		LOGPAS(as, DLSS7, LOGL_ERROR, "Error encoding IPA Msg\n");
-		return -1;
-	}
-
-	return xua_as_transmit_msg(as, msg);
+	return xua_as_transmit_msg(as, xua);
 }
 
 static int ipa_rx_msg_ccm(struct osmo_ss7_asp *asp, struct msgb *msg)

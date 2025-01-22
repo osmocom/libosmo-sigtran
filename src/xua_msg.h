@@ -29,6 +29,7 @@ struct osmo_sccp_addr;
 struct osmo_sccp_gt;
 
 struct xua_msg {
+	struct llist_head entry; /* Allows queueing a xua_msg into a llist */
 	struct xua_common_hdr hdr;
 	struct osmo_mtp_transfer_param mtp;
 
