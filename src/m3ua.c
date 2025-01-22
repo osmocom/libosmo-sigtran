@@ -506,23 +506,31 @@ static struct msgb *m3ua_to_msg(struct xua_msg *xua)
 	return msg;
 }
 
-/* transmit given xua_msg via given ASP */
+/* transmit given xua_msg via given ASP
+ * This function takes ownership of xua msg passed to it.
+ */
 static int m3ua_tx_xua_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
-	struct msgb *msg = m3ua_to_msg(xua);
+	struct msgb *msg;
 
 	OSMO_ASSERT(asp->cfg.proto == OSMO_SS7_ASP_PROT_M3UA);
 
+	msg = m3ua_to_msg(xua);
+	xua_msg_free(xua);
 	if (!msg)
 		return -1;
 
+	/* msg becomes owned by osmo_ss7_asp_send here: */
 	return osmo_ss7_asp_send(asp, msg);
 }
 
 /*! \brief Send a given xUA message via a given M3UA Application Server
  *  \param[in] as Application Server through which to send \ref xua
  *  \param[in] xua xUA message to be sent
- *  \return 0 on success; negative on error */
+ *  \return 0 on success; negative on error
+ *
+ *  This function takes ownership of xua msg passed to it.
+ */
 int m3ua_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
 {
 	struct msgb *msg;
@@ -535,6 +543,7 @@ int m3ua_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
 		xua_msg_add_u32(xua, M3UA_IEI_ROUTE_CTX, as->cfg.routing_key.context);
 
 	msg = m3ua_to_msg(xua);
+	xua_msg_free(xua);
 	if (!msg) {
 		LOGPAS(as, DLM3UA, LOGL_ERROR, "Error encoding M3UA Msg\n");
 		return -1;
@@ -794,10 +803,8 @@ int m3ua_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg)
 		err = m3ua_gen_error_msg(rc, msg);
 
 out:
-	if (err) {
+	if (err)
 		m3ua_tx_xua_asp(asp, err);
-		xua_msg_free(err);
-	}
 
 	xua_msg_free(xua);
 
@@ -900,7 +907,6 @@ void m3ua_tx_snm_available(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsig
 		xua = m3ua_encode_duna(rctx, num_rctx, aff_pc, num_aff_pc, info_string);
 
 	m3ua_tx_xua_asp(asp, xua);
-	xua_msg_free(xua);
 }
 
 /*! Transmit SSNM SCON message indicating congestion
@@ -934,7 +940,6 @@ void m3ua_tx_snm_congestion(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsi
 		xua_msg_add_data(xua, M3UA_IEI_INFO_STRING, strlen(info_string)+1, (const uint8_t *) info_string);
 
 	m3ua_tx_xua_asp(asp, xua);
-	xua_msg_free(xua);
 }
 
 /*! Transmit SSNM DUPU message indicating user unavailability.
@@ -950,7 +955,6 @@ void m3ua_tx_dupu(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int n
 {
 	struct xua_msg *xua = m3ua_encode_dupu(rctx, num_rctx, dpc, user, cause, info_str);
 	m3ua_tx_xua_asp(asp, xua);
-	xua_msg_free(xua);
 }
 
 /* received SNM message on ASP side */

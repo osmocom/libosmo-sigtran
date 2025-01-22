@@ -94,13 +94,17 @@ static struct msgb *ipa_to_msg(struct xua_msg *xua)
 /*! \brief Send a given xUA message via a given IPA "Application Server"
  *  \param[in] as Application Server through which to send \a xua
  *  \param[in] xua xUA message to be sent
- *  \return 0 on success; negative on error */
+ *  \return 0 on success; negative on error
+ *
+ *  This function takes ownership of xua msg passed to it.
+ */
 int ipa_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
 {
 	struct msgb *msg;
 	OSMO_ASSERT(as->cfg.proto == OSMO_SS7_ASP_PROT_IPA);
 
 	msg = ipa_to_msg(xua);
+	xua_msg_free(xua);
 	if (!msg) {
 		LOGPAS(as, DLSS7, LOGL_ERROR, "Error encoding IPA Msg\n");
 		return -1;

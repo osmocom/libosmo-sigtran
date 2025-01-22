@@ -291,13 +291,16 @@ static struct msgb *sua_to_msg(struct xua_msg *xua)
 
 static int sua_tx_xua_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
-	struct msgb *msg = sua_to_msg(xua);
+	struct msgb *msg;
 
 	OSMO_ASSERT(asp->cfg.proto == OSMO_SS7_ASP_PROT_SUA);
 
+	msg = sua_to_msg(xua);
+	xua_msg_free(xua);
 	if (!msg)
 		return -1;
 
+	/* msg becomes owned by osmo_ss7_asp_send here: */
 	return osmo_ss7_asp_send(asp, msg);
 }
 
@@ -317,6 +320,7 @@ int sua_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
 		xua_msg_add_u32(xua, SUA_IEI_ROUTE_CTX, as->cfg.routing_key.context);
 
 	msg = sua_to_msg(xua);
+	xua_msg_free(xua);
 	if (!msg) {
 		LOGPAS(as, DLSUA, LOGL_ERROR, "Error encoding SUA Msg\n");
 		return -1;

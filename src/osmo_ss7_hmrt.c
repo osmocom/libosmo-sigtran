@@ -86,24 +86,35 @@ static struct xua_msg *mtp_prim_to_m3ua(struct osmo_mtp_prim *prim)
 	return m3ua_xfer_from_data(&data_hdr, msgb_l2(msg), msgb_l2len(msg));
 }
 
-/* delivery given XUA message to given SS7 user */
+/* delivery given XUA message to given SS7 user
+ * Ownership of xua_msg passed is transferred to this function.
+ */
 static int deliver_to_mtp_user(const struct osmo_ss7_user *osu,
 				struct xua_msg *xua)
 {
 	struct osmo_mtp_prim *prim;
+	int rc;
 
 	/* Create MTP-TRANSFER.ind and feed to user */
 	prim = m3ua_to_xfer_ind(xua);
-	if (!prim)
-		return -1;
+	if (!prim) {
+		rc = -1;
+		goto ret_free;
+	}
 	prim->u.transfer = xua->mtp;
 
-	return osu->prim_cb(&prim->oph, (void *) osu->priv);
+	rc = osu->prim_cb(&prim->oph, (void *) osu->priv);
+
+ret_free:
+	xua_msg_free(xua);
+	return rc;
 }
 
 /* HMDC -> HMDT: Message for distribution; Figure 25/Q.704 */
 /* This means it is a message we received from remote/L2, and it is to
- * be routed to a local user part */
+ * be routed to a local user part.
+ * Ownership of xua_msg passed is transferred to this function.
+ */
 static int hmdt_message_for_distribution(struct osmo_ss7_instance *inst, struct xua_msg *xua)
 {
 	struct m3ua_data_hdr *mdh;
@@ -120,6 +131,7 @@ static int hmdt_message_for_distribution(struct osmo_ss7_instance *inst, struct 
 		default:
 			LOGP(DLSS7, LOGL_ERROR, "Unknown M3UA XFER Message "
 				"Type %u\n", xua->hdr.msg_type);
+			xua_msg_free(xua);
 			return -1;
 		}
 		break;
@@ -131,6 +143,7 @@ static int hmdt_message_for_distribution(struct osmo_ss7_instance *inst, struct 
 		/* Discard Message */
 		LOGP(DLSS7, LOGL_ERROR, "Unknown M3UA Message Class %u\n",
 			xua->hdr.msg_class);
+		xua_msg_free(xua);
 		return -1;
 	}
 
@@ -142,13 +155,16 @@ static int hmdt_message_for_distribution(struct osmo_ss7_instance *inst, struct 
 		LOGP(DLSS7, LOGL_NOTICE, "No MTP-User for SI %u\n", service_ind);
 		/* Discard Message */
 		/* FIXME: User Part Unavailable HMDT -> HMRT */
+		xua_msg_free(xua);
 		return -1;
 	}
 }
 
 /* HMDC->HMRT Msg For Routing; Figure 26/Q.704 */
 /* local message was receive d from L4, SRM, SLM, STM or SLTC, or
- * remote message received from L2 and HMDC determined msg for routing */
+ * remote message received from L2 and HMDC determined msg for routing
+ * Ownership of xua_msg passed is transferred to this function.
+ */
 static int hmrt_message_for_routing(struct osmo_ss7_instance *inst,
 				    struct xua_msg *xua)
 {
@@ -215,12 +231,14 @@ static int hmrt_message_for_routing(struct osmo_ss7_instance *inst,
 		/* Message Received for inaccesible SP HMRT ->RTPC */
 		/* Discard Message */
 	}
+	xua_msg_free(xua);
 	return -1;
 }
 
 /* HMDC: Received Message L2 -> L3; Figure 24/Q.704 */
 /* This means a message was received from L2 and we have to decide if it
- * is for the local stack (HMDT) or for routng (HMRT) */
+ * is for the local stack (HMDT) or for routng (HMRT)
+ * Ownership of xua_msg passed is transferred to this function. */
 int m3ua_hmdc_rx_from_l2(struct osmo_ss7_instance *inst, struct xua_msg *xua)
 {
 	uint32_t dpc = xua->mtp.dpc;
@@ -257,7 +275,6 @@ int osmo_ss7_user_mtp_xfer_req(struct osmo_ss7_instance *inst,
 		 * IPv4). So we call m3ua_hmdc_rx_from_l2() just like
 		 * the MTP-TRANSFER had been received from L2. */
 		rc = m3ua_hmdc_rx_from_l2(inst, xua);
-		xua_msg_free(xua);
 		break;
 	default:
 		LOGP(DLSS7, LOGL_ERROR, "Ignoring unknown primitive %u:%u\n",
