@@ -302,9 +302,9 @@ static int ipa_rx_msg_sccp(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t s
 	/* Update xua->mtp with values from data_hdr */
 	m3ua_dh_to_xfer_param(&xua->mtp, &data_hdr);
 
-	/* Pass on as if we had received it from an M3UA ASP */
+	/* Pass on as if we had received it from an M3UA ASP.
+	 * xua ownership is passed here: */
 	rc = m3ua_hmdc_rx_from_l2(asp->inst, xua);
-	xua_msg_free(xua);
 	return rc;
 }
 

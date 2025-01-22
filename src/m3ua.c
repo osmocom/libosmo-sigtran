@@ -579,6 +579,7 @@ struct m3ua_data_hdr *data_hdr_from_m3ua(struct xua_msg *xua)
 	return data_hdr;
 }
 
+/* This function takes ownership of xua msg passed to it. */
 static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
 	struct xua_msg_part *na_ie = xua_msg_find_tag(xua, M3UA_IEI_NET_APPEAR);
@@ -594,7 +595,8 @@ static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 			"%s(): unsupported message type: %s\n",
 			__func__,
 			get_value_string(m3ua_xfer_msgt_names, xua->hdr.msg_type));
-		return M3UA_ERR_UNSUPP_MSG_TYPE;
+		rc = M3UA_ERR_UNSUPP_MSG_TYPE;
+		goto ret_free;
 	}
 
 	/* Reject unsupported Network Appearance IE. */
@@ -605,13 +607,15 @@ static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 			"Unsupported 'Network Appearance' IE '0x%08x' in message type '%s', sending 'Error'.\n",
 			na, get_value_string(m3ua_xfer_msgt_names, xua->hdr.msg_type));
 		if (na_ie->len != 4)
-			return M3UA_ERR_PARAM_FIELD_ERR;
-		return M3UA_ERR_INVAL_NET_APPEAR;
+			rc = M3UA_ERR_PARAM_FIELD_ERR;
+		else
+			rc = M3UA_ERR_INVAL_NET_APPEAR;
+		goto ret_free;
 	}
 
 	rc = xua_find_as_for_asp(&as, asp, rctx_ie);
 	if (rc)
-		return rc;
+		goto ret_free;
 
 	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_TOTAL);
 
@@ -635,8 +639,12 @@ static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		xua_msg_free_tag(xua, M3UA_IEI_ROUTE_CTX);
 	}
 
+	/* xua ownership is passed here: */
 	return m3ua_hmdc_rx_from_l2(asp->inst, xua);
-	/* xua will be freed by caller m3ua_rx_msg() */
+
+ret_free:
+	xua_msg_free(xua);
+	return rc;
 }
 
 static int m3ua_rx_mgmt_err(struct osmo_ss7_asp *asp, struct xua_msg *xua)
@@ -683,16 +691,24 @@ static int m3ua_rx_mgmt_ntfy(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	return 0;
 }
 
+/* This function takes ownership of xua msg passed to it. */
 static int m3ua_rx_mgmt(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
+	int rc;
+
 	switch (xua->hdr.msg_type) {
 	case M3UA_MGMT_ERR:
-		return m3ua_rx_mgmt_err(asp, xua);
+		rc = m3ua_rx_mgmt_err(asp, xua);
+		break;
 	case M3UA_MGMT_NTFY:
-		return m3ua_rx_mgmt_ntfy(asp, xua);
+		rc = m3ua_rx_mgmt_ntfy(asp, xua);
+		break;
 	default:
-		return M3UA_ERR_UNSUPP_MSG_TYPE;
+		rc = M3UA_ERR_UNSUPP_MSG_TYPE;
 	}
+
+	xua_msg_free(xua);
+	return rc;
 }
 
 /* map from M3UA ASPSM/ASPTM to xua_asp_fsm event */
@@ -709,23 +725,26 @@ static const struct xua_msg_event_map m3ua_aspxm_map[] = {
 	{ M3UA_MSGC_ASPTM, M3UA_ASPTM_INACTIVE_ACK, XUA_ASP_E_ASPTM_ASPIA_ACK },
 };
 
-
+/* This function takes ownership of xua msg passed to it. */
 static int m3ua_rx_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
 	int event;
+	int rc = 0;
 
 	/* map from the M3UA message class and message type to the XUA
 	 * ASP FSM event number */
 	event = xua_msg_event_map(xua, m3ua_aspxm_map,
 				  ARRAY_SIZE(m3ua_aspxm_map));
-	if (event < 0)
-		return M3UA_ERR_UNSUPP_MSG_TYPE;
+	if (event < 0) {
+		rc = M3UA_ERR_UNSUPP_MSG_TYPE;
+		goto ret_free;
+	}
 
 	/* deliver that event to the ASP FSM */
-	if (osmo_fsm_inst_dispatch(asp->fi, event, xua) < 0)
-		return M3UA_ERR_UNEXPECTED_MSG;
-
-	return 0;
+	rc = osmo_fsm_inst_dispatch(asp->fi, event, xua);
+ret_free:
+	xua_msg_free(xua);
+	return rc;
 }
 
 static int m3ua_rx_snm(struct osmo_ss7_asp *asp, struct xua_msg *xua);
@@ -753,9 +772,9 @@ int m3ua_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg)
 			"M3UA message\n");
 
 		if (hdr->version != M3UA_VERSION)
-			err = m3ua_gen_error_msg(M3UA_ERR_INVALID_VERSION, msg);
+			rc = M3UA_ERR_INVALID_VERSION;
 		else
-			err = m3ua_gen_error_msg(M3UA_ERR_PARAM_FIELD_ERR, msg);
+			rc = M3UA_ERR_PARAM_FIELD_ERR;
 		goto out;
 	}
 
@@ -763,7 +782,8 @@ int m3ua_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg)
 		xua_hdr_dump(xua, &xua_dialect_m3ua));
 
 	if (!xua_dialect_check_all_mand_ies(&xua_dialect_m3ua, xua)) {
-		err = m3ua_gen_error_msg(M3UA_ERR_MISSING_PARAM, msg);
+		rc = M3UA_ERR_MISSING_PARAM;
+		xua_msg_free(xua);
 		goto out;
 	}
 
@@ -775,7 +795,8 @@ int m3ua_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg)
 		/* The DATA message MUST NOT be sent on stream 0. */
 		if (msgb_sctp_stream(msg) == 0) {
 			rc = M3UA_ERR_INVAL_STREAM_ID;
-			break;
+			xua_msg_free(xua);
+			goto out;
 		}
 		rc = m3ua_rx_xfer(asp, xua);
 		break;
@@ -795,19 +816,16 @@ int m3ua_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg)
 	default:
 		LOGPASP(asp, DLM3UA, LOGL_NOTICE, "Received unknown M3UA "
 			"Message Class %u\n", xua->hdr.msg_class);
-		err = m3ua_gen_error_msg(M3UA_ERR_UNSUPP_MSG_CLASS, msg);
-		break;
+		rc = M3UA_ERR_UNSUPP_MSG_CLASS;
+		xua_msg_free(xua);
+		goto out;
 	}
 
+out:
 	if (rc > 0)
 		err = m3ua_gen_error_msg(rc, msg);
-
-out:
 	if (err)
 		m3ua_tx_xua_asp(asp, err);
-
-	xua_msg_free(xua);
-
 	return rc;
 }
 
@@ -957,7 +975,8 @@ void m3ua_tx_dupu(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int n
 	m3ua_tx_xua_asp(asp, xua);
 }
 
-/* received SNM message on ASP side */
+/* received SNM message on ASP side
+ * This function takes ownership of xua msg passed to it. */
 static int m3ua_rx_snm_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
 	struct osmo_ss7_as *as = NULL;
@@ -966,7 +985,7 @@ static int m3ua_rx_snm_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 
 	rc = xua_find_as_for_asp(&as, asp, rctx_ie);
 	if (rc)
-		return rc;
+		goto ret_free;
 
 	/* report those up the stack so both other ASPs and local SCCP users can be notified */
 	switch (xua->hdr.msg_type) {
@@ -996,14 +1015,16 @@ static int m3ua_rx_snm_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 			xua_snm_rx_daud(asp, xua);
 		} else {
 			LOGPASP(asp, DLM3UA, LOGL_ERROR, "DAUD not permitted in ASP role\n");
-			return M3UA_ERR_UNSUPP_MSG_TYPE;
+			rc = M3UA_ERR_UNSUPP_MSG_TYPE;
 		}
 		break;
 	default:
-		return M3UA_ERR_UNSUPP_MSG_TYPE;
+		rc = M3UA_ERR_UNSUPP_MSG_TYPE;
 	}
 
-	return 0;
+ret_free:
+	xua_msg_free(xua);
+	return rc;
 }
 
 /* received SNM message on SG side */

@@ -548,7 +548,8 @@ static int m3ua_rx_rkm_dereg_rsp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	return 0;
 }
 
-/* process an incoming RKM message in xua format */
+/* process an incoming RKM message in xua format
+ * This function takes ownership of xua msg passed to it. */
 int m3ua_rx_rkm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
 	int rc;
@@ -578,6 +579,8 @@ int m3ua_rx_rkm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		rc = -1;
 		break;
 	}
+
+	xua_msg_free(xua);
 	return rc;
 }
 
