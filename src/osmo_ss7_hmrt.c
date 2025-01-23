@@ -181,6 +181,8 @@ static int hmrt_message_for_routing(struct osmo_ss7_instance *inst,
 			}
 
 			rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TX_MSU_TOTAL);
+			OSMO_ASSERT(xua->mtp.sls <= 0xf);
+			rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TX_MSU_SLS_0 + xua->mtp.sls);
 
 			switch (as->cfg.proto) {
 			case OSMO_SS7_ASP_PROT_M3UA:
