@@ -54,9 +54,26 @@ struct value_string osmo_ss7_as_traffic_mode_vals[] = {
 	{ 0, NULL }
 };
 
+#define SS7_AS_CTR_RX_MSU_SLS_STR "Number of MSU received on SLS "
 static const struct rate_ctr_desc ss7_as_rcd[] = {
-	[SS7_AS_CTR_RX_MSU_TOTAL] = { "rx:msu:total", "Total number of MSU received" },
-	[SS7_AS_CTR_TX_MSU_TOTAL] = { "tx:msu:total", "Total number of MSU transmitted" },
+	[SS7_AS_CTR_RX_MSU_TOTAL] = {	"rx:msu:total",		"Total number of MSU received" },
+	[SS7_AS_CTR_RX_MSU_SLS_0] = {	"rx:msu:sls:0",		SS7_AS_CTR_RX_MSU_SLS_STR "0" },
+	[SS7_AS_CTR_RX_MSU_SLS_1] = {	"rx:msu:sls:1",		SS7_AS_CTR_RX_MSU_SLS_STR "1" },
+	[SS7_AS_CTR_RX_MSU_SLS_2] = {	"rx:msu:sls:2",		SS7_AS_CTR_RX_MSU_SLS_STR "2" },
+	[SS7_AS_CTR_RX_MSU_SLS_3] = {	"rx:msu:sls:3",		SS7_AS_CTR_RX_MSU_SLS_STR "3" },
+	[SS7_AS_CTR_RX_MSU_SLS_4] = {	"rx:msu:sls:4",		SS7_AS_CTR_RX_MSU_SLS_STR "4" },
+	[SS7_AS_CTR_RX_MSU_SLS_5] = {	"rx:msu:sls:5",		SS7_AS_CTR_RX_MSU_SLS_STR "5" },
+	[SS7_AS_CTR_RX_MSU_SLS_6] = {	"rx:msu:sls:6",		SS7_AS_CTR_RX_MSU_SLS_STR "6" },
+	[SS7_AS_CTR_RX_MSU_SLS_7] = {	"rx:msu:sls:7",		SS7_AS_CTR_RX_MSU_SLS_STR "7" },
+	[SS7_AS_CTR_RX_MSU_SLS_8] = {	"rx:msu:sls:8",		SS7_AS_CTR_RX_MSU_SLS_STR "8" },
+	[SS7_AS_CTR_RX_MSU_SLS_9] = {	"rx:msu:sls:9",		SS7_AS_CTR_RX_MSU_SLS_STR "9" },
+	[SS7_AS_CTR_RX_MSU_SLS_10] = {	"rx:msu:sls:10",	SS7_AS_CTR_RX_MSU_SLS_STR "10" },
+	[SS7_AS_CTR_RX_MSU_SLS_11] = {	"rx:msu:sls:11",	SS7_AS_CTR_RX_MSU_SLS_STR "11" },
+	[SS7_AS_CTR_RX_MSU_SLS_12] = {	"rx:msu:sls:12",	SS7_AS_CTR_RX_MSU_SLS_STR "12" },
+	[SS7_AS_CTR_RX_MSU_SLS_13] = {	"rx:msu:sls:13",	SS7_AS_CTR_RX_MSU_SLS_STR "13" },
+	[SS7_AS_CTR_RX_MSU_SLS_14] = {	"rx:msu:sls:14",	SS7_AS_CTR_RX_MSU_SLS_STR "14" },
+	[SS7_AS_CTR_RX_MSU_SLS_15] = {	"rx:msu:sls:15",	SS7_AS_CTR_RX_MSU_SLS_STR "15" },
+	[SS7_AS_CTR_TX_MSU_TOTAL] = {	"tx:msu:total",		"Total number of MSU transmitted" },
 };
 
 static const struct rate_ctr_group_desc ss7_as_rcgd = {

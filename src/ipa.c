@@ -238,6 +238,8 @@ static int ipa_rx_msg_sccp(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t s
 	}
 
 	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_TOTAL);
+	OSMO_ASSERT(sls <= 0xf);
+	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_SLS_0 + sls);
 
 	/* pull the IPA header */
 	msgb_pull_to_l2(msg);
