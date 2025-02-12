@@ -1,3 +1,69 @@
+libosmo-sigtran (2.1.0) unstable; urgency=medium
+
+  [ Andreas Eversberg ]
+  * Reject M3UA with "M3UA Network Appearance"
+
+  [ Neels Hofmeyr ]
+  * coverity CID#216830
+
+  [ Harald Welte ]
+  * SS7: Support secondary point codes
+
+  [ Pau Espin Pedrol ]
+  * tests/vty: Add vty-transcript-test for osmo-stp
+  * Fix 'update route' vty command
+  * tests/vty/osmo_stp_test.vty: Add some more lines to test 'update route' cmd
+  * src/osmo_ss7_vty.c: Improve error formatting in 'update route' cmd
+  * vty: Fix 'update route' parameter comment descriptions
+  * tests/vty/Makefile.am: Allow testing with specific vty file
+  * tests/vty: Show bug inserting routes with different priority
+  * ss7 vty: Fix insert order of routes with higher priority
+  * ss7 vty: Handle 'update route ... qos-class default' properly
+  * ss7 vty: Validate qos-class number being passed to 'update route'
+  * ss7 vty: Limit qos-class range to 0-7
+  * ss7 vty: Set default route priority to 5
+  * ss7 vty: Limit route priority range to 1-9
+  * osmo_ss7_route_destroy(): Fix potential null ptr deref
+  * sua: sua_iei_names: s/Cause/SCCP Cause/
+  * cosmetic: Add some comments with spec references
+  * sua, sccp: Add APIs to get cause string description
+  * Move include sigtran/m2ua_types.h -> sigtran/protocol/m2ua.h
+  * sigtran: xua_msg.h,msg_types.h: Make headers private
+  * sigtran: Make osmo_ss7_route_table APIs private
+  * sigtran: Add API osmo_ss7_route_get_dest_as()
+  * sigtran: Make osmo_ss7_route struct and several APIs private
+  * sigtran: Make osmo_ss7_linkset APIs private
+  * sigtran: Make osmo_ss7_link APIs private
+  * sigtran: Make LOG SS7 macros private
+  * tests: Fix missing LIBOSMONETIF_CFLAGS
+  * sigtran: Constify osmo_ss7_instance ptr in several APIs
+  * sigtran: Split osmo_ss7_instance allocation into its own function
+  * sigtran: Add API osmo_ss7_instance_get_id()
+  * sigtran: Add API osmo_ss7_instance_get_name()
+  * sigtran: Add API osmo_ss7_instance_get_pc_fmt()
+  * sigtran: Add API osmo_ss7_instance_get_primary_pc()
+  *  sigtran: Add API osmo_ss7_get_sccp()
+  * sigtran: Add API osmo_ss7_instances_llist_entry
+  * sigtran: Make osmo_ss7_xua_server APIs private
+  * sigtran: Add API osmo_ss7_as_get_asp_protocol()
+  * route: Fix rt pointer use-after-free
+  * sigtran: Add API osmo_ss7_as_select_asp()
+  * sigtran: Add public APIs to manage struct osmo_ss7_user
+  * sigtran: Make osmo_ss7_user struct private
+  * sigtran: Make osmo_ss7_asp struct private
+  * sigtran: Make osmo_ss7_asp_peer private
+  * sigtran: Make osmo_ss7_instance struct private
+  * sigtran: Make osmo_ss7_as struct private
+  * cosmetic: osmo_ss7: Rearrange some contents
+  * route_table: Split allocation code to its own function
+  * Move code to delete routes by as/linkset to helper functions
+  * libosmo-sigtran.pc.in: Add missing Requires.private libosmo*
+  * jenkins.sh: libosmo-netif no longer depends on libosmo-abis
+  * cosmetic: whitespace improvements
+  * ipa: Split msgb generation into its own helper function
+
+ -- Oliver Smith <osmith@sysmocom.de>  Wed, 12 Feb 2025 11:35:14 +0100
+
 libosmo-sigtran (2.0.0) unstable; urgency=medium
 
   [ Pau Espin Pedrol ]

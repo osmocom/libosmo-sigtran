@@ -7,12 +7,3 @@
 # If any interfaces have been added since the last public release: c:r:a + 1.
 # If any interfaces have been removed or changed since the last public release: c:r:0.
 #library	what			description / commit summary line
-libosmo-sigtran API change	struct osmo_ss7_instance has new member 'secondary_pc'
-libosmo-sigtran add API osmo_sccp_{release,return,reset,error,refusal}_cause_name(s), osmo_sua_sccp_cause_name
-libosmo-sigtran add API osmo_ss7_route_get_dest_as()
-libosmo-sigtran Make private  osmo_ss7_route
-libosmo-sigtran add API osmo_ss7_instance_get_id(), osmo_ss7_instance_get_name(), osmo_ss7_instance_get_pc_fmt(), osmo_ss7_instance_get_primary_pc(), osmo_ss7_get_sccp()
-libosmo-sigtran add API osmo_ss7_instances_llist_entry()
-libosmo-sigtran add API osmo_ss7_as_get_asp_protocol(), osmo_ss7_as_select_asp()
-libosmo-sigtran add API osmo_ss7_user: create(), get_instance(), set_prim_cb(), set_priv(), get_priv()
-libosmo-sigtran Make private  struct osmo_ss7_instance
