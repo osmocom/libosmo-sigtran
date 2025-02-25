@@ -505,7 +505,8 @@ static void write_one_rtable(struct vty *vty, struct osmo_ss7_route_table *rtabl
 	}
 }
 
-static void vty_dump_rtable(struct vty *vty, struct osmo_ss7_route_table *rtbl)
+/* "filter_pc == OSMO_SS7_PC_INVALID" means "show all" */
+static void vty_dump_rtable(struct vty *vty, struct osmo_ss7_route_table *rtbl, uint32_t filter_pc)
 {
 	struct osmo_ss7_route *rt;
 
@@ -516,6 +517,9 @@ static void vty_dump_rtable(struct vty *vty, struct osmo_ss7_route_table *rtbl)
 	vty_out(vty, "---------------------- - - - ------------------- ------- ------- -------%s", VTY_NEWLINE);
 
 	llist_for_each_entry(rt, &rtbl->routes, list) {
+		if ((filter_pc != OSMO_SS7_PC_INVALID) && ((filter_pc & rt->cfg.mask) != rt->cfg.pc))
+			continue; /* Skip routes not matching destination */
+
 		vty_out(vty, "%-22s %c %c %u %-19s %-7s %-7s %-7s%s",
 			osmo_ss7_route_print(rt),
 			' ',
@@ -530,11 +534,14 @@ static void vty_dump_rtable(struct vty *vty, struct osmo_ss7_route_table *rtbl)
 }
 
 DEFUN(show_cs7_route, show_cs7_route_cmd,
-	"show cs7 instance <0-15> route",
-	SHOW_STR CS7_STR INST_STR INST_STR "Routing Table\n")
+	"show cs7 instance <0-15> route [POINT_CODE]",
+	SHOW_STR CS7_STR INST_STR INST_STR
+	"Routing Table\n"
+	"Destination Point Code\n")
 {
 	int id = atoi(argv[0]);
 	struct osmo_ss7_instance *inst;
+	uint32_t filter_pc = OSMO_SS7_PC_INVALID;
 
 	inst = osmo_ss7_instance_find(id);
 	if (!inst) {
@@ -542,7 +549,16 @@ DEFUN(show_cs7_route, show_cs7_route_cmd,
 		return CMD_WARNING;
 	}
 
-	vty_dump_rtable(vty, inst->rtable_system);
+	if (argc > 1) {
+		int pc = osmo_ss7_pointcode_parse(inst, argv[1]);
+		if (pc < 0 || !osmo_ss7_pc_is_valid((uint32_t)pc)) {
+			vty_out(vty, "Invalid point code (%s)%s", argv[1], VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+		filter_pc = (uint32_t)pc;
+	}
+
+	vty_dump_rtable(vty, inst->rtable_system, filter_pc);
 	return CMD_SUCCESS;
 }
 
