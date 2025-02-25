@@ -518,7 +518,14 @@ static void vty_dump_rtable(struct vty *vty, struct osmo_ss7_route_table *rtbl)
 	llist_for_each_entry(rt, &rtbl->routes, list) {
 		vty_out(vty, "%-22s %c %c %u %-19s %-7s %-7s %-7s%s",
 			osmo_ss7_route_print(rt),
-			' ', ' ', rt->cfg.priority, rt->cfg.linkset_name, "?", "?", "?", VTY_NEWLINE);
+			' ',
+			'0' + rt->cfg.qos_class,
+			rt->cfg.priority,
+			rt->cfg.linkset_name,
+			"?",
+			"?",
+			"?",
+			VTY_NEWLINE);
 	}
 }
 
