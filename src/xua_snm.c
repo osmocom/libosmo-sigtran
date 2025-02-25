@@ -59,7 +59,7 @@ static const char *format_affected_pcs_c(void *ctx, const struct osmo_ss7_instan
 		uint8_t mask = _aff_pc >> 24;
 
 		/* append point code + mask */
-		out = talloc_asprintf_append(out, "%s%s/%u, ", i == 0 ? "" : ", ",
+		out = talloc_asprintf_append(out, "%s%s/%u", i == 0 ? "" : ", ",
 					     osmo_ss7_pointcode_print(s7i, pc), mask);
 	}
 	return out;
