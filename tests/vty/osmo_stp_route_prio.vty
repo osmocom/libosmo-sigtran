@@ -83,9 +83,9 @@ C=Cong Q=QoS P=Prio
 
 Destination            C Q P Linkset Name        Linkset Non-adj Route
 ---------------------- - - - ------------------- ------- ------- -------
-3.2.1/14                 0 2 as3                 ?       ?       ?      
-3.2.1/14                 0 5 as2                 ?       ?       ?      
-3.2.1/14                 7 6 as1                 ?       ?       ?      
+3.2.1/14         INACC   0 2 as3                 UNAVAIL ?       UNAVAIL
+3.2.1/14         INACC   0 5 as2                 UNAVAIL ?       UNAVAIL
+3.2.1/14         INACC   7 6 as1                 UNAVAIL ?       UNAVAIL
 
 OsmoSTP(config-cs7-rt)# ! NOW TEST LOOKUP WORKS AS DESIRED (as3 PICKED):
 OsmoSTP(config-cs7-rt)# do show cs7 instance 0 route-lookup 3.2.1 from 0.0.1 sls 0

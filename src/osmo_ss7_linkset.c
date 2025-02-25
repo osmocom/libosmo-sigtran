@@ -100,3 +100,14 @@ ss7_linkset_find_or_create(struct osmo_ss7_instance *inst, const char *name, uin
 
 	return lset;
 }
+
+bool
+ss7_linkset_is_available(const struct osmo_ss7_linkset *lset)
+{
+	for (unsigned int i = 0; i < ARRAY_SIZE(lset->links); i++) {
+		struct osmo_ss7_link *link = lset->links[i];
+		if (link && ss7_link_is_available(link))
+			return true;
+	}
+	return false;
+}

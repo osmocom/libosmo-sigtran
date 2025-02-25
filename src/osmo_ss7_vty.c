@@ -520,15 +520,18 @@ static void vty_dump_rtable(struct vty *vty, struct osmo_ss7_route_table *rtbl, 
 		if ((filter_pc != OSMO_SS7_PC_INVALID) && ((filter_pc & rt->cfg.mask) != rt->cfg.pc))
 			continue; /* Skip routes not matching destination */
 
-		vty_out(vty, "%-22s %c %c %u %-19s %-7s %-7s %-7s%s",
+		bool rt_avail = ss7_route_is_available(rt);
+
+		vty_out(vty, "%-16s %-5s %c %c %u %-19s %-7s %-7s %-7s%s",
 			osmo_ss7_route_print(rt),
+			rt_avail ? "acces" : "INACC",
 			' ',
 			'0' + rt->cfg.qos_class,
 			rt->cfg.priority,
 			rt->cfg.linkset_name,
+			rt_avail ? "avail" : "UNAVAIL",
 			"?",
-			"?",
-			"?",
+			rt_avail ? "avail" : "UNAVAIL",
 			VTY_NEWLINE);
 	}
 }

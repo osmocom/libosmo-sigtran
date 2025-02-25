@@ -75,3 +75,11 @@ ss7_link_find_or_create(struct osmo_ss7_linkset *lset, uint32_t id)
 
 	return link;
 }
+
+/* Whether link is available, ITU Q.704 section 3.2 */
+bool
+ss7_link_is_available(const struct osmo_ss7_link *link)
+{
+	/* TODO: manage operational availability of a link... */
+	return link->cfg.adm_state == OSMO_SS7_LS_ENABLED;
+}

@@ -54,3 +54,5 @@ ss7_route_find_dpc_mask(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
 
 int ss7_route_set_linkset(struct osmo_ss7_route *rt, const char *linkset_name);
 int ss7_route_insert(struct osmo_ss7_route *rt);
+
+bool ss7_route_is_available(const struct osmo_ss7_route *rt);

@@ -31,3 +31,6 @@ struct osmo_ss7_link {
 void ss7_link_destroy(struct osmo_ss7_link *link);
 struct osmo_ss7_link *
 ss7_link_find_or_create(struct osmo_ss7_linkset *lset, uint32_t id);
+
+bool
+ss7_link_is_available(const struct osmo_ss7_link *link);

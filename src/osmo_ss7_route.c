@@ -372,3 +372,15 @@ osmo_ss7_route_get_dest_as(struct osmo_ss7_route *rt)
 {
 	return rt->dest.as;
 }
+
+
+/* Whether route is available, ITU Q.704 */
+bool ss7_route_is_available(const struct osmo_ss7_route *rt)
+{
+	OSMO_ASSERT(rt);
+	if (rt->dest.as)
+		return osmo_ss7_as_active(rt->dest.as);
+	if (rt->dest.linkset)
+		return ss7_linkset_is_available(rt->dest.linkset);
+	return false;
+}

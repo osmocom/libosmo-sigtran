@@ -30,3 +30,6 @@ struct osmo_ss7_linkset *
 ss7_linkset_find_by_name(struct osmo_ss7_instance *inst, const char *name);
 struct osmo_ss7_linkset *
 ss7_linkset_find_or_create(struct osmo_ss7_instance *inst, const char *name, uint32_t pc);
+
+bool
+ss7_linkset_is_available(const struct osmo_ss7_linkset *lset);
