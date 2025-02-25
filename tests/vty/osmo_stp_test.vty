@@ -12,6 +12,7 @@ OsmoSTP> list
   show cs7 instance <0-15> asp-assoc-status name ASP_NAME
   show cs7 instance <0-15> as (active|all|m3ua|sua)
   show cs7 instance <0-15> route
+  show cs7 instance <0-15> route-lookup POINT_CODE from POINT_CODE sls <0-15> [list-asps]
   show cs7 instance <0-15> sccp addressbook
   show cs7 instance <0-15> sccp users
   show cs7 instance <0-15> sccp ssn <0-65535>
@@ -35,6 +36,7 @@ OsmoSTP# list
   show cs7 instance <0-15> asp-assoc-status name ASP_NAME
   show cs7 instance <0-15> as (active|all|m3ua|sua)
   show cs7 instance <0-15> route
+  show cs7 instance <0-15> route-lookup POINT_CODE from POINT_CODE sls <0-15> [list-asps]
   show cs7 instance <0-15> sccp addressbook
   show cs7 instance <0-15> sccp users
   show cs7 instance <0-15> sccp ssn <0-65535>
@@ -78,6 +80,7 @@ OsmoSTP# show cs7 instance 0 ?
   asp-assoc-status  Application Server Process (ASP) SCTP association status
   as                Application Server (AS)
   route             Routing Table
+  route-lookup      Look up route
   sccp              Signalling Connection Control Part
 
 OsmoSTP# show cs7 instance 0 as ?

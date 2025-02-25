@@ -86,3 +86,7 @@ Destination            C Q P Linkset Name        Linkset Non-adj Route
 3.2.1/14                   2 as3                 ?       ?       ?      
 3.2.1/14                   5 as2                 ?       ?       ?      
 3.2.1/14                   6 as1                 ?       ?       ?      
+
+OsmoSTP(config-cs7-rt)# ! NOW TEST LOOKUP WORKS AS DESIRED (as3 PICKED):
+OsmoSTP(config-cs7-rt)# do show cs7 instance 0 route-lookup 3.2.1 from 0.0.1 sls 0
+pc=6161=3.2.1 mask=0x3fff=7.255.7 via AS as3 proto=m3ua

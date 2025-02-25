@@ -539,6 +539,51 @@ DEFUN(show_cs7_route, show_cs7_route_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(show_cs7_route_lookup, show_cs7_route_lookup_cmd,
+      "show cs7 instance <0-15> route-lookup POINT_CODE from POINT_CODE sls <0-15> [list-asps]",
+      SHOW_STR CS7_STR INST_STR INST_STR
+      "Look up route\n" "Destination PC\n"
+      "From\n" "Origin PC\n"
+      "SLS\n" "SLS value\n"
+      "List ASPs of the AS if route points to an AS")
+{
+	int id = atoi(argv[0]);
+	bool list_asps = argc > 4;
+	struct osmo_ss7_instance *inst;
+	struct osmo_ss7_route *rt;
+	uint32_t dpc;
+	int pc;
+
+	inst = osmo_ss7_instance_find(id);
+	if (!inst) {
+		vty_out(vty, "No SS7 instance %d found%s", id, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	pc = osmo_ss7_pointcode_parse(inst, argv[1]);
+	if (pc < 0 || !osmo_ss7_pc_is_valid((uint32_t)pc)) {
+		vty_out(vty, "Invalid point code (%s)%s", argv[1], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	dpc = pc;
+
+	pc = osmo_ss7_pointcode_parse(inst, argv[2]);
+	if (pc < 0 || !osmo_ss7_pc_is_valid((uint32_t)pc)) {
+		vty_out(vty, "Invalid point code (%s)%s", argv[2], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	rt = osmo_ss7_route_lookup(inst, dpc);
+	if (!rt) {
+		vty_out(vty, "No route found for DPC %s%s",
+			osmo_ss7_pointcode_print(inst, dpc), VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	vty_out(vty, "%s%s", osmo_ss7_route_name(rt, list_asps), VTY_NEWLINE);
+	return CMD_SUCCESS;
+}
+
 /***********************************************************************
  * xUA Listener Configuration (SG)
  ***********************************************************************/
@@ -3103,6 +3148,7 @@ static void vty_init_shared(void *ctx)
 	install_lib_element(L_CS7_AS_NODE, &as_pc_patch_sccp_cmd);
 
 	install_lib_element_ve(&show_cs7_route_cmd);
+	install_lib_element_ve(&show_cs7_route_lookup_cmd);
 
 	vty_init_addr();
 }
