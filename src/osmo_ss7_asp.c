@@ -609,6 +609,7 @@ static int xua_cli_read_cb(struct osmo_stream_cli *conn, int res, struct msgb *m
 static int ipa_cli_read_cb(struct osmo_stream_cli *conn, int res, struct msgb *msg);
 static int m3ua_tcp_cli_read_cb(struct osmo_stream_cli *conn, int res, struct msgb *msg);
 static int xua_cli_connect_cb(struct osmo_stream_cli *cli);
+static int xua_cli_disconnect_cb(struct osmo_stream_cli *cli);
 static int xua_cli_close_and_reconnect(struct osmo_stream_cli *cli);
 
 int osmo_ss7_asp_restart(struct osmo_ss7_asp *asp)
@@ -647,7 +648,7 @@ int osmo_ss7_asp_restart(struct osmo_ss7_asp *asp)
 		osmo_stream_cli_set_proto(asp->client, asp->cfg.trans_proto);
 		osmo_stream_cli_set_reconnect_timeout(asp->client, 5);
 		osmo_stream_cli_set_connect_cb(asp->client, xua_cli_connect_cb);
-		osmo_stream_cli_set_disconnect_cb(asp->client, xua_cli_close_and_reconnect);
+		osmo_stream_cli_set_disconnect_cb(asp->client, xua_cli_disconnect_cb);
 		switch (asp->cfg.proto) {
 		case OSMO_SS7_ASP_PROT_IPA:
 			OSMO_ASSERT(asp->cfg.trans_proto == IPPROTO_TCP);
@@ -977,6 +978,14 @@ static int xua_cli_close_and_reconnect(struct osmo_stream_cli *cli)
 {
 	xua_cli_close(cli);
 	osmo_stream_cli_reconnect(cli);
+	return 0;
+}
+
+static int xua_cli_disconnect_cb(struct osmo_stream_cli *cli)
+{
+	struct osmo_ss7_asp *asp = osmo_stream_cli_get_data(cli);
+	LOGPASP(asp, DLSS7, LOGL_NOTICE, "disconnect_cb() from lower layers, reconnecting\n");
+	xua_cli_close_and_reconnect(cli);
 	return 0;
 }
 
