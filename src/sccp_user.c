@@ -628,6 +628,7 @@ osmo_sccp_simple_client_on_ss7_id(void *ctx, uint32_t ss7_id, const char *name,
 			asp = asp_i;
 			LOGP(DLSCCP, LOGL_NOTICE, "%s: ASP %s for %s is not associated with any AS, using it\n",
 			     name, asp->cfg.name, osmo_ss7_asp_protocol_name(prot));
+			osmo_ss7_as_add_asp(as, asp->cfg.name);
 			break;
 		}
 		if (!asp) {
@@ -642,6 +643,7 @@ osmo_sccp_simple_client_on_ss7_id(void *ctx, uint32_t ss7_id, const char *name,
 			if (!asp)
 				goto out_rt;
 			asp_created = true;
+			asp->simple_client_allocated = true;
 			/* Ensure that the ASP we use is set to operate as a client. */
 			asp->cfg.is_server = false;
 			/* Ensure that the ASP we use is set to role ASP. */
@@ -650,12 +652,10 @@ osmo_sccp_simple_client_on_ss7_id(void *ctx, uint32_t ss7_id, const char *name,
 				ss7_asp_peer_set_hosts(&asp->cfg.local, asp, &default_local_ip, 1);
 			if (default_remote_ip)
 				ss7_asp_peer_set_hosts(&asp->cfg.remote, asp, &default_remote_ip, 1);
-			/* Make sure proper defaults are applied if app didn't provide specific default values */
-			ss7_asp_set_default_peer_hosts(asp);
-			asp->simple_client_allocated = true;
+			/* Make sure proper defaults are applied if app didn't
+			provide specific default values, then restart the ASP: */
+			ss7_asp_restart_after_reconfigure(asp);
 		}
-
-		osmo_ss7_as_add_asp(as, asp->cfg.name);
 	}
 
 	/* Extra sanity checks if the ASP asp-clnt-* was pre-configured over VTY: */
@@ -696,12 +696,9 @@ osmo_sccp_simple_client_on_ss7_id(void *ctx, uint32_t ss7_id, const char *name,
 				goto out_asp;
 			}
 		}
+		/* ASP was already started here previously by VTY go_parent. */
 	}
 
-	/* Restart ASP */
-	if (prot != OSMO_SS7_ASP_PROT_IPA)
-		osmo_ss7_asp_use_default_lm(asp, LOGL_DEBUG);
-	osmo_ss7_asp_restart(asp);
 	LOGP(DLSCCP, LOGL_NOTICE, "%s: Using ASP instance %s\n", name,
 	     asp->cfg.name);
 

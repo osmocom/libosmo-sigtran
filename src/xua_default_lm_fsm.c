@@ -413,6 +413,14 @@ static const struct osmo_xua_layer_manager default_layer_manager = {
 	.prim_cb = default_lm_prim_cb,
 };
 
+void osmo_ss7_asp_remove_default_lm(struct osmo_ss7_asp *asp)
+{
+	if (!asp->lm_priv)
+		return;
+	osmo_fsm_inst_term(asp->lm_priv, OSMO_FSM_TERM_ERROR, NULL);
+	asp->lm_priv = NULL;
+}
+
 int osmo_ss7_asp_use_default_lm(struct osmo_ss7_asp *asp, int log_level)
 {
 	struct lm_fsm_priv *lmp;

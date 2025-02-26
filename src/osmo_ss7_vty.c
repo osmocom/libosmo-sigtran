@@ -3001,9 +3001,7 @@ int osmo_ss7_vty_go_parent(struct vty *vty)
 	switch (vty->node) {
 	case L_CS7_ASP_NODE:
 		asp = vty->index;
-		/* Make sure proper defaults values are set */
-		ss7_asp_set_default_peer_hosts(asp);
-		osmo_ss7_asp_restart(asp);
+		ss7_asp_restart_after_reconfigure(asp);
 		vty->node = L_CS7_NODE;
 		vty->index = asp->inst;
 		break;

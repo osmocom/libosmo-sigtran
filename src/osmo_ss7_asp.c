@@ -1291,3 +1291,22 @@ int ss7_asp_get_fd(const struct osmo_ss7_asp *asp)
 	}
 	return -1;
 }
+
+/* Apply sane configs for unconfigured options and restart the ASP.  */
+void ss7_asp_restart_after_reconfigure(struct osmo_ss7_asp *asp)
+{
+	/* Make sure proper defaults values are applied if user didn't provide
+	* specific default values */
+	ss7_asp_set_default_peer_hosts(asp);
+
+	/* Apply default LM FSM for client ASP */
+	if (asp->cfg.proto != OSMO_SS7_ASP_PROT_IPA &&
+	    asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP &&
+	    !asp->cfg.is_server) {
+		osmo_ss7_asp_use_default_lm(asp, LOGL_DEBUG);
+	} else {
+		osmo_ss7_asp_remove_default_lm(asp);
+	}
+
+	osmo_ss7_asp_restart(asp);
+}
