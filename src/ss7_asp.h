@@ -103,6 +103,7 @@ struct osmo_ss7_asp *ss7_asp_alloc(struct osmo_ss7_instance *inst, const char *n
 bool ss7_asp_set_default_peer_hosts(struct osmo_ss7_asp *asp);
 bool ss7_asp_is_started(const struct osmo_ss7_asp *asp);
 int ss7_asp_get_fd(const struct osmo_ss7_asp *asp);
+int ss7_asp_disconnect_stream(struct osmo_ss7_asp *asp);
 
 int ss7_asp_apply_peer_primary_address(const struct osmo_ss7_asp *asp);
 int ss7_asp_apply_primary_address(const struct osmo_ss7_asp *asp);

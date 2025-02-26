@@ -612,95 +612,82 @@ static int xua_cli_connect_cb(struct osmo_stream_cli *cli);
 static int xua_cli_disconnect_cb(struct osmo_stream_cli *cli);
 static int xua_cli_close_and_reconnect(struct osmo_stream_cli *cli);
 
-int osmo_ss7_asp_restart(struct osmo_ss7_asp *asp)
+
+static int ss7_asp_start_client(struct osmo_ss7_asp *asp)
 {
-	int rc;
-	char bufloc[512], bufrem[512];
 	uint8_t byte;
+	int rc;
 
-	OSMO_ASSERT(ss7_initialized);
-	ss7_asp_peer_snprintf(bufloc, sizeof(bufloc), &asp->cfg.local);
-	ss7_asp_peer_snprintf(bufrem, sizeof(bufrem), &asp->cfg.remote);
-	LOGPASP(asp, DLSS7, LOGL_INFO, "Restarting ASP %s, r=%s<->l=%s\n",
-	       asp->cfg.name, bufrem, bufloc);
-
-	if (!asp->cfg.is_server) {
-		/* We are in client mode now */
-		if (asp->server) {
-			/* if we previously were in server mode,
-			 * destroy it */
-			osmo_stream_srv_destroy(asp->server);
-			asp->server = NULL;
-		}
-		if (!asp->client)
-			asp->client = osmo_stream_cli_create(asp);
-		if (!asp->client) {
-			LOGPASP(asp, DLSS7, LOGL_ERROR, "Unable to create stream"
-				" client for ASP %s\n", asp->cfg.name);
-			return -1;
-		}
-		osmo_stream_cli_set_name(asp->client, asp->cfg.name);
-		osmo_stream_cli_set_nodelay(asp->client, true);
-		osmo_stream_cli_set_addrs(asp->client, (const char **)asp->cfg.remote.host, asp->cfg.remote.host_cnt);
-		osmo_stream_cli_set_port(asp->client, asp->cfg.remote.port);
-		osmo_stream_cli_set_local_addrs(asp->client, (const char **)asp->cfg.local.host, asp->cfg.local.host_cnt);
-		osmo_stream_cli_set_local_port(asp->client, asp->cfg.local.port);
-		osmo_stream_cli_set_proto(asp->client, asp->cfg.trans_proto);
-		osmo_stream_cli_set_reconnect_timeout(asp->client, 5);
-		osmo_stream_cli_set_connect_cb(asp->client, xua_cli_connect_cb);
-		osmo_stream_cli_set_disconnect_cb(asp->client, xua_cli_disconnect_cb);
-		switch (asp->cfg.proto) {
-		case OSMO_SS7_ASP_PROT_IPA:
-			OSMO_ASSERT(asp->cfg.trans_proto == IPPROTO_TCP);
-			osmo_stream_cli_set_read_cb2(asp->client, ipa_cli_read_cb);
-			osmo_stream_cli_set_segmentation_cb(asp->client, osmo_ipa_segmentation_cb);
-			break;
-		case OSMO_SS7_ASP_PROT_M3UA:
-			if (asp->cfg.trans_proto == IPPROTO_SCTP) {
-				osmo_stream_cli_set_read_cb2(asp->client, xua_cli_read_cb);
-				osmo_stream_cli_set_segmentation_cb(asp->client, NULL);
-			} else if (asp->cfg.trans_proto == IPPROTO_TCP) {
-				osmo_stream_cli_set_read_cb2(asp->client, m3ua_tcp_cli_read_cb);
-				osmo_stream_cli_set_segmentation_cb(asp->client, xua_tcp_segmentation_cb);
-			} else
-				OSMO_ASSERT(0);
-			break;
-		default:
-			OSMO_ASSERT(asp->cfg.trans_proto == IPPROTO_SCTP);
+	if (!asp->client)
+		asp->client = osmo_stream_cli_create(asp);
+	if (!asp->client) {
+		LOGPASP(asp, DLSS7, LOGL_ERROR, "Unable to create stream"
+			" client for ASP %s\n", asp->cfg.name);
+		return -1;
+	}
+	osmo_stream_cli_set_name(asp->client, asp->cfg.name);
+	osmo_stream_cli_set_nodelay(asp->client, true);
+	osmo_stream_cli_set_addrs(asp->client, (const char **)asp->cfg.remote.host, asp->cfg.remote.host_cnt);
+	osmo_stream_cli_set_port(asp->client, asp->cfg.remote.port);
+	osmo_stream_cli_set_local_addrs(asp->client, (const char **)asp->cfg.local.host, asp->cfg.local.host_cnt);
+	osmo_stream_cli_set_local_port(asp->client, asp->cfg.local.port);
+	osmo_stream_cli_set_proto(asp->client, asp->cfg.trans_proto);
+	osmo_stream_cli_set_reconnect_timeout(asp->client, 5);
+	osmo_stream_cli_set_connect_cb(asp->client, xua_cli_connect_cb);
+	osmo_stream_cli_set_disconnect_cb(asp->client, xua_cli_disconnect_cb);
+	switch (asp->cfg.proto) {
+	case OSMO_SS7_ASP_PROT_IPA:
+		OSMO_ASSERT(asp->cfg.trans_proto == IPPROTO_TCP);
+		osmo_stream_cli_set_read_cb2(asp->client, ipa_cli_read_cb);
+		osmo_stream_cli_set_segmentation_cb(asp->client, osmo_ipa_segmentation_cb);
+		break;
+	case OSMO_SS7_ASP_PROT_M3UA:
+		if (asp->cfg.trans_proto == IPPROTO_SCTP) {
 			osmo_stream_cli_set_read_cb2(asp->client, xua_cli_read_cb);
 			osmo_stream_cli_set_segmentation_cb(asp->client, NULL);
-			break;
-		}
-		osmo_stream_cli_set_data(asp->client, asp);
-		byte = 1; /*AUTH is needed by ASCONF. enable, don't abort socket creation if AUTH can't be enabled */
-		osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_SOCKOPT_AUTH_SUPPORTED, &byte, sizeof(byte));
-		byte = 1; /* enable, don't abort socket creation if ASCONF can't be enabled */
-		osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_SOCKOPT_ASCONF_SUPPORTED, &byte, sizeof(byte));
-		if (asp->cfg.sctp_init.num_ostreams_present)
-			osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_NUM_OSTREAMS,
-						  &asp->cfg.sctp_init.num_ostreams_value,
-						  sizeof(asp->cfg.sctp_init.num_ostreams_value));
-		if (asp->cfg.sctp_init.max_instreams_present)
-			osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_MAX_INSTREAMS,
-						  &asp->cfg.sctp_init.max_instreams_value,
-						  sizeof(asp->cfg.sctp_init.max_instreams_value));
-		if (asp->cfg.sctp_init.max_attempts_present)
-			osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_MAX_ATTEMPTS,
-						  &asp->cfg.sctp_init.max_attempts_value,
-						  sizeof(asp->cfg.sctp_init.max_attempts_value));
-		if (asp->cfg.sctp_init.max_init_timeo_present)
-			osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_TIMEOUT,
-						  &asp->cfg.sctp_init.max_init_timeo_value,
-						  sizeof(asp->cfg.sctp_init.max_init_timeo_value));
-		rc = osmo_stream_cli_open(asp->client);
-		if (rc < 0) {
-			LOGPASP(asp, DLSS7, LOGL_ERROR, "Unable to open stream"
-				" client for ASP %s, %s ==> %s\n", asp->cfg.name, bufloc, bufrem);
-			/* we don't return error in here because osmo_stream_cli_open()
-			   will continue to retry (due to timeout being explicitly set with
-			   osmo_stream_cli_set_reconnect_timeout() above) to connect so the error is transient */
-		}
-	} else {
+		} else if (asp->cfg.trans_proto == IPPROTO_TCP) {
+			osmo_stream_cli_set_read_cb2(asp->client, m3ua_tcp_cli_read_cb);
+			osmo_stream_cli_set_segmentation_cb(asp->client, xua_tcp_segmentation_cb);
+		} else
+			OSMO_ASSERT(0);
+		break;
+	default:
+		OSMO_ASSERT(asp->cfg.trans_proto == IPPROTO_SCTP);
+		osmo_stream_cli_set_read_cb2(asp->client, xua_cli_read_cb);
+		osmo_stream_cli_set_segmentation_cb(asp->client, NULL);
+		break;
+	}
+	osmo_stream_cli_set_data(asp->client, asp);
+	byte = 1; /*AUTH is needed by ASCONF. enable, don't abort socket creation if AUTH can't be enabled */
+	osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_SOCKOPT_AUTH_SUPPORTED, &byte, sizeof(byte));
+	byte = 1; /* enable, don't abort socket creation if ASCONF can't be enabled */
+	osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_SOCKOPT_ASCONF_SUPPORTED, &byte, sizeof(byte));
+	if (asp->cfg.sctp_init.num_ostreams_present)
+		osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_NUM_OSTREAMS,
+					&asp->cfg.sctp_init.num_ostreams_value,
+					sizeof(asp->cfg.sctp_init.num_ostreams_value));
+	if (asp->cfg.sctp_init.max_instreams_present)
+		osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_MAX_INSTREAMS,
+					&asp->cfg.sctp_init.max_instreams_value,
+					sizeof(asp->cfg.sctp_init.max_instreams_value));
+	if (asp->cfg.sctp_init.max_attempts_present)
+		osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_MAX_ATTEMPTS,
+					&asp->cfg.sctp_init.max_attempts_value,
+					sizeof(asp->cfg.sctp_init.max_attempts_value));
+	if (asp->cfg.sctp_init.max_init_timeo_present)
+		osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_TIMEOUT,
+					&asp->cfg.sctp_init.max_init_timeo_value,
+					sizeof(asp->cfg.sctp_init.max_init_timeo_value));
+	rc = osmo_stream_cli_open(asp->client);
+	return rc;
+}
+
+/* Force stream disconnection, which should trigger disconnect_cb/close_cb() and
+ * announce disconnection to upper layers. */
+int ss7_asp_disconnect_stream(struct osmo_ss7_asp *asp)
+{
+	/* First tear down previous state if existing: */
+	if (asp->cfg.is_server) {
 		/* We are in server mode now */
 		if (asp->client) {
 			/* if we previously were in client mode,
@@ -708,18 +695,64 @@ int osmo_ss7_asp_restart(struct osmo_ss7_asp *asp)
 			osmo_stream_cli_destroy(asp->client);
 			asp->client = NULL;
 		}
-		/* FIXME: ensure we have a SCTP server */
-		LOGPASP(asp, DLSS7, LOGL_NOTICE, "ASP Restart for server "
-			"not implemented yet!\n");
+	} else {
+		/* We are in client mode now */
+		if (asp->server) {
+			/* if we previously were in server mode,
+			 * destroy it */
+			osmo_stream_srv_destroy(asp->server);
+			asp->server = NULL;
+		}
+		if (asp->client) {
+			/* Make sure we close the previous stream before starting a new one: */
+			osmo_stream_cli_close(asp->client);
+		}
 	}
+	return 0;
+}
 
-	/* (re)start the ASP FSM */
-	if (asp->fi)
+int osmo_ss7_asp_restart(struct osmo_ss7_asp *asp)
+{
+	int rc;
+	char bufloc[512], bufrem[512];
+
+	OSMO_ASSERT(ss7_initialized);
+	ss7_asp_peer_snprintf(bufloc, sizeof(bufloc), &asp->cfg.local);
+	ss7_asp_peer_snprintf(bufrem, sizeof(bufrem), &asp->cfg.remote);
+	LOGPASP(asp, DLSS7, LOGL_INFO, "Restarting ASP %s, r=%s<->l=%s\n",
+		asp->cfg.name, bufrem, bufloc);
+
+	/* First tear down previous state if existing: */
+	ss7_asp_disconnect_stream(asp);
+
+	/* The ASP FSM must be terminated *after* tearing down the conn, so that
+	 * DISCONNECT events go up the stack */
+	if (asp->fi) {
 		osmo_fsm_inst_term(asp->fi, OSMO_FSM_TERM_REQUEST, NULL);
-	OSMO_ASSERT(!asp->fi);
+		OSMO_ASSERT(!asp->fi);
+	}
 	if ((rc = xua_asp_fsm_start(asp, asp->cfg.role, LOGL_DEBUG)) < 0)
 		return rc;
 	OSMO_ASSERT(asp->fi);
+
+	/* Now start the new stream: */
+
+	if (asp->cfg.is_server) {
+		/* We are in server mode now */
+		/* FIXME: ensure we have a SCTP server */
+		LOGPASP(asp, DLSS7, LOGL_NOTICE, "ASP Restart for server "
+			"not implemented yet!\n");
+	} else {
+		/* We are in client mode now */
+		rc = ss7_asp_start_client(asp);
+		if (rc < 0) {
+			LOGPASP(asp, DLSS7, LOGL_ERROR, "Unable to open stream"
+				" client for ASP %s, %s ==> %s\n", asp->cfg.name, bufloc, bufrem);
+			/* we don't return error in here because osmo_stream_cli_open()
+			will continue to retry (due to timeout being explicitly set with
+			osmo_stream_cli_set_reconnect_timeout() above) to connect so the error is transient */
+		}
+	}
 	return 0;
 }
 
