@@ -207,7 +207,7 @@ static int lm_timer_cb(struct osmo_fsm_inst *fi)
 		/* we have been waiting for the ASP to come up, but it
 		 * failed to do so */
 		LOGPFSML(fi, LOGL_NOTICE, "Peer didn't send any ASP_UP in time! Restarting ASP\n");
-		restart_asp(fi);
+		ss7_asp_disconnect_stream(lmp->asp);
 		break;
 	case SS7_ASP_LM_T_WAIT_NOTIFY:
 		if (lmp->asp->cfg.quirks & OSMO_SS7_ASP_QUIRK_NO_NOTIFY) {
@@ -226,7 +226,7 @@ static int lm_timer_cb(struct osmo_fsm_inst *fi)
 		as = find_first_as_in_asp(lmp->asp);
 		if (!as) {
 			LOGPFSML(fi, LOGL_ERROR, "Unable to find AS!\n");
-			restart_asp(fi);
+			ss7_asp_disconnect_stream(lmp->asp);
 			return 0;
 		}
 		/* Fill in settings from first AS (TODO: multiple AS support) */
@@ -237,11 +237,11 @@ static int lm_timer_cb(struct osmo_fsm_inst *fi)
 	case SS7_ASP_LM_T_WAIT_NOTIY_RKM:
 		/* No AS has reported via NOTIFY even after dynamic RKM
 		 * configuration */
-		restart_asp(fi);
+		ss7_asp_disconnect_stream(lmp->asp);
 		break;
 	case SS7_ASP_LM_T_WAIT_RK_REG_RESP:
 		/* timeout of registration of routing key */
-		restart_asp(fi);
+		ss7_asp_disconnect_stream(lmp->asp);
 		break;
 	}
 	return 0;
@@ -285,12 +285,12 @@ static void lm_rkm_reg(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		oxp = data;
 		if (oxp->u.rk_reg.status != M3UA_RKM_REG_SUCCESS) {
 			LOGPFSML(fi, LOGL_NOTICE, "Received RKM_REG_RSP with negative result\n");
-			restart_asp(fi);
+			ss7_asp_disconnect_stream(lmp->asp);
 		} else {
 			unsigned long timeout_sec;
 			rc = handle_reg_conf(fi, oxp->u.rk_reg.key.l_rk_id, oxp->u.rk_reg.key.context);
 			if (rc < 0)
-				restart_asp(fi);
+				ss7_asp_disconnect_stream(lmp->asp);
 			/* RKM registration was successful, we can transition to WAIT_NOTIFY
 			 * state and assume that an NOTIFY/AS-INACTIVE arrives within
 			 * T_WAIT_NOTIFY_RKM seconds */
