@@ -714,7 +714,13 @@ static void xua_asp_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cau
 {
 	struct xua_asp_fsm_priv *xafp = fi->priv;
 
+	if (!xafp)
+		return;
+
 	osmo_timer_del(&xafp->t_ack.timer);
+
+	if (xafp->asp)
+		xafp->asp->fi = NULL;
 }
 
 static const struct osmo_fsm_state xua_asp_states[] = {
@@ -779,16 +785,16 @@ struct osmo_fsm xua_asp_fsm = {
 	.cleanup = xua_asp_fsm_cleanup,
 };
 
-static struct osmo_fsm_inst *ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
-					       enum osmo_ss7_asp_role role, int log_level);
+static int ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
+			     enum osmo_ss7_asp_role role, int log_level);
 
-/*! \brief Start a new ASP finite stae machine for given ASP
+/*! \brief Start a new ASP finite stae machine for given ASP (stored in asp->fi)
  *  \param[in] asp Application Server Process for which to start FSM
  *  \param[in] role Role (ASP, SG, IPSP) of this FSM
  *  \param[in] log_level Logging Level for ASP FSM logging
- *  \returns FSM instance on success; NULL on error */
-struct osmo_fsm_inst *xua_asp_fsm_start(struct osmo_ss7_asp *asp,
-					enum osmo_ss7_asp_role role, int log_level)
+ *  \returns 0 on success; negative on error */
+int xua_asp_fsm_start(struct osmo_ss7_asp *asp,
+		      enum osmo_ss7_asp_role role, int log_level)
 {
 	struct osmo_fsm_inst *fi;
 	struct xua_asp_fsm_priv *xafp;
@@ -802,14 +808,17 @@ struct osmo_fsm_inst *xua_asp_fsm_start(struct osmo_ss7_asp *asp,
 	xafp = talloc_zero(fi, struct xua_asp_fsm_priv);
 	if (!xafp) {
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_ERROR, NULL);
-		return NULL;
+		return -ENOMEM;
 	}
 	xafp->role = role;
 	xafp->asp = asp;
 
 	fi->priv = xafp;
 
-	return fi;
+	/* Attach FSM to ASP: */
+	asp->fi = fi;
+
+	return 0;
 }
 
 
@@ -1124,6 +1133,14 @@ static int ipa_asp_fsm_timer_cb(struct osmo_fsm_inst *fi)
 	return -1;
 }
 
+static void ipa_asp_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
+{
+	struct ipa_asp_fsm_priv *iafp = fi->priv;
+
+	if (iafp && iafp->asp)
+		iafp->asp->fi = NULL;
+}
+
 static const struct osmo_fsm_state ipa_asp_states[] = {
 	[IPA_ASP_S_DOWN] = {
 		.in_event_mask = S(XUA_ASP_E_M_ASP_UP_REQ) |
@@ -1200,16 +1217,17 @@ struct osmo_fsm ipa_asp_fsm = {
 			       S(XUA_ASP_E_ASPSM_BEAT_ACK) |
 			       S(XUA_ASP_E_AS_ASSIGNED),
 	.allstate_action = ipa_asp_allstate,
+	.cleanup = ipa_asp_fsm_cleanup,
 };
 
 
-/*! \brief Start a new ASP finite state machine for given ASP
+/*! \brief Start a new ASP finite state machine for given ASP (stored on asp->fi)
  *  \param[in] asp Application Server Process for which to start FSM
  *  \param[in] role Role (ASP, SG, IPSP) of this FSM
  *  \param[in] log_level Logging Level for ASP FSM logging
- *  \returns FSM instance on success; NULL on error */
-static struct osmo_fsm_inst *ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
-					       enum osmo_ss7_asp_role role, int log_level)
+ *  \returns 0 on success; negative on error */
+static int ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
+			     enum osmo_ss7_asp_role role, int log_level)
 {
 	struct osmo_fsm_inst *fi;
 	struct ipa_asp_fsm_priv *iafp;
@@ -1223,7 +1241,7 @@ static struct osmo_fsm_inst *ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
 	iafp = talloc_zero(fi, struct ipa_asp_fsm_priv);
 	if (!iafp) {
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_ERROR, NULL);
-		return NULL;
+		return -ENOMEM;
 	}
 
 	if (as) {
@@ -1251,8 +1269,11 @@ static struct osmo_fsm_inst *ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
 
 	fi->priv = iafp;
 
+	/* Attach FSM to ASP: */
+	asp->fi = fi;
+
 	if (can_start && role == OSMO_SS7_ASP_ROLE_ASP)
 		osmo_fsm_inst_dispatch(fi, XUA_ASP_E_M_ASP_UP_REQ, NULL);
 
-	return fi;
+	return 0;
 }

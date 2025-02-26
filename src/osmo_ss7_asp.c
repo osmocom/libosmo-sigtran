@@ -716,8 +716,10 @@ int osmo_ss7_asp_restart(struct osmo_ss7_asp *asp)
 	/* (re)start the ASP FSM */
 	if (asp->fi)
 		osmo_fsm_inst_term(asp->fi, OSMO_FSM_TERM_REQUEST, NULL);
-	asp->fi = xua_asp_fsm_start(asp, asp->cfg.role, LOGL_DEBUG);
-
+	OSMO_ASSERT(!asp->fi);
+	if ((rc = xua_asp_fsm_start(asp, asp->cfg.role, LOGL_DEBUG)) < 0)
+		return rc;
+	OSMO_ASSERT(asp->fi);
 	return 0;
 }
 
