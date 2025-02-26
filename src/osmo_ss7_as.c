@@ -199,6 +199,21 @@ bool osmo_ss7_as_has_asp(const struct osmo_ss7_as *as,
 	return false;
 }
 
+/*! Determine amount of ASPs associated to an AS.
+ *  \param[in] as Application Server.
+ *  \returns number of ASPs associated to as */
+unsigned int osmo_ss7_as_count_asp(const struct osmo_ss7_as *as)
+{
+	unsigned int i;
+	unsigned int cnt = 0;
+
+	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
+		if (as->cfg.asps[i])
+			cnt++;
+	}
+	return cnt;
+}
+
 /*! Determine if given AS is in the active state.
  *  \param[in] as Application Server.
  *  \returns true in case as is active; false otherwise. */

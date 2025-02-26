@@ -601,10 +601,11 @@ void xua_rkm_cleanup_dyn_as_for_asp(struct osmo_ss7_asp *asp)
 	llist_for_each_entry_safe(as, as2, &inst->as_list, list) {
 		if (!osmo_ss7_as_has_asp(as, asp))
 			continue;
-		/* FIXME: check if there are no other ASPs! */
 		if (!as->rkm_dyn_allocated)
 			continue;
 
-		osmo_ss7_as_destroy(as);
+		/* If there are no other ASPs, destroy the AS: */
+		if (osmo_ss7_as_count_asp(as) == 1)
+			osmo_ss7_as_destroy(as);
 	}
 }
