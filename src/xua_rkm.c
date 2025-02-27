@@ -221,6 +221,14 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 	as = osmo_ss7_as_find_by_rctx(asp->inst, rctx);
 	if (as) {
 		LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: Found existing AS for RCTX %u\n", rctx);
+		/* Early return before allocating stuff if no space left: */
+		if (*nas_idx >= max_nas_idx) {
+			LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: not enough room for newly assigned AS (max %u AS)\n",
+				max_nas_idx+1);
+			msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_INSUFF_RESRC, 0);
+			return -1;
+		}
+
 		if (as->cfg.routing_key.pc != dpc) {
 			LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: DPC doesn't match, rejecting AS (%u != %u)\n",
 				as->cfg.routing_key.pc, dpc);
@@ -244,6 +252,14 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 			as->cfg.mode_set_by_peer = true;
 		}
 	} else if (asp->inst->cfg.permit_dyn_rkm_alloc) {
+		/* Early return before allocating stuff if no space left: */
+		if (*nas_idx >= max_nas_idx) {
+			LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: not enough room for newly assigned AS (max %u AS)\n",
+				max_nas_idx+1);
+			msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_INSUFF_RESRC, 0);
+			return -1;
+		}
+
 		/* Create an AS for this routing key */
 		snprintf(namebuf, sizeof(namebuf), "as-rkm-%u", rctx);
 		as = osmo_ss7_as_find_or_create(asp->inst, namebuf, OSMO_SS7_ASP_PROT_M3UA);
@@ -272,17 +288,6 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 			msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_CANT_SUPP_UNQ_RT, 0);
 			return -1;
 		}
-
-		/* append to list of newly assigned as */
-		if (*nas_idx >= max_nas_idx) {
-			ss7_route_destroy(rt);
-			osmo_ss7_as_destroy(as);
-			LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: not enough room for newly assigned AS (max %u AS)\n",
-				max_nas_idx+1);
-			msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_INSUFF_RESRC, 0);
-			return -1;
-		}
-		newly_assigned_as[(*nas_idx)++] = as;
 	} else {
 		/* not permitted to create dynamic RKM entries */
 		LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: RCTX %u not found in configuration, and "
@@ -294,6 +299,8 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 	/* Success: Add just-create AS to connected ASP + report success */
 	osmo_ss7_as_add_asp(as, asp->cfg.name);
 	msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_SUCCESS, rctx);
+	/* append to list of newly assigned as */
+	newly_assigned_as[(*nas_idx)++] = as;
 	return 0;
 }
 
