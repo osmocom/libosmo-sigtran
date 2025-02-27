@@ -100,6 +100,19 @@ const struct value_string m3ua_ntfy_other_names[] = {
 	{ 0, NULL }
 };
 
+const char *m3ua_ntfy_info_name(uint16_t ntfy_status_type, uint16_t ntfy_status_info)
+{
+	switch (ntfy_status_type) {
+	case M3UA_NOTIFY_T_STATCHG:
+		return get_value_string(m3ua_ntfy_stchg_names, ntfy_status_info);
+	case M3UA_NOTIFY_T_OTHER:
+		return get_value_string(m3ua_ntfy_other_names, ntfy_status_info);
+	default:
+		break;
+	}
+	return "NULL";
+}
+
 static const struct value_string m3ua_iei_names[] = {
 	{ M3UA_IEI_INFO_STRING,		"INFO String" },
 	{ M3UA_IEI_ROUTE_CTX,		"Routing Context" },
@@ -643,20 +656,7 @@ static int m3ua_rx_mgmt_ntfy(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	m3ua_decode_notify(&ntfy, asp, xua);
 
 	type_name = get_value_string(m3ua_ntfy_type_names, ntfy.status_type);
-
-	switch (ntfy.status_type) {
-	case M3UA_NOTIFY_T_STATCHG:
-		info_name = get_value_string(m3ua_ntfy_stchg_names,
-						ntfy.status_info);
-		break;
-	case M3UA_NOTIFY_T_OTHER:
-		info_name = get_value_string(m3ua_ntfy_other_names,
-						ntfy.status_info);
-		break;
-	default:
-		info_name = "NULL";
-		break;
-	}
+	info_name = m3ua_ntfy_info_name(ntfy.status_type, ntfy.status_info);
 	LOGPASP(asp, DLM3UA, LOGL_NOTICE, "Received NOTIFY Type %s:%s (%s)\n",
 		type_name, info_name,
 		ntfy.info_string ? ntfy.info_string : "");

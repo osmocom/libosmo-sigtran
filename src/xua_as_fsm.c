@@ -43,10 +43,17 @@ static int as_notify_all_asp(struct osmo_ss7_as *as, struct osmo_xlm_prim_notify
 {
 	struct msgb *msg;
 	unsigned int i, sent = 0;
+	const char *type_name, *info_name, *info_str;
 
 	/* we don't send notify to IPA peers! */
 	if (as->cfg.proto == OSMO_SS7_ASP_PROT_IPA)
 		return 0;
+
+	type_name = get_value_string(m3ua_ntfy_type_names, npar->status_type);
+	info_name = m3ua_ntfy_info_name(npar->status_type, npar->status_info);
+	info_str = npar->info_string ? npar->info_string : "";
+	LOGPFSM(as->fi, "Broadcasting NOTIFY Type %s:%s (%s) to all non-DOWN ASPs\n",
+		type_name, info_name, info_str);
 
 	/* iterate over all non-DOWN ASPs and send them the message */
 	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
@@ -71,6 +78,8 @@ static int as_notify_all_asp(struct osmo_ss7_as *as, struct osmo_xlm_prim_notify
 
 		/* TODO: Optional Routing Context */
 
+		LOGPASP(asp, DLSS7, LOGL_INFO, "Tx NOTIFY Type %s:%s (%s)\n",
+			type_name, info_name, info_str);
 		msg = encode_notify(npar);
 		osmo_ss7_asp_send(asp, msg);
 		sent++;

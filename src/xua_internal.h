@@ -71,6 +71,7 @@ extern const struct value_string m3ua_err_names[];
 extern const struct value_string m3ua_ntfy_type_names[];
 extern const struct value_string m3ua_ntfy_stchg_names[];
 extern const struct value_string m3ua_ntfy_other_names[];
+const char *m3ua_ntfy_info_name(uint16_t ntfy_status_type, uint16_t ntfy_status_info);
 
 struct xua_msg *m3ua_encode_notify(const struct osmo_xlm_prim_notify *npar);
 int m3ua_decode_notify(struct osmo_xlm_prim_notify *npar, void *ctx,
