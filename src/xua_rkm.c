@@ -346,7 +346,16 @@ static int m3ua_rx_rkm_reg_req(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		if (!as)
 			continue;
 		/* Notify AS that it has an INACTIVE ASP */
-		osmo_fsm_inst_dispatch(as->fi, XUA_ASPAS_ASP_INACTIVE_IND, asp);
+		/* RFC4666 4.3.4.5: "When an ASP moves from ASP-DOWN to ASP-INACTIVE within a
+		* particular AS, a Notify message SHOULD be sent, by the ASP-UP receptor,
+		* after sending the ASP-UP-ACK, in order to inform the ASP of the current AS
+		* state."
+		*/
+		struct xua_as_event_asp_inactive_ind_pars pars = {
+			.asp = asp,
+			.asp_requires_notify = true,
+		};
+		osmo_fsm_inst_dispatch(as->fi, XUA_ASPAS_ASP_INACTIVE_IND, &pars);
 	}
 
 	return 0;

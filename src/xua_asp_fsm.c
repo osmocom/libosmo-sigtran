@@ -355,7 +355,7 @@ static const uint32_t evt_ack_map[_NUM_XUA_ASP_E] = {
 
 /* Helper function to dispatch an ASP->AS event to all AS of which this
  * ASP is a memmber.  Ignores routing contexts for now. */
-static void dispatch_to_all_as(struct osmo_fsm_inst *fi, uint32_t event)
+static void dispatch_to_all_as(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct xua_asp_fsm_priv *xafp = fi->priv;
 	struct osmo_ss7_asp *asp = xafp->asp;
@@ -365,7 +365,7 @@ static void dispatch_to_all_as(struct osmo_fsm_inst *fi, uint32_t event)
 	llist_for_each_entry(as, &inst->as_list, list) {
 		if (!osmo_ss7_as_has_asp(as, asp))
 			continue;
-		osmo_fsm_inst_dispatch(as->fi, event, asp);
+		osmo_fsm_inst_dispatch(as->fi, event, data);
 	}
 }
 
@@ -418,7 +418,9 @@ static void check_stop_t_ack(struct osmo_fsm_inst *fi, uint32_t event)
 
 static void xua_asp_fsm_down_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
-	dispatch_to_all_as(fi, XUA_ASPAS_ASP_DOWN_IND);
+	struct xua_asp_fsm_priv *xafp = fi->priv;
+	struct osmo_ss7_asp *asp = xafp->asp;
+	dispatch_to_all_as(fi, XUA_ASPAS_ASP_DOWN_IND, asp);
 }
 
 static void xua_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -478,7 +480,17 @@ static void xua_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 
 static void xua_asp_fsm_inactive_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
-	dispatch_to_all_as(fi, XUA_ASPAS_ASP_INACTIVE_IND);
+	struct xua_asp_fsm_priv *xafp = fi->priv;
+	/* RFC4666 4.3.4.5: "When an ASP moves from ASP-DOWN to ASP-INACTIVE within a
+	 * particular AS, a Notify message SHOULD be sent, by the ASP-UP receptor,
+	 * after sending the ASP-UP-ACK, in order to inform the ASP of the current AS
+	 * state."
+	 */
+	struct xua_as_event_asp_inactive_ind_pars pars = {
+		.asp = xafp->asp,
+		.asp_requires_notify = (prev_state == XUA_ASP_S_DOWN),
+	};
+	dispatch_to_all_as(fi, XUA_ASPAS_ASP_INACTIVE_IND, &pars);
 }
 
 static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -596,7 +608,9 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 
 static void xua_asp_fsm_active_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
-	dispatch_to_all_as(fi, XUA_ASPAS_ASP_ACTIVE_IND);
+	struct xua_asp_fsm_priv *xafp = fi->priv;
+	struct osmo_ss7_asp *asp = xafp->asp;
+	dispatch_to_all_as(fi, XUA_ASPAS_ASP_ACTIVE_IND, asp);
 }
 
 static void xua_asp_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -1047,8 +1061,14 @@ static void ipa_asp_fsm_wait_id_ack(struct osmo_fsm_inst *fi, uint32_t event, vo
 
 static void ipa_asp_fsm_active_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
-	dispatch_to_all_as(fi, XUA_ASPAS_ASP_INACTIVE_IND);
-	dispatch_to_all_as(fi, XUA_ASPAS_ASP_ACTIVE_IND);
+	struct ipa_asp_fsm_priv *iafp = fi->priv;
+	struct osmo_ss7_asp *asp = iafp->asp;
+	struct xua_as_event_asp_inactive_ind_pars pars = {
+		.asp = asp,
+		.asp_requires_notify = false,
+	};
+	dispatch_to_all_as(fi, XUA_ASPAS_ASP_INACTIVE_IND, &pars);
+	dispatch_to_all_as(fi, XUA_ASPAS_ASP_ACTIVE_IND, asp);
 }
 
 /* Server + Client: We're actively transmitting user data */
@@ -1064,7 +1084,12 @@ static void ipa_asp_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *d
 
 static void ipa_asp_fsm_inactive_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
-	dispatch_to_all_as(fi, XUA_ASPAS_ASP_INACTIVE_IND);
+	struct ipa_asp_fsm_priv *iafp = fi->priv;
+	struct xua_as_event_asp_inactive_ind_pars pars = {
+		.asp = iafp->asp,
+		.asp_requires_notify = false,
+	};
+	dispatch_to_all_as(fi, XUA_ASPAS_ASP_INACTIVE_IND, &pars);
 }
 
 static void ipa_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void *data)

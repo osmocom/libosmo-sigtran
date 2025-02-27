@@ -39,6 +39,19 @@ static struct msgb *encode_notify(const struct osmo_xlm_prim_notify *npar)
 	return msg;
 }
 
+static void tx_notify(struct osmo_ss7_asp *asp, const struct osmo_xlm_prim_notify *npar)
+{
+	const char *type_name, *info_name, *info_str;
+	type_name = get_value_string(m3ua_ntfy_type_names, npar->status_type);
+	info_name = m3ua_ntfy_info_name(npar->status_type, npar->status_info);
+	info_str = npar->info_string ? npar->info_string : "";
+
+	LOGPASP(asp, DLSS7, LOGL_INFO, "Tx NOTIFY Type %s:%s (%s)\n",
+		type_name, info_name, info_str);
+	struct msgb *msg = encode_notify(npar);
+	osmo_ss7_asp_send(asp, msg);
+}
+
 static int as_notify_all_asp(struct osmo_ss7_as *as, struct osmo_xlm_prim_notify *npar)
 {
 	struct msgb *msg;
@@ -183,6 +196,37 @@ struct xua_as_fsm_priv {
 	} recovery;
 	bool ipa_route_created;
 };
+
+static void fill_notify_statchg_pars(const struct osmo_fsm_inst *fi, struct osmo_xlm_prim_notify *npar)
+{
+	struct xua_as_fsm_priv *xafp = (struct xua_as_fsm_priv *) fi->priv;
+	struct osmo_ss7_as *as = xafp->as;
+	*npar = (struct osmo_xlm_prim_notify){
+		.status_type = M3UA_NOTIFY_T_STATCHG,
+	};
+
+	switch (fi->state) {
+	case XUA_AS_S_INACTIVE:
+		npar->status_info = M3UA_NOTIFY_I_AS_INACT;
+		break;
+	case XUA_AS_S_ACTIVE:
+		npar->status_info = M3UA_NOTIFY_I_AS_ACT;
+		break;
+	case XUA_AS_S_PENDING:
+		npar->status_info = M3UA_NOTIFY_I_AS_PEND;
+		break;
+	case XUA_AS_S_DOWN:
+	default:
+		/* Nothing will be sent anyway... */
+		return;
+	}
+
+	/* Add the routing context, if it is configured */
+	if (as->cfg.routing_key.context) {
+		npar->presence |= NOTIFY_PAR_P_ROUTE_CTX;
+		npar->route_ctx = as->cfg.routing_key.context;
+	}
+}
 
 /* is the given AS one with a single ASP of IPA type? */
 static bool is_single_ipa_asp(struct osmo_ss7_as *as)
@@ -351,21 +395,21 @@ static void xua_as_fsm_onenter(struct osmo_fsm_inst *fi, uint32_t old_state)
 {
 	struct xua_as_fsm_priv *xafp = (struct xua_as_fsm_priv *) fi->priv;
 	struct osmo_ss7_as *as = xafp->as;
-	struct osmo_xlm_prim_notify npar = {
-		.status_type = M3UA_NOTIFY_T_STATCHG,
-	};
+	struct osmo_xlm_prim_notify npar;
+
+	fill_notify_statchg_pars(fi, &npar);
 
 	switch (fi->state) {
 	case XUA_AS_S_INACTIVE:
-		npar.status_info = M3UA_NOTIFY_I_AS_INACT;
+		/* continue below */
 		break;
 	case XUA_AS_S_ACTIVE:
 		if (is_single_ipa_asp(as))
 			ipa_add_route(fi);
-		npar.status_info = M3UA_NOTIFY_I_AS_ACT;
+		/* continue below */
 		break;
 	case XUA_AS_S_PENDING:
-		npar.status_info = M3UA_NOTIFY_I_AS_PEND;
+		/* continue below */
 		break;
 	case XUA_AS_S_DOWN:
 		if (is_single_ipa_asp(as))
@@ -384,11 +428,7 @@ static void xua_as_fsm_onenter(struct osmo_fsm_inst *fi, uint32_t old_state)
 		return;
 	}
 
-	/* Add the routing context, if it is configured */
-	if (as->cfg.routing_key.context) {
-		npar.presence |= NOTIFY_PAR_P_ROUTE_CTX;
-		npar.route_ctx = as->cfg.routing_key.context;
-	}
+	fill_notify_statchg_pars(fi, &npar);
 
 	/* TODO: ASP-Id of ASP triggering this state change */
 
@@ -409,10 +449,13 @@ static void xua_as_fsm_onenter(struct osmo_fsm_inst *fi, uint32_t old_state)
 static void xua_as_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct xua_as_fsm_priv *xafp = (struct xua_as_fsm_priv *) fi->priv;
-	struct osmo_ss7_asp *asp = data;
+	struct osmo_ss7_asp *asp;
+	struct xua_as_event_asp_inactive_ind_pars *inact_ind_pars;
+	struct osmo_xlm_prim_notify npar;
 
 	switch (event) {
 	case XUA_ASPAS_ASP_DOWN_IND:
+		asp = data;
 		/* one ASP transitions into ASP-DOWN */
 		if (check_any_other_asp_not_down(xafp->as, asp)) {
 			/* ignore, we stay AS_INACTIVE */
@@ -424,7 +467,11 @@ static void xua_as_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void *
 		osmo_fsm_inst_state_chg(fi, XUA_AS_S_ACTIVE, 0, 0);
 		break;
 	case XUA_ASPAS_ASP_INACTIVE_IND:
-		/* ignore */
+		inact_ind_pars = data;
+		if (inact_ind_pars->asp_requires_notify) {
+			fill_notify_statchg_pars(fi, &npar);
+			tx_notify(inact_ind_pars->asp, &npar);
+		}
 		break;
 	}
 }
@@ -433,14 +480,19 @@ static void xua_as_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *da
 {
 	struct xua_as_fsm_priv *xafp = (struct xua_as_fsm_priv *) fi->priv;
 	struct osmo_ss7_asp *asp;
+	struct xua_as_event_asp_inactive_ind_pars *inact_ind_pars;
 	struct msgb *msg;
+	struct osmo_xlm_prim_notify npar;
 
 	switch (event) {
 	case XUA_ASPAS_ASP_DOWN_IND:
 	case XUA_ASPAS_ASP_INACTIVE_IND:
-		asp = data;
-		if (check_any_other_asp_in_active(xafp->as, asp)) {
-			/* ignore, we stay AS_ACTIVE */
+		inact_ind_pars = data;
+		if (check_any_other_asp_in_active(xafp->as, inact_ind_pars->asp)) {
+			if (event == XUA_ASPAS_ASP_INACTIVE_IND && inact_ind_pars->asp_requires_notify) {
+				fill_notify_statchg_pars(fi, &npar);
+				tx_notify(inact_ind_pars->asp, &npar);
+			} /* ASP_DOWN_IND: ignore, nothing to be sent */
 		} else {
 			uint32_t recovery_msec = xafp->as->cfg.recovery_timeout_msec;
 			osmo_fsm_inst_state_chg(fi, XUA_AS_S_PENDING, 0, 0);
@@ -467,7 +519,9 @@ static void xua_as_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *da
 static void xua_as_fsm_pending(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct xua_as_fsm_priv *xafp = (struct xua_as_fsm_priv *) fi->priv;
+	struct xua_as_event_asp_inactive_ind_pars *inact_ind_pars;
 	struct msgb *msg;
+	struct osmo_xlm_prim_notify npar;
 
 	switch (event) {
 	case XUA_ASPAS_ASP_ACTIVE_IND:
@@ -479,7 +533,11 @@ static void xua_as_fsm_pending(struct osmo_fsm_inst *fi, uint32_t event, void *d
 			xua_as_transmit_msg(xafp->as, msg);
 		break;
 	case XUA_ASPAS_ASP_INACTIVE_IND:
-		/* ignore */
+		inact_ind_pars = data;
+		if (inact_ind_pars->asp_requires_notify) {
+			fill_notify_statchg_pars(fi, &npar);
+			tx_notify(inact_ind_pars->asp, &npar);
+		}
 		break;
 	case XUA_ASPAS_ASP_DOWN_IND:
 		/* ignore */
