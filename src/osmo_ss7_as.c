@@ -49,7 +49,7 @@
 struct value_string osmo_ss7_as_traffic_mode_vals[] = {
 	{ OSMO_SS7_AS_TMOD_BCAST,	"broadcast" },
 	{ OSMO_SS7_AS_TMOD_LOADSHARE,	"loadshare" },
-	{ OSMO_SS7_AS_TMOD_ROUNDROBIN,	"round-robin" },
+	{ OSMO_SS7_AS_TMOD_ROUNDROBIN,	"roundrobin" },
 	{ OSMO_SS7_AS_TMOD_OVERRIDE,	"override" },
 	{ 0, NULL }
 };
