@@ -1172,6 +1172,7 @@ int osmo_ss7_asp_send(struct osmo_ss7_asp *asp, struct msgb *msg)
 	}
 
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_TX_TOTAL);
+	LOGPASP(asp, DLSS7, LOGL_DEBUG, "Tx %d bytes: %s\n", msg->len, msgb_hexdump(msg));
 
 	if (asp->cfg.is_server) {
 		if (!asp->server) {
