@@ -114,4 +114,4 @@ void ss7_asp_restart_after_reconfigure(struct osmo_ss7_asp *asp);
 void osmo_ss7_asp_remove_default_lm(struct osmo_ss7_asp *asp);
 
 #define LOGPASP(asp, subsys, level, fmt, args ...) \
-	_LOGSS7((asp)->inst, subsys, level, "asp-%s: " fmt, (asp)->cfg.name, ## args)
+	_LOGSS7((asp)->inst, subsys, level, "ASP(%s) " fmt, (asp)->cfg.name, ## args)
