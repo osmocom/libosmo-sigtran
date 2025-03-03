@@ -981,8 +981,8 @@ static int xua_cli_connect_cb(struct osmo_stream_cli *cli)
 		rc = ss7_asp_apply_primary_address(asp);
 	} else {
 		if (asp->cfg.proto == OSMO_SS7_ASP_PROT_IPA) {
-			/* we use the lower 4 bits of the asp_id feld as SLS; let's initialize it here from a
-			 * pseudo-random value */
+			/* we use the lower 4 bits of the asp_id field as SLS;
+			 * let's initialize it here from a pseudo-random value */
 			asp->asp_id = rand() & 0xf;
 		}
 	}
