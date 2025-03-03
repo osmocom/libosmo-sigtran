@@ -196,6 +196,9 @@ int osmo_ss7_tmode_to_xua(enum osmo_ss7_as_traffic_mode tmod)
 		return M3UA_TMOD_LOADSHARE;
 	case OSMO_SS7_AS_TMOD_BCAST:
 		return M3UA_TMOD_BCAST;
+	case OSMO_SS7_AS_TMOD_ROUNDROBIN:
+		/* Round-robin is a Loadshare implementation: */
+		return M3UA_TMOD_LOADSHARE;
 	default:
 		return -1;
 	}
