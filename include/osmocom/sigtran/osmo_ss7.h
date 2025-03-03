@@ -172,10 +172,20 @@ int osmo_ss7_asp_protocol_port(enum osmo_ss7_asp_protocol prot);
  * SS7 AS Traffic Mode
  ***********************************************************************/
 
+ /* Traffic mode implementations which can be configured on an AS, either by
+  * peer (eg. RFC4666 M3UA "Traffic Mode Type") or locally through VTY.
+  * Note: This is related but not exactly RFC4666 M3UA "Traffic Mode Type" (enum
+  * m3ua_traffic_mode). */
 enum osmo_ss7_as_traffic_mode {
-	OSMO_SS7_AS_TMOD_OVERRIDE = 0,	/* default */
+	/* RFC4666 M3UA "Traffic Mode Type" "Override". Default traffic mode: */
+	OSMO_SS7_AS_TMOD_OVERRIDE = 0,
+	/* RFC4666 M3UA "Traffic Mode Type" "Broadcast": */
 	OSMO_SS7_AS_TMOD_BCAST,
+	/* RFC4666 M3UA "Traffic Mode Type" "Loadshare",
+	 * traffic distribution based on OPC+SLS: */
 	OSMO_SS7_AS_TMOD_LOADSHARE,
+	/* RFC4666 M3UA "Traffic Mode Type" "Loadshare",
+	 * traffic distribution implemented as round-robin: */
 	OSMO_SS7_AS_TMOD_ROUNDROBIN,
 	_NUM_OSMO_SS7_ASP_TMOD
 };

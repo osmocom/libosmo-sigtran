@@ -172,6 +172,7 @@ enum m3ua_error_code {
 	M3UA_ERR_NO_CONFGD_AS_FOR_ASP	= 0x1a,
 };
 
+/* Traffic Mode Type */
 enum m3ua_traffic_mode {
 	M3UA_TMOD_OVERRIDE	= 1,
 	M3UA_TMOD_LOADSHARE	= 2,
