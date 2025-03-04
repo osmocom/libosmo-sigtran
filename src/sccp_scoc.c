@@ -102,6 +102,11 @@ struct sccp_connection {
 	uint32_t sccp_class;
 	uint32_t release_cause; /* WAIT_CONN_CONF */
 
+	/* SLS to be used to transmit all Connection-oriented messages
+	 * (ITU-T Q.714 1.1.2.3 Protocol class 2).
+	 * SLS is 4 bits, as described in ITU Q.704 Figure 3 */
+	uint8_t tx_co_mtp_sls;
+
 	struct msgb *opt_data_cache;
 
 	/* incoming (true) or outgoing (false) */
@@ -450,6 +455,26 @@ bool osmo_sccp_conn_id_exists(const struct osmo_sccp_instance *inst, uint32_t id
 
 #define INIT_TIMER(x, fn, priv)		do { (x)->cb = fn; (x)->data = priv; } while (0)
 
+/* Generate an SLS to be used for Connection-oriented messages on this SCCP connection.
+ * SLS is 4 bits, as described in ITU Q.704 Figure 3.
+ * ITU-T Q.714 1.1.2.3 Protocol class 2:
+ *  "Messages belonging to a given signalling connection shall contain the same
+ *  value of the SLS field to ensure sequencing as described in 1.1.2.2"
+ */
+static uint8_t sccp_conn_gen_tx_co_mtp_sls(const struct sccp_connection *conn)
+{
+	/* Implementation: Derive the SLS from conn->conn_id. */
+	const uint32_t id = conn->conn_id;
+	uint8_t sls;
+
+	/* First shrink it to 1 byte: */
+	sls = ((id >> (3*8)) ^ (id >> (2*8)) ^ (id >> (1*8)) ^ (id)) & 0xff;
+	/* Now shrink it 8 -> 4 bits: */
+	sls = ((sls >> 4) ^ sls) & 0x0f;
+
+	return sls;
+}
+
 /* allocate + init a SCCP Connection with given ID */
 static struct sccp_connection *conn_create_id(struct osmo_sccp_user *user, uint32_t conn_id)
 {
@@ -471,6 +496,8 @@ static struct sccp_connection *conn_create_id(struct osmo_sccp_user *user, uint3
 	INIT_TIMER(&conn->t_rel, rel_tmr_cb, conn);
 	INIT_TIMER(&conn->t_int, int_tmr_cb, conn);
 	INIT_TIMER(&conn->t_rep_rel, rep_rel_tmr_cb, conn);
+
+	conn->tx_co_mtp_sls = sccp_conn_gen_tx_co_mtp_sls(conn);
 
 	/* this might change at runtime, as it is not a constant :/ */
 	sccp_scoc_fsm.log_subsys = DLSCCP;
@@ -715,6 +742,13 @@ static struct xua_msg *xua_gen_msg_co(struct sccp_connection *conn, uint32_t eve
 	if (!xua)
 		return NULL;
 
+	/* amend this with point code information; Many CO msgs
+	 * includes neither called nor calling party address! */
+	xua->mtp.dpc = conn->remote_pc;
+
+	/* Apply SLS calculated for the connection (ITU-T Q.714 1.1.2.3). */
+	xua->mtp.sls = conn->tx_co_mtp_sls;
+
 	switch (msg_type) {
 	case SUA_CO_CORE: /* Connect Request == SCCP CR */
 		xua->hdr = XUA_HDR(SUA_MSGC_CO, SUA_CO_CORE);
@@ -835,9 +869,6 @@ static int xua_gen_encode_and_send(struct sccp_connection *conn, uint32_t event,
 	if (!xua)
 		return -ENOMEM;
 
-	/* amend this with point code information; Many CO msgs
-	 * includes neither called nor calling party address! */
-	xua->mtp.dpc = conn->remote_pc;
 	sccp_scrc_rx_scoc_conn_msg(conn->inst, xua);
 	xua_msg_free(xua);
 	return 0;
