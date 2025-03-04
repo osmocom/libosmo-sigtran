@@ -110,20 +110,15 @@ enum osmo_ss7_asp_protocol osmo_ss7_as_get_asp_protocol(const struct osmo_ss7_as
  *  \param[in] as Application Server to which \ref asp is added
  *  \param[in] asp Application Server Process to be added to \ref as
  *  \returns 0 on success; negative in case of error */
-int osmo_ss7_as_add_asp(struct osmo_ss7_as *as, const char *asp_name)
+int ss7_as_add_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp)
 {
-	struct osmo_ss7_asp *asp;
 	unsigned int i;
-
-	OSMO_ASSERT(ss7_initialized);
-	asp = osmo_ss7_asp_find_by_name(as->inst, asp_name);
-	if (!asp)
-		return -ENODEV;
-
-	LOGPAS(as, DLSS7, LOGL_INFO, "Adding ASP %s to AS\n", asp->cfg.name);
+	OSMO_ASSERT(asp);
 
 	if (osmo_ss7_as_has_asp(as, asp))
 		return 0;
+
+	LOGPAS(as, DLSS7, LOGL_INFO, "Adding ASP %s to AS\n", asp->cfg.name);
 
 	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
 		if (!as->cfg.asps[i]) {
@@ -135,6 +130,22 @@ int osmo_ss7_as_add_asp(struct osmo_ss7_as *as, const char *asp_name)
 	}
 
 	return -ENOSPC;
+}
+
+/*! \brief Add given ASP to given AS
+ *  \param[in] as Application Server to which \ref asp is added
+ *  \param[in] asp_name Name of Application Server Process to be added to \ref as
+ *  \returns 0 on success; negative in case of error */
+int osmo_ss7_as_add_asp(struct osmo_ss7_as *as, const char *asp_name)
+{
+	struct osmo_ss7_asp *asp;
+
+	OSMO_ASSERT(ss7_initialized);
+	asp = osmo_ss7_asp_find_by_name(as->inst, asp_name);
+	if (!asp)
+		return -ENODEV;
+
+	return ss7_as_add_asp(as, asp);
 }
 
 /*! \brief Delete given ASP from given AS

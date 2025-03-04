@@ -297,7 +297,7 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 	}
 
 	/* Success: Add just-create AS to connected ASP + report success */
-	osmo_ss7_as_add_asp(as, asp->cfg.name);
+	ss7_as_add_asp(as, asp);
 	msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_SUCCESS, rctx);
 	/* append to list of newly assigned as */
 	newly_assigned_as[(*nas_idx)++] = as;

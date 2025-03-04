@@ -958,7 +958,7 @@ static void ipa_asp_fsm_wait_id_resp(struct osmo_fsm_inst *fi, uint32_t event, v
 				iafp->ipa_unit->unit_name);
 			goto out_err;
 		}
-		osmo_ss7_as_add_asp(as, asp->cfg.name);
+		ss7_as_add_asp(as, asp);
 		/* TODO: OAP Authentication? */
 		/* Send ID_ACK */
 		if (fd >= 0) {

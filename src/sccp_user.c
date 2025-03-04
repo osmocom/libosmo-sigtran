@@ -633,7 +633,7 @@ osmo_sccp_simple_client_on_ss7_id(void *ctx, uint32_t ss7_id, const char *name,
 			asp = asp_i;
 			LOGP(DLSCCP, LOGL_NOTICE, "%s: ASP %s for %s is not associated with any AS, using it\n",
 			     name, asp->cfg.name, osmo_ss7_asp_protocol_name(prot));
-			osmo_ss7_as_add_asp(as, asp->cfg.name);
+			ss7_as_add_asp(as, asp);
 			break;
 		}
 		if (!asp) {
@@ -657,7 +657,7 @@ osmo_sccp_simple_client_on_ss7_id(void *ctx, uint32_t ss7_id, const char *name,
 				ss7_asp_peer_set_hosts(&asp->cfg.local, asp, &default_local_ip, 1);
 			if (default_remote_ip)
 				ss7_asp_peer_set_hosts(&asp->cfg.remote, asp, &default_remote_ip, 1);
-			osmo_ss7_as_add_asp(as, asp->cfg.name);
+			ss7_as_add_asp(as, asp);
 			/* Make sure proper defaults are applied if app didn't
 			provide specific default values, then restart the ASP: */
 			ss7_asp_restart_after_reconfigure(asp);
@@ -866,7 +866,7 @@ osmo_sccp_simple_server_add_clnt(struct osmo_sccp_instance *inst,
 		goto out_asp;
 	asp->cfg.is_server = true;
 	asp->cfg.role = OSMO_SS7_ASP_ROLE_SG;
-	osmo_ss7_as_add_asp(as, asp_name);
+	ss7_as_add_asp(as, asp);
 	talloc_free(asp_name);
 	talloc_free(as_name);
 	osmo_ss7_asp_restart(asp);
