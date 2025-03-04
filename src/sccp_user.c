@@ -652,6 +652,7 @@ osmo_sccp_simple_client_on_ss7_id(void *ctx, uint32_t ss7_id, const char *name,
 				ss7_asp_peer_set_hosts(&asp->cfg.local, asp, &default_local_ip, 1);
 			if (default_remote_ip)
 				ss7_asp_peer_set_hosts(&asp->cfg.remote, asp, &default_remote_ip, 1);
+			osmo_ss7_as_add_asp(as, asp->cfg.name);
 			/* Make sure proper defaults are applied if app didn't
 			provide specific default values, then restart the ASP: */
 			ss7_asp_restart_after_reconfigure(asp);
