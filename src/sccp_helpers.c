@@ -72,6 +72,7 @@ int osmo_sccp_tx_unitdata(struct osmo_sccp_user *scu,
 	param = &prim->u.unitdata;
 	memcpy(&param->calling_addr, calling_addr, sizeof(*calling_addr));
 	memcpy(&param->called_addr, called_addr, sizeof(*called_addr));
+	param->in_sequence_control = OSMO_SCU_UNITDATA_REQ_P_SEQUENCE_CONTROL_NOT_PRESENT;
 	osmo_prim_init(&prim->oph, SCCP_SAP_USER, OSMO_SCU_PRIM_N_UNITDATA, PRIM_OP_REQUEST, msg);
 
 	msg->l2h = msgb_put(msg, len);

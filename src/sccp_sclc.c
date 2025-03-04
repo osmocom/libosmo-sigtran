@@ -35,9 +35,6 @@
  * SUA which classic SCCP cannot handle (like IP addresses in GT).
  * However, all SCCP features can be expressed in SUA.
  *
- * The code only supports Class 2.  No support for Class 3 is intended,
- * but patches are of course always welcome.
- *
  * Missing other features:
  *  * Segmentation/Reassembly support
  *  * T(guard) after (re)start
@@ -67,18 +64,47 @@ static struct xua_msg *xua_gen_msg_cl(uint32_t event,
 {
 	struct xua_msg *xua = xua_msg_alloc();
 	struct osmo_scu_unitdata_param *udpar = &prim->u.unitdata;
+	uint32_t seq_ctrl = udpar->in_sequence_control;
+	uint32_t proto_class;
 
 	if (!xua)
 		return NULL;
+
+	if (seq_ctrl == OSMO_SCU_UNITDATA_REQ_P_SEQUENCE_CONTROL_NOT_PRESENT) {
+		/* ITU-T Q.711 6.2.1 Class 0:
+		 * "The SCCP user can invoke this service by means of the parameter
+		 * "sequence control" in the N-UNITDATA request primitive being absent" */
+		proto_class = 0;
+		/* Erase the mark, we are anyway not using it in protocol_class=0. */
+		seq_ctrl = 0;
+		/* ITU-T Q.714 (1.1.2.1 Protocol class 0):
+		 * "They are transferred independently of each other.
+		 *  Therefore, they may be delivered to the SCCP user out-of-sequence."
+		 */
+		xua->mtp.sls = rand() & 0xf;
+	} else {
+		/* "ITU-T Q.711 6.2.1 Class 1:
+		 * "The SCCP user can invoke this service by means of the parameter
+		 * "sequence control" in the N-UNITDATA request primitive being present." */
+		proto_class = 1;
+		/* ITU-T Q.714 (1.1.2.2 Protocol class 1):
+		* "The Signalling Link Selection (SLS) parameter in the MTP-TRANSFER
+		* request primitive is chosen by the originating SCCP based on the value
+		* of the sequence control parameter. The SLS shall be identical for a
+		* stream of NSDUs with the same sequence control parameter".
+		* SLS is 4 bits, as described in ITU Q.704 Figure 3.
+		*/
+		xua->mtp.sls = udpar->in_sequence_control & 0x0f;
+	}
 
 	switch (msg_type) {
 	case SUA_CL_CLDT:
 		xua->hdr = XUA_HDR(SUA_MSGC_CL, SUA_CL_CLDT);
 		xua_msg_add_u32(xua, SUA_IEI_ROUTE_CTX, 0); /* FIXME */
-		xua_msg_add_u32(xua, SUA_IEI_PROTO_CLASS, 0);
+		xua_msg_add_u32(xua, SUA_IEI_PROTO_CLASS, proto_class);
 		xua_msg_add_sccp_addr(xua, SUA_IEI_SRC_ADDR, &udpar->calling_addr);
 		xua_msg_add_sccp_addr(xua, SUA_IEI_DEST_ADDR, &udpar->called_addr);
-		xua_msg_add_u32(xua, SUA_IEI_SEQ_CTRL, udpar->in_sequence_control);
+		xua_msg_add_u32(xua, SUA_IEI_SEQ_CTRL, seq_ctrl);
 		/* optional: importance, ... correlation id? */
 		if (!prim)
 			goto prim_needed;

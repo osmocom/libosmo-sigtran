@@ -236,6 +236,13 @@ struct osmo_scu_reset_param {
 };
 
 /* OSMO_SCU_PRIM_N_UNITDATA */
+/* NOTE: Ideally there should have been a "bool in_sequence_control_present",
+ * but that was found too late, so instead set:
+ * "in_sequence_control = OSMO_SCU_UNITDATA_PARAM_SEQUENCE_CONTROL_NOT_PRESENT"
+ * to mark the field not present (aka select Protocol Class 0).
+ * See ITU-T Q.711 6.2.1 for more information.
+ */
+#define OSMO_SCU_UNITDATA_REQ_P_SEQUENCE_CONTROL_NOT_PRESENT 0xffffffff
 struct osmo_scu_unitdata_param {
 	struct osmo_sccp_addr called_addr;
 	struct osmo_sccp_addr calling_addr;
