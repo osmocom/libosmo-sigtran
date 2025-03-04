@@ -208,7 +208,8 @@ static int hmrt_message_for_routing(struct osmo_ss7_instance *inst,
 		} else
 			OSMO_ASSERT(0);
 	} else {
-		LOGP(DLSS7, LOGL_ERROR, "MTP-TRANSFER.req for DPC %u: no route!\n", dpc);
+		LOGP(DLSS7, LOGL_ERROR, "MTP-TRANSFER.req for dpc=%u=%s: no route!\n",
+		     dpc, osmo_ss7_pointcode_print(inst, dpc));
 		/* DPC unknown HMRT -> MGMT */
 		/* Message Received for inaccesible SP HMRT ->RTPC */
 		/* Discard Message */
