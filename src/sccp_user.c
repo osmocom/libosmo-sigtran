@@ -634,6 +634,11 @@ osmo_sccp_simple_client_on_ss7_id(void *ctx, uint32_t ss7_id, const char *name,
 			LOGP(DLSCCP, LOGL_NOTICE, "%s: ASP %s for %s is not associated with any AS, using it\n",
 			     name, asp->cfg.name, osmo_ss7_asp_protocol_name(prot));
 			ss7_as_add_asp(as, asp);
+			/* ASP became associated to a new AS, hence it needs to be
+			 * restarted to announce/register its Routing Context.
+			 * Make sure proper defaults are applied if app didn't
+			 * provide specific default values, then restart the ASP: */
+			ss7_asp_restart_after_reconfigure(asp);
 			break;
 		}
 		if (!asp) {
