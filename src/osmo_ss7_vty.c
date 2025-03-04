@@ -3042,6 +3042,8 @@ int osmo_ss7_vty_go_parent(struct vty *vty)
 	return 0;
 }
 
+/* This is no longer used. The libosmocore callback was deprecated is not ever called since.
+ * libosmocore.git 70ce871532ab21955e0955d7e230eae65438f047 (release 1.3.0). */
 int osmo_ss7_is_config_node(struct vty *vty, int node)
 {
 	switch (node) {

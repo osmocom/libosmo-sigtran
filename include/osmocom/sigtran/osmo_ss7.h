@@ -354,4 +354,6 @@ struct vty;
 void osmo_ss7_vty_init_asp(void *ctx);
 void osmo_ss7_vty_init_sg(void *ctx);
 int osmo_ss7_vty_go_parent(struct vty *vty);
-int osmo_ss7_is_config_node(struct vty *vty, int node);
+int osmo_ss7_is_config_node(struct vty *vty, int node)
+	OSMO_DEPRECATED("Implicit parent node tracking has replaced the use of this callback. "
+			"This callback is no longer called, ever, and can be left NULL.");
