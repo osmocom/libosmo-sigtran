@@ -14,6 +14,7 @@ OsmoSTP> list
   show cs7 instance <0-15> as name AS_NAME
   show cs7 instance <0-15> as binding-table name AS_NAME
   show cs7 instance <0-15> route [POINT_CODE]
+  show cs7 instance <0-15> route binding-table [POINT_CODE] [all-matches]
   show cs7 instance <0-15> route-lookup POINT_CODE from POINT_CODE sls <0-15> [list-asps]
   show cs7 instance <0-15> sccp addressbook
   show cs7 instance <0-15> sccp users
@@ -40,6 +41,7 @@ OsmoSTP# list
   show cs7 instance <0-15> as name AS_NAME
   show cs7 instance <0-15> as binding-table name AS_NAME
   show cs7 instance <0-15> route [POINT_CODE]
+  show cs7 instance <0-15> route binding-table [POINT_CODE] [all-matches]
   show cs7 instance <0-15> route-lookup POINT_CODE from POINT_CODE sls <0-15> [list-asps]
   show cs7 instance <0-15> sccp addressbook
   show cs7 instance <0-15> sccp users

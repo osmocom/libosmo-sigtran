@@ -49,6 +49,7 @@
 #include "ss7_as.h"
 #include "ss7_asp.h"
 #include "ss7_combined_linkset.h"
+#include <ss7_linkset.h>
 #include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"
@@ -604,6 +605,86 @@ DEFUN(show_cs7_route, show_cs7_route_cmd,
 	}
 
 	vty_dump_rtable(vty, inst->rtable_system, filter_pc);
+	return CMD_SUCCESS;
+}
+
+DEFUN(show_cs7_route_bindingtable, show_cs7_route_bindingtable_cmd,
+	"show cs7 instance <0-15> route binding-table [POINT_CODE] [all-matches]",
+	SHOW_STR CS7_STR INST_STR INST_STR
+	"Routing Table\n"
+	"Display binding table\n"
+	"Destination Point Code\n"
+	"Display all matching Combination Links\n")
+{
+	int id = atoi(argv[0]);
+	bool all = argc > 2;
+	struct osmo_ss7_instance *inst;
+	uint32_t filter_pc = OSMO_SS7_PC_INVALID;
+	struct osmo_ss7_combined_linkset *clset;
+
+	inst = osmo_ss7_instance_find(id);
+	if (!inst) {
+		vty_out(vty, "No SS7 instance %d found%s", id, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (argc > 1) {
+		int pc = osmo_ss7_pointcode_parse(inst, argv[1]);
+		if (pc < 0 || !osmo_ss7_pc_is_valid((uint32_t)pc)) {
+			vty_out(vty, "Invalid point code (%s)%s", argv[1], VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+		filter_pc = (uint32_t)pc;
+	}
+
+	llist_for_each_entry(clset, &inst->rtable_system->combined_linksets, list) {
+		if ((filter_pc != OSMO_SS7_PC_INVALID) && ((filter_pc & clset->cfg.mask) != clset->cfg.pc))
+			continue; /* Skip combined linksets not matching destination */
+
+		vty_out(vty, "%sCombined Linkset: dpc=%u=%s, mask=0x%x=%s, prio=%u%s", VTY_NEWLINE,
+			(clset)->cfg.pc, osmo_ss7_pointcode_print(clset->rtable->inst, clset->cfg.pc),
+			(clset)->cfg.mask, osmo_ss7_pointcode_print2(clset->rtable->inst, clset->cfg.mask),
+			(clset)->cfg.priority, VTY_NEWLINE);
+		vty_out(vty, "Loadshare Seed  Normal Route           Available  Alternative Route      Available%s", VTY_NEWLINE);
+		vty_out(vty, "--------------  ---------------------  ---------  ---------------------  ---------%s", VTY_NEWLINE);
+
+		for (unsigned int i = 0; i < ARRAY_SIZE(clset->esls_table); i++) {
+			struct osmo_ss7_esls_entry *e = &clset->esls_table[i];
+			char normal_buf[128];
+			char alt_buf[128];
+
+			#define RT_DEST_SPRINTF(buf, rt) \
+				do { \
+					if (rt) { \
+						if ((rt)->dest.as) { \
+							snprintf(buf, sizeof(buf), "%s", (rt)->dest.as->cfg.name); \
+						} else if ((rt)->dest.linkset) { \
+							snprintf(buf, sizeof(buf), "%s", (rt)->dest.linkset->cfg.name); \
+						} else { \
+							snprintf(buf, sizeof(buf), "<error>"); \
+						} \
+					} else { \
+						snprintf(buf, sizeof(buf), "-"); \
+					} \
+				} while (0)
+
+			RT_DEST_SPRINTF(normal_buf, e->normal_rt);
+			RT_DEST_SPRINTF(alt_buf, e->alt_rt);
+
+			#undef RT_DEST_SPRINTF
+
+			vty_out(vty, "%-15u %-22s %-10s %-22s %-10s%s",
+				i,
+				normal_buf,
+				e->normal_rt ? (ss7_route_is_available(e->normal_rt) ? "Yes" : "No") : "-",
+				alt_buf,
+				e->alt_rt ? (ss7_route_is_available(e->alt_rt) ? "Yes" : "No") : "-",
+				VTY_NEWLINE);
+		}
+
+		if (!all)
+			break;
+	}
 	return CMD_SUCCESS;
 }
 
@@ -3369,6 +3450,7 @@ static void vty_init_shared(void *ctx)
 	install_lib_element(L_CS7_AS_NODE, &as_pc_patch_sccp_cmd);
 
 	install_lib_element_ve(&show_cs7_route_cmd);
+	install_lib_element_ve(&show_cs7_route_bindingtable_cmd);
 	install_lib_element_ve(&show_cs7_route_lookup_cmd);
 
 	vty_init_addr();
