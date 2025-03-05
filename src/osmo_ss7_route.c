@@ -286,6 +286,8 @@ const char *osmo_ss7_route_print(const struct osmo_ss7_route *rt)
 const char *osmo_ss7_route_name(struct osmo_ss7_route *rt, bool list_asps)
 {
 	static char buf[256];
+	char pc_str[MAX_PC_STR_LEN];
+	char mask_str[MAX_PC_STR_LEN];
 	char *pos = buf;
 	struct osmo_ss7_instance *inst;
 	size_t l;
@@ -304,8 +306,8 @@ const char *osmo_ss7_route_name(struct osmo_ss7_route *rt, bool list_asps)
 	} while (0)
 
 	APPEND("pc=%u=%s mask=0x%x=%s",
-	rt->cfg.pc, osmo_ss7_pointcode_print(inst, rt->cfg.pc),
-	rt->cfg.mask, osmo_ss7_pointcode_print2(inst, rt->cfg.mask));
+	rt->cfg.pc, osmo_ss7_pointcode_print_buf(pc_str, sizeof(pc_str), inst, rt->cfg.pc),
+	rt->cfg.mask, osmo_ss7_pointcode_print_buf(mask_str, sizeof(mask_str), inst, rt->cfg.mask));
 
 	if (rt->dest.as) {
 		struct osmo_ss7_as *as = rt->dest.as;
