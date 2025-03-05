@@ -2433,6 +2433,49 @@ DEFUN(show_cs7_as_name, show_cs7_as_name_cmd,
 	return show_as(vty, id, as_name, NULL);
 }
 
+DEFUN(show_cs7_as_bindingtable_name, show_cs7_as_bindingtable_name_cmd,
+	"show cs7 instance <0-15> as binding-table name AS_NAME",
+	SHOW_STR CS7_STR INST_STR INST_STR "Application Server (AS)\n"
+	"Display binding table\n"
+	"Look up AS with a given name\n"
+	"Name of the Application Server (AS)\n")
+{
+	int id = atoi(argv[0]);
+	const char *as_name = argv[1];
+	struct osmo_ss7_instance *inst;
+	struct osmo_ss7_as *as = NULL;
+
+	inst = osmo_ss7_instance_find(id);
+	if (!inst) {
+		vty_out(vty, "No SS7 instance %d found%s", id, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (as_name) {
+		as = osmo_ss7_as_find_by_name(inst, as_name);
+		if (!as) {
+			vty_out(vty, "No AS %s found%s", as_name, VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+	}
+
+	vty_out(vty, "Loadshare Seed  Normal ASP       Active  Alternative ASP  Active%s", VTY_NEWLINE);
+	vty_out(vty, "--------------  ---------------  ------  ---------------  ------%s", VTY_NEWLINE);
+
+	for (unsigned int i = 0; i < ARRAY_SIZE(as->aesls_table); i++) {
+		struct osmo_ss7_as_esls_entry *e = &as->aesls_table[i];
+		vty_out(vty, "%-15u %-16s %-7s %-16s %-7s%s",
+			i,
+			e->normal_asp ? e->normal_asp->cfg.name : "-",
+			e->normal_asp ? (osmo_ss7_asp_active(e->normal_asp) ? "Yes" : "No") : "-",
+			e->alt_asp ? e->alt_asp->cfg.name : "-",
+			e->alt_asp ? (osmo_ss7_asp_active(e->alt_asp) ? "Yes" : "No") : "-",
+			VTY_NEWLINE);
+	}
+
+	return CMD_SUCCESS;
+}
+
 /***********************************************************************
  * SCCP addressbook handling
  ***********************************************************************/
@@ -3306,6 +3349,7 @@ static void vty_init_shared(void *ctx)
 	install_node(&as_node, NULL);
 	install_lib_element_ve(&show_cs7_as_cmd);
 	install_lib_element_ve(&show_cs7_as_name_cmd);
+	install_lib_element_ve(&show_cs7_as_bindingtable_name_cmd);
 	install_lib_element(L_CS7_NODE, &cs7_as_cmd);
 	install_lib_element(L_CS7_NODE, &no_cs7_as_cmd);
 	install_lib_element(L_CS7_AS_NODE, &cfg_description_cmd);
