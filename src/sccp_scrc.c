@@ -154,8 +154,9 @@ static int gen_mtp_transfer_req_xua(struct osmo_sccp_instance *inst,
 
 	rt = ss7_instance_lookup_route(inst->ss7, &rtlabel);
 	if (!rt) {
-		LOGP(DLSCCP, LOGL_ERROR, "MTP-TRANSFER.req from SCCP for "
-			"DPC %u: no route!\n", xua->mtp.dpc);
+		char buf[256];
+		LOGP(DLSCCP, LOGL_ERROR, "MTP-TRANSFER.req from SCCP for %s: no route!\n",
+		     ss7_route_label_to_str(buf, sizeof(buf), inst->ss7, &rtlabel));
 		return -1;
 	}
 
