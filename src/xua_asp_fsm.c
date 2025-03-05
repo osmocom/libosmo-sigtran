@@ -481,14 +481,17 @@ static void xua_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 static void xua_asp_fsm_inactive_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct xua_asp_fsm_priv *xafp = fi->priv;
+	struct osmo_ss7_asp *asp = xafp->asp;
 	/* RFC4666 4.3.4.5: "When an ASP moves from ASP-DOWN to ASP-INACTIVE within a
 	 * particular AS, a Notify message SHOULD be sent, by the ASP-UP receptor,
 	 * after sending the ASP-UP-ACK, in order to inform the ASP of the current AS
 	 * state."
+	 * NOTIFY is only transmitted by roles SG and IPSP.
 	 */
 	struct xua_as_event_asp_inactive_ind_pars pars = {
-		.asp = xafp->asp,
-		.asp_requires_notify = (prev_state == XUA_ASP_S_DOWN),
+		.asp = asp,
+		.asp_requires_notify = (asp->cfg.role != OSMO_SS7_ASP_ROLE_ASP) &&
+				       (prev_state == XUA_ASP_S_DOWN),
 	};
 	dispatch_to_all_as(fi, XUA_ASPAS_ASP_INACTIVE_IND, &pars);
 }
