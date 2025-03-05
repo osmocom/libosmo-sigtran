@@ -108,7 +108,9 @@ struct osmo_ss7_as {
 		} pc_override;
 
 		struct osmo_ss7_asp *asps[16];
-		uint8_t last_asp_idx_sent; /* used for load-sharing traffic mode (round robin implementation) */
+		/* used for load-sharing traffic mode (round robin implementation) */
+		uint8_t last_asp_idx_assigned;
+		uint8_t last_asp_idx_sent;
 
 		struct {
 			/* How many bits from ITU SLS field (starting from least-significant-bit)

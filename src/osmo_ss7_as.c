@@ -304,6 +304,33 @@ static struct osmo_ss7_asp *ss7_as_select_asp_override(struct osmo_ss7_as *as)
 	return asp;
 }
 
+/* Pick an ASP serving AS in a round-robin fashion.
+ * During Loadshare eSLS table generation we want to pick Normal ASP
+ * in a distributed fashion, regardless of active state (Alternative ASP will
+ * be picked up temporarily later on if needed).
+ * Moreover, we must use a different index from the "active"
+ * ss7_as_select_asp_roundrobin() below, in order to avoid tainting the
+ * distribution. */
+static struct osmo_ss7_asp *ss7_as_assign_asp_roundrobin(struct osmo_ss7_as *as)
+{
+	struct osmo_ss7_asp *asp;
+	unsigned int i;
+	unsigned int first_idx;
+
+	first_idx = (as->cfg.last_asp_idx_assigned + 1) % ARRAY_SIZE(as->cfg.asps);
+	i = first_idx;
+	do {
+		asp = as->cfg.asps[i];
+		if (asp)
+			break;
+		i = (i + 1) % ARRAY_SIZE(as->cfg.asps);
+	} while (i != first_idx);
+	as->cfg.last_asp_idx_assigned = i;
+
+	return asp;
+}
+
+/* Pick an active ASP serving AS in a round-robin fashion, to send a message to. */
 static struct osmo_ss7_asp *ss7_as_select_asp_roundrobin(struct osmo_ss7_as *as)
 {
 	struct osmo_ss7_asp *asp;
@@ -397,17 +424,24 @@ static struct osmo_ss7_asp *ss7_as_select_asp_loadshare(struct osmo_ss7_as *as, 
 
 	/* No current ASP available, try to find a new current ASP: */
 
-	/* No normal route selected yet: */
+	/* No normal route assigned yet: */
 	if (!aeslse->normal_asp) {
-		asp = ss7_as_select_asp_roundrobin(as);
-		/* Either a normal route was selected or none found: */
+		/* Establish a Normal ASP, regardless of active state: */
+		asp = ss7_as_assign_asp_roundrobin(as);
+		/* No ASP found for Normal ASP, regardless of state... */
+		if (!asp)
+			return NULL;
 		aeslse->normal_asp = asp;
-		if (asp)
-			LOGPAS(as, DLSS7, LOGL_DEBUG, "Tx Loadshare: OPC=%u=%s,SLS=%u -> eSLS=%u: "
-			       "picked Normal ASP '%s' round-robin style\n",
-				mtp->opc, osmo_ss7_pointcode_print(as->inst, mtp->opc),
-				mtp->sls, as_ext_sls, asp->cfg.name);
-		return asp;
+		LOGPAS(as, DLSS7, LOGL_DEBUG, "Tx Loadshare: OPC=%u=%s,SLS=%u -> eSLS=%u: "
+		       "picked Normal ASP '%s' round-robin style\n",
+		       mtp->opc, osmo_ss7_pointcode_print(as->inst, mtp->opc),
+		       mtp->sls, as_ext_sls, aeslse->normal_asp->cfg.name);
+		if (osmo_ss7_asp_active(aeslse->normal_asp)) {
+			/* Found active Normal Route: */
+			return aeslse->normal_asp;
+		}
+		/* Normal ASP was assigned, but it is not active, fall-through
+		 * below to attempt transmission through Alternative ASP: */
 	}
 
 	/* Normal ASP unavailable and no alternative ASP (or unavailable too).
