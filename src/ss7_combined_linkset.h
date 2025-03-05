@@ -56,3 +56,13 @@ void
 ss7_combined_linkset_del_route(struct osmo_ss7_route *rt);
 struct osmo_ss7_route *
 ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const struct osmo_ss7_route_label *rtlabel);
+
+#define LOGPCLSET(clset, subsys, level, fmt, args ...) do { \
+	char _pc_str[MAX_PC_STR_LEN]; \
+	char _mask_str[MAX_PC_STR_LEN]; \
+	_LOGSS7((clset)->rtable->inst, subsys, level, \
+		"CombinedLinkset(dpc=%u=%s,mask=0x%x=%s,prio=%u) " fmt, \
+		(clset)->cfg.pc, osmo_ss7_pointcode_print_buf(_pc_str, MAX_PC_STR_LEN, (clset)->rtable->inst, (clset)->cfg.pc), \
+		(clset)->cfg.mask, osmo_ss7_pointcode_print_buf(_mask_str, MAX_PC_STR_LEN, (clset)->rtable->inst, (clset)->cfg.mask), \
+		(clset)->cfg.priority, ## args); \
+	} while (0)
