@@ -11,6 +11,7 @@ OsmoSTP> list
   show cs7 instance <0-15> asp-assoc-status
   show cs7 instance <0-15> asp-assoc-status name ASP_NAME
   show cs7 instance <0-15> as (active|all|m3ua|sua)
+  show cs7 instance <0-15> as name AS_NAME
   show cs7 instance <0-15> route [POINT_CODE]
   show cs7 instance <0-15> route-lookup POINT_CODE from POINT_CODE sls <0-15> [list-asps]
   show cs7 instance <0-15> sccp addressbook
@@ -35,6 +36,7 @@ OsmoSTP# list
   show cs7 instance <0-15> asp-assoc-status
   show cs7 instance <0-15> asp-assoc-status name ASP_NAME
   show cs7 instance <0-15> as (active|all|m3ua|sua)
+  show cs7 instance <0-15> as name AS_NAME
   show cs7 instance <0-15> route [POINT_CODE]
   show cs7 instance <0-15> route-lookup POINT_CODE from POINT_CODE sls <0-15> [list-asps]
   show cs7 instance <0-15> sccp addressbook
@@ -88,6 +90,7 @@ OsmoSTP# show cs7 instance 0 as ?
   all     Display all ASs (default)
   m3ua    Display all m3ua ASs
   sua     Display all SUA ASs
+  name    Look up AS with a given name
 
 OsmoSTP# show cs7 instance 0 sccp ?
   addressbook  List all SCCP addressbook entries
@@ -401,6 +404,15 @@ OsmoSTP(config-cs7-as)# do show cs7 instance 0 as m3ua
 AS Name      State        Context    Dpc           Si   Opc           Ssn Min   Max   Mode
 ------------ ------------ ---------- ------------- ---- ------------- --- ----- ----- -------
 my-ass       AS_DOWN      0          0.0.0                                             override
+
+OsmoSTP(config-cs7-as)# do show cs7 instance 0 as name my-ass
+                          Routing    Routing Key                          Cic   Cic   Traffic
+AS Name      State        Context    Dpc           Si   Opc           Ssn Min   Max   Mode
+------------ ------------ ---------- ------------- ---- ------------- --- ----- ----- -------
+my-ass       AS_DOWN      0          0.0.0                                             override
+
+OsmoSTP(config-cs7-as)# do show cs7 instance 0 as name my-ass-not-exists
+% No AS 'my-ass-not-exists' found
 
 OsmoSTP(config-cs7-as)# asp my-asp
 OsmoSTP(config-cs7-as)# routing-key 0 3.2.1

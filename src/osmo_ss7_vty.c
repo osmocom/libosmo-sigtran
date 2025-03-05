@@ -2358,28 +2358,42 @@ static void write_one_as(struct vty *vty, struct osmo_ss7_as *as, bool show_dyn_
 		vty_out(vty, "  point-code override patch-sccp both%s", VTY_NEWLINE);
 }
 
-DEFUN(show_cs7_as, show_cs7_as_cmd,
-	"show cs7 instance <0-15> as (active|all|m3ua|sua)",
-	SHOW_STR CS7_STR INST_STR INST_STR "Application Server (AS)\n"
-	"Display all active ASs\n"
-	"Display all ASs (default)\n"
-	"Display all m3ua ASs\n"
-	"Display all SUA ASs\n")
+static void show_one_as(struct vty *vty, struct osmo_ss7_as *as)
+{
+	vty_out(vty, "%-12s %-12s %-10u %-13s %4s %13s %3s %5s %4s %10s%s",
+		as->cfg.name, osmo_fsm_inst_state_name(as->fi), as->cfg.routing_key.context,
+		osmo_ss7_pointcode_print(as->inst, as->cfg.routing_key.pc),
+		"", "", "", "", "", osmo_ss7_as_traffic_mode_name(as->cfg.mode),
+		VTY_NEWLINE);
+}
+
+static int show_as(struct vty *vty, int id, const char *as_name, const char *filter)
 {
 	struct osmo_ss7_instance *inst;
-	struct osmo_ss7_as *as;
-	const char *filter = argv[1];
-	int id = atoi(argv[0]);
+	struct osmo_ss7_as *as = NULL;
 
 	inst = osmo_ss7_instance_find(id);
 	if (!inst) {
-		vty_out(vty, "No SS7 instance %d found%s", id, VTY_NEWLINE);
+		vty_out(vty, "%% No SS7 instance %d found%s", id, VTY_NEWLINE);
 		return CMD_WARNING;
+	}
+
+	if (as_name) {
+		as = osmo_ss7_as_find_by_name(inst, as_name);
+		if (!as) {
+			vty_out(vty, "%% No AS '%s' found%s", as_name, VTY_NEWLINE);
+			return CMD_WARNING;
+		}
 	}
 
 	vty_out(vty, "                          Routing    Routing Key                          Cic   Cic   Traffic%s", VTY_NEWLINE);
 	vty_out(vty, "AS Name      State        Context    Dpc           Si   Opc           Ssn Min   Max   Mode%s", VTY_NEWLINE);
 	vty_out(vty, "------------ ------------ ---------- ------------- ---- ------------- --- ----- ----- -------%s", VTY_NEWLINE);
+
+	if (as) {
+		show_one_as(vty, as);
+		return CMD_SUCCESS;
+	}
 
 	llist_for_each_entry(as, &inst->as_list, list) {
 		if (filter && !strcmp(filter, "m3ua") && as->cfg.proto != OSMO_SS7_ASP_PROT_M3UA)
@@ -2388,13 +2402,35 @@ DEFUN(show_cs7_as, show_cs7_as_cmd,
 			continue;
 		if (filter && !strcmp(filter, "active") && !osmo_ss7_as_active(as))
 			continue;
-		vty_out(vty, "%-12s %-12s %-10u %-13s %4s %13s %3s %5s %4s %10s%s",
-			as->cfg.name, osmo_fsm_inst_state_name(as->fi), as->cfg.routing_key.context,
-			osmo_ss7_pointcode_print(as->inst, as->cfg.routing_key.pc),
-			"", "", "", "", "", osmo_ss7_as_traffic_mode_name(as->cfg.mode),
-			VTY_NEWLINE);
+		show_one_as(vty, as);
 	}
 	return CMD_SUCCESS;
+}
+
+DEFUN(show_cs7_as, show_cs7_as_cmd,
+	"show cs7 instance <0-15> as (active|all|m3ua|sua)",
+	SHOW_STR CS7_STR INST_STR INST_STR "Application Server (AS)\n"
+	"Display all active ASs\n"
+	"Display all ASs (default)\n"
+	"Display all m3ua ASs\n"
+	"Display all SUA ASs\n")
+{
+	const char *filter = argv[1];
+	int id = atoi(argv[0]);
+
+	return show_as(vty, id, NULL, filter);
+}
+
+DEFUN(show_cs7_as_name, show_cs7_as_name_cmd,
+	"show cs7 instance <0-15> as name AS_NAME",
+	SHOW_STR CS7_STR INST_STR INST_STR "Application Server (AS)\n"
+	"Look up AS with a given name\n"
+	"Name of the Application Server (AS)\n")
+{
+	int id = atoi(argv[0]);
+	const char *as_name = argv[1];
+
+	return show_as(vty, id, as_name, NULL);
 }
 
 /***********************************************************************
@@ -3269,6 +3305,7 @@ static void vty_init_shared(void *ctx)
 
 	install_node(&as_node, NULL);
 	install_lib_element_ve(&show_cs7_as_cmd);
+	install_lib_element_ve(&show_cs7_as_name_cmd);
 	install_lib_element(L_CS7_NODE, &cs7_as_cmd);
 	install_lib_element(L_CS7_NODE, &no_cs7_as_cmd);
 	install_lib_element(L_CS7_AS_NODE, &cfg_description_cmd);
