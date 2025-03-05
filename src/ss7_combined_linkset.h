@@ -33,7 +33,8 @@ struct osmo_ss7_combined_linkset {
 	/*! list of \ref osmo_ss7_route */
 	struct llist_head routes;
 	unsigned int num_routes;
-	void *last_route_roundrobin;
+	void *last_route_roundrobin_ass;
+	void *last_route_roundrobin_tx;
 
 	struct {
 		uint32_t pc;

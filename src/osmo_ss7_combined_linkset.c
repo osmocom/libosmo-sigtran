@@ -151,11 +151,17 @@ void ss7_combined_linkset_del_route(struct osmo_ss7_route *rt)
 	}
 
 	/* Update round robin state */
-	if (rt == clset->last_route_roundrobin) {
-		ss7_llist_round_robin(&clset->routes, &clset->last_route_roundrobin, struct osmo_ss7_route, list);
+	if (rt == clset->last_route_roundrobin_ass) {
+		ss7_llist_round_robin(&clset->routes, &clset->last_route_roundrobin_ass, struct osmo_ss7_route, list);
 		/* If there's only one left, remove state: */
-		if (rt == clset->last_route_roundrobin)
-			clset->last_route_roundrobin = NULL;
+		if (rt == clset->last_route_roundrobin_ass)
+			clset->last_route_roundrobin_ass = NULL;
+	}
+	if (rt == clset->last_route_roundrobin_tx) {
+		ss7_llist_round_robin(&clset->routes, &clset->last_route_roundrobin_tx, struct osmo_ss7_route, list);
+		/* If there's only one left, remove state: */
+		if (rt == clset->last_route_roundrobin_tx)
+			clset->last_route_roundrobin_tx = NULL;
 	}
 
 	llist_del(&rt->list);
@@ -195,25 +201,37 @@ struct osmo_ss7_route *current_rt(const struct osmo_ss7_esls_entry *eslse)
 	return NULL;
 }
 
+/* Pick a Route from Combined Linkset in a round-robin fashion.
+ * During Loadshare eSLS table generation we want to pick Normal Route
+ * in a distributed fashion, regardless of active state (Alternative Route will
+ * be picked up temporarily later on if needed).
+ * Moreover, we must use a different index from the "active"
+ * ss7_combined_linkset_select_route_roundrobin() below, in order to avoid tainting
+ * the distribution.
+ */
+static struct osmo_ss7_route *ss7_combined_linkset_assign_route_roundrobin(struct osmo_ss7_combined_linkset *clset)
+{
+	struct osmo_ss7_route *rt;
+
+	for (unsigned int i = 0; i < clset->num_routes; i++) {
+		rt = ss7_llist_round_robin(&clset->routes, &clset->last_route_roundrobin_ass, struct osmo_ss7_route, list);
+		if (rt)
+			return rt;
+	}
+	return NULL;
+}
+
+/* Pick an available route from Combined Linkset in a round-robin fashion, to send a message through. */
 static struct osmo_ss7_route *ss7_combined_linkset_select_route_roundrobin(struct osmo_ss7_combined_linkset *clset)
 {
 	struct osmo_ss7_route *rt;
-	struct osmo_ss7_route *rt_found = NULL;
-	unsigned int i = 0;
 
-	while (i < clset->num_routes) {
-		i++;
-		rt = ss7_llist_round_robin(&clset->routes, &clset->last_route_roundrobin, struct osmo_ss7_route, list);
-		if (ss7_route_is_available(rt)) {
-			rt_found = rt;
-			break;
-		}
+	for (unsigned int i = 0; i < clset->num_routes; i++) {
+		rt = ss7_llist_round_robin(&clset->routes, &clset->last_route_roundrobin_tx, struct osmo_ss7_route, list);
+		if (rt && ss7_route_is_available(rt))
+			return rt;
 	}
-
-	if (!rt_found)
-		return NULL;
-
-	return rt_found;
+	return NULL;
 }
 
 struct osmo_ss7_route *
@@ -256,18 +274,24 @@ ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const
 
 	/* No normal route selected yet: */
 	if (!eslse->normal_rt) {
-		rt = ss7_combined_linkset_select_route_roundrobin(clset);
-		/* Either a normal route was selected or none found: */
+		/* Establish a Normal Route, regardless of available state: */
+		rt = ss7_combined_linkset_assign_route_roundrobin(clset);
+		/* No route found for Normal Route, regardless of state... */
+		if (!rt)
+			return NULL;
 		eslse->normal_rt = rt;
-		if (rt) {
-			LOGPCLSET(clset, DLSS7, LOGL_DEBUG, "RT loookup: OPC=%u=%s,DPC=%u=%s,SLS=%u -> eSLS=%u: "
-				  "picked Normal Route via '%s' round-robin style\n",
-				  rtlabel->opc, osmo_ss7_pointcode_print(inst, rtlabel->opc),
-				  rtlabel->dpc, osmo_ss7_pointcode_print2(inst, rtlabel->dpc),
-				  rtlabel->sls, esls,
-				  rt->dest.as ? rt->dest.as->cfg.name : "<linkset>");
+		LOGPCLSET(clset, DLSS7, LOGL_DEBUG, "RT loookup: OPC=%u=%s,DPC=%u=%s,SLS=%u -> eSLS=%u: "
+			  "picked Normal Route via '%s' round-robin style\n",
+			  rtlabel->opc, osmo_ss7_pointcode_print(inst, rtlabel->opc),
+			  rtlabel->dpc, osmo_ss7_pointcode_print2(inst, rtlabel->dpc),
+			  rtlabel->sls, esls,
+			  rt->dest.as ? rt->dest.as->cfg.name : "<linkset>");
+		if (ss7_route_is_available(eslse->normal_rt)) {
+			/* Found available Normal Route: */
+			return eslse->normal_rt;
 		}
-		return rt;
+		/* Normal Route was assigned, but it is not active, fall-through
+		 * below to attempt transmission through Alternative Route: */
 	}
 
 	/* Normal route unavailable and no alternative route (or unavailable too).
