@@ -166,7 +166,7 @@ const struct value_string sccp_scmg_msgt_names[] = {
 };
 
 static int sccp_scmg_tx(struct osmo_sccp_user *scu, const struct osmo_sccp_addr *calling_addr,
-			const struct osmo_sccp_addr *called_addr,
+			const struct osmo_sccp_addr *called_addr, const uint32_t *seq_ctrl,
 			uint8_t msg_type, uint8_t ssn, uint16_t pc, uint8_t smi, uint8_t *ssc_cong_lvl)
 {
 	struct msgb *msg = sccp_msgb_alloc(__func__);
@@ -179,6 +179,7 @@ static int sccp_scmg_tx(struct osmo_sccp_user *scu, const struct osmo_sccp_addr 
 	param = &prim->u.unitdata;
 	memcpy(&param->calling_addr, calling_addr, sizeof(*calling_addr));
 	memcpy(&param->called_addr, called_addr, sizeof(*called_addr));
+	param->in_sequence_control = seq_ctrl ? *seq_ctrl : OSMO_SCU_UNITDATA_REQ_P_SEQUENCE_CONTROL_NOT_PRESENT;
 	osmo_prim_init(&prim->oph, SCCP_SAP_USER, OSMO_SCU_PRIM_N_UNITDATA, PRIM_OP_REQUEST, msg);
 
 	/* Fill the actual SCMG message */
@@ -243,7 +244,7 @@ static int scmg_rx_sst(struct osmo_sccp_user *scu, const struct osmo_sccp_addr *
 	if (0 /* !subsys_available(scu) */)
 		return 0;
 
-	return sccp_scmg_tx(scu, called_addr, calling_addr, SCCP_SCMG_MSGT_SSA,
+	return sccp_scmg_tx(scu, called_addr, calling_addr, NULL, SCCP_SCMG_MSGT_SSA,
 			    sst->affected_ssn, sst->affected_pc, 0, NULL);
 }
 
