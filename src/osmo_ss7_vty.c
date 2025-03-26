@@ -404,7 +404,7 @@ DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
 	   "Point Code Mask\n"
 	   "Specify Destination Linkset\n"
 	   "Linkset Name\n"
-	   "Specify Priority\n"
+	   "Specify Priority (lower value means higher priority)\n"
 	   ROUTE_PRIO_VAR_HELP_STR
 	   "Specify QoS Class\n"
 	   QOS_CLASS_VAR_HELP_STR,
