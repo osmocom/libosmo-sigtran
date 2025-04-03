@@ -350,6 +350,15 @@ static struct osmo_ss7_asp *ss7_as_select_asp_roundrobin(struct osmo_ss7_as *as)
 	return asp;
 }
 
+/* Reset loadshare bindings table. It will be filled in as needed.
+ * This is useful for instance when user changes the ASP set inside an AS, or
+ * changes the way the binding seed (eSLS) is calculated. */
+void ss7_as_loadshare_binding_table_reset(struct osmo_ss7_as *as)
+{
+	memset(&as->aesls_table[0], 0, sizeof(as->aesls_table));
+	as->cfg.last_asp_idx_assigned = 0;
+}
+
 static as_ext_sls_t osmo_ss7_instance_calc_itu_as_ext_sls(const struct osmo_ss7_as *as, uint32_t opc, uint8_t sls)
 {
 	uint16_t opc12;

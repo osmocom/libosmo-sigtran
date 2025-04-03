@@ -131,6 +131,7 @@ struct osmo_ss7_asp *ss7_as_select_asp(struct osmo_ss7_as *as, const struct osmo
 
 unsigned int osmo_ss7_as_count_asp(const struct osmo_ss7_as *as);
 int ss7_as_add_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp);
+void ss7_as_loadshare_binding_table_reset(struct osmo_ss7_as *as);
 
 #define LOGPAS(as, subsys, level, fmt, args ...) \
 	_LOGSS7((as)->inst, subsys, level, "AS(%s) " fmt, (as)->cfg.name, ## args)

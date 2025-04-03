@@ -2185,6 +2185,17 @@ DEFUN_ATTR(as_sls_shift, as_sls_shift_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN_ATTR(as_bindingtable_reset, as_bindingtable_reset_cmd,
+	"binding-table reset",
+	"AS Loadshare binding table operations\n"
+	"Reset loadshare binding table\n",
+	CMD_ATTR_IMMEDIATE)
+{
+	struct osmo_ss7_as *as = vty->index;
+	ss7_as_loadshare_binding_table_reset(as);
+	return CMD_SUCCESS;
+}
+
 DEFUN_ATTR(as_recov_tout, as_recov_tout_cmd,
 	   "recovery-timeout <1-2000>",
 	   "Specifies the recovery timeout value in milliseconds\n"
@@ -3440,6 +3451,7 @@ static void vty_init_shared(void *ctx)
 	install_lib_element(L_CS7_AS_NODE, &as_traf_mode_loadshare_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_no_traf_mode_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_sls_shift_cmd);
+	install_lib_element(L_CS7_AS_NODE, &as_bindingtable_reset_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_recov_tout_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_qos_class_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_rout_key_cmd);
