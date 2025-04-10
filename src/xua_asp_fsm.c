@@ -231,6 +231,17 @@ static int peer_send(struct osmo_fsm_inst *fi, int out_event, struct xua_msg *in
 	case XUA_ASP_E_ASPSM_ASPUP_ACK:
 		/* RFC3868 Ch. 3.5.2 */
 		xua->hdr = XUA_HDR(SUA_MSGC_ASPSM, SUA_ASPSM_UP_ACK);
+		/* Optional: ASP ID */
+#if 0
+		/* TODO: RFC 4666 3.5.2:
+		 * "The optional ASP Identifier parameter is specifically useful for IPSP
+		 * communication.  In that case, the IPSP answering the ASP Up message
+		 * MAY include its own ASP Identifier value." */
+		if (ss7_asp_peer_requires_asp_id(asp)) { /* Maybe configure in VTY "asp" node? */
+			asp_id = /* get a unique id of asp within as, eg. the index in as->asps[] */;
+			xua_msg_add_u32(xua, SUA_IEI_ASP_ID, asp_id);
+		}
+#endif
 		/* Optional: Info String */
 		break;
 	case XUA_ASP_E_ASPSM_ASPDN:
