@@ -1027,7 +1027,6 @@ static int xua_cli_disconnect_cb(struct osmo_stream_cli *cli)
 /* read call-back for IPA/SCCPlite socket */
 static int ipa_cli_read_cb(struct osmo_stream_cli *conn, int res, struct msgb *msg)
 {
-	int fd = osmo_stream_cli_get_fd(conn);
 	struct osmo_ss7_asp *asp = osmo_stream_cli_get_data(conn);
 
 	if (res <= 0) {
@@ -1042,9 +1041,9 @@ static int ipa_cli_read_cb(struct osmo_stream_cli *conn, int res, struct msgb *m
 
 	msg->dst = asp;
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_TOTAL);
-	/* we can use the 'fd' return value of osmo_stream_srv_get_fd() here unverified as all we do
-	 * is 'roll the dice' to obtain a 4-bit SLS value. */
-	return ipa_rx_msg(asp, msg, fd & 0xf);
+	/* we simply use the lower 4 bits of the asp_id, which is initialized to a pseudo-random value upon
+	 * connect */
+	return ipa_rx_msg(asp, msg, asp->asp_id & 0xf);
 }
 
 /* read call-back for M3UA-over-TCP socket */
