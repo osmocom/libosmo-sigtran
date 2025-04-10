@@ -1104,34 +1104,34 @@ static void ipa_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 	}
 }
 
-/* Assign a 4 bit asp_id (as unqiue as possible) which will be used as SLS for incoming IPA PDUs.*/
-static void _ipa_asp_pick_unused_asp_id_as_sls(struct osmo_ss7_asp *asp, const struct osmo_ss7_as *as)
+/* Assign a 4 bit SLS (as unqiue as possible) for incoming IPA PDUs.*/
+static void _ipa_asp_pick_unused_sls(struct osmo_ss7_asp *asp, const struct osmo_ss7_as *as)
 {
-	for (unsigned int asp_id = 0; asp_id <= 0x0f; asp_id++) {
+	for (unsigned int sls = 0; sls <= 0x0f; sls++) {
 		bool used = false;
 		for (unsigned i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
 			if (!as->cfg.asps[i])
 				continue;
 			if (as->cfg.asps[i] == asp)
 				continue;
-			if (!as->cfg.asps[i]->asp_id_present)
+			if (!as->cfg.asps[i]->ipa.sls_assigned)
 				continue;
-			if (as->cfg.asps[i]->asp_id == asp_id) {
+			if (as->cfg.asps[i]->ipa.sls == sls) {
 				used = true;
 				break;
 			}
 		}
 		if (used)
 			continue;
-		/* Found an unused asp_id, use it: */
-		asp->asp_id = asp_id;
-		asp->asp_id_present = true;
-		LOGPASP(asp, DLSS7, LOGL_DEBUG, "Assigned unsued asp_id = %u to be used as SLS\n", asp_id);
+		/* Found an unused SLS, use it: */
+		asp->ipa.sls = sls;
+		asp->ipa.sls_assigned = true;
+		LOGPASP(asp, DLSS7, LOGL_DEBUG, "Assigned unsued SLS = %u\n", sls);
 		return;
 	}
-	LOGPASP(asp, DLSS7, LOGL_INFO, "All asp_ids in IPA AS picked, unique SLS not possible, picking random one\n");
-	asp->asp_id = rand() & 0x0f;
-	asp->asp_id_present = true;
+	LOGPASP(asp, DLSS7, LOGL_INFO, "All SLS in IPA AS picked, unique SLS not possible, picking random one\n");
+	asp->ipa.sls = rand() & 0x0f;
+	asp->ipa.sls_assigned = true;
 }
 
 static void ipa_asp_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -1160,12 +1160,9 @@ static void ipa_asp_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	case XUA_ASP_E_AS_ASSIGNED:
 		as = data;
 		osmo_talloc_replace_string(iafp->ipa_unit, &iafp->ipa_unit->unit_name, as->cfg.name);
-		/* In IPA, asp_id is not really used on the wire, and we
-		 * actually use internally the lower 4 bits of the field to
-		 * fill in a potentailly unique SLS to apply to PDUs received from the IPA socket.
-		 * Now that AS is known, try picking an unused asp_id inside the AS.
-		 * we use the lower 4 bits of the asp_id field as SLS; */
-		_ipa_asp_pick_unused_asp_id_as_sls(iafp->asp, as);
+		/* Now that AS is known, try picking an unused SLS inside the AS.
+		 * It will be applied to PDUs received from the IPA socket. */
+		_ipa_asp_pick_unused_sls(iafp->asp, as);
 		/* Now that the AS is known, start the client side: */
 		if (iafp->role == OSMO_SS7_ASP_ROLE_ASP && fi->state == IPA_ASP_S_DOWN) {
 			LOGPFSML(fi, LOGL_NOTICE, "Bringing up ASP now once it has been assigned to an AS\n");
@@ -1310,13 +1307,13 @@ static int ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
 
 	if (as) {
 		unit_name = as->cfg.name;
-		/* Allocacate potentially unique asp_id within AS since AS is already known: */
-		_ipa_asp_pick_unused_asp_id_as_sls(asp, as);
+		/* Allocacate potentially unique SLS within AS since AS is already known: */
+		_ipa_asp_pick_unused_sls(asp, as);
 	} else if (asp->dyn_allocated) {
 		LOGPFSML(fi, LOGL_INFO, "Dynamic ASP is not assigned to any AS, "
 			 "using ASP name instead of AS name as ipa_unit_name\n");
 		unit_name = asp->cfg.name;
-		/* asp->asp_id will be assigned together with AS unit_name during XUA_ASP_E_AS_ASSIGNED. */
+		/* asp->ipa.sls will be assigned together with AS unit_name during XUA_ASP_E_AS_ASSIGNED. */
 	} else {
 		/* ASP in client mode will be brought up when this ASP is added
 		 * to an AS, see XUA_ASP_E_AS_ASSIGNED. */
@@ -1325,7 +1322,7 @@ static int ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
 			can_start = false;
 		}
 		unit_name = asp->cfg.name;
-		/* asp->asp_id will be assigned together with AS unit_name during XUA_ASP_E_AS_ASSIGNED. */
+		/* asp->ipa.sls will be assigned together with AS unit_name during XUA_ASP_E_AS_ASSIGNED. */
 	}
 
 	iafp->role = role;

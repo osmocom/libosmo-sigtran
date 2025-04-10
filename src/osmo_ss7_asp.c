@@ -851,9 +851,7 @@ int ss7_asp_ipa_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struct msg
 
 	msg->dst = asp;
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_TOTAL);
-	/* we simply use the lower 4 bits of the asp_id, which is initialized to a pseudo-random value upon
-	 * connect */
-	return ipa_rx_msg(asp, msg, asp->asp_id & 0xf);
+	return ipa_rx_msg(asp, msg, asp->ipa.sls);
 }
 
 /* netif code tells us we can read something from the socket */
@@ -1035,9 +1033,7 @@ static int ipa_cli_read_cb(struct osmo_stream_cli *conn, int res, struct msgb *m
 
 	msg->dst = asp;
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_TOTAL);
-	/* we simply use the lower 4 bits of the asp_id, which is initialized to a pseudo-random value upon
-	 * connect */
-	return ipa_rx_msg(asp, msg, asp->asp_id & 0xf);
+	return ipa_rx_msg(asp, msg, asp->ipa.sls);
 }
 
 /* read call-back for M3UA-over-TCP socket */

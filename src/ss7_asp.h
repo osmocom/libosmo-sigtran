@@ -63,6 +63,15 @@ struct osmo_ss7_asp {
 	/*! Pending message for non-blocking IPA read */
 	struct msgb *pending_msg;
 
+	/* IPA proto ASP specific fields. */
+	struct {
+		/* Incoming IPA PDUs have no SLS field, hence a potentially
+		 * unique one within AS is assigned to this ASP and applied
+		 * manually when received. */
+		uint8_t sls:4;
+		bool sls_assigned;
+	} ipa;
+
 	struct {
 		char *name;
 		char *description;
