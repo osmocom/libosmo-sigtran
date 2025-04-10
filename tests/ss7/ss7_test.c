@@ -10,6 +10,7 @@
 
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <osmocom/sigtran/protocol/m3ua.h>
+#include <osmocom/sigtran/protocol/sua.h>
 
 #include <osmocom/core/utils.h>
 #include <osmocom/core/msgb.h>
@@ -276,6 +277,8 @@ static void test_as(void)
 {
 	struct osmo_ss7_as *as;
 	struct osmo_ss7_asp *asp;
+	struct xua_msg *xua;
+	int rc;
 
 	OSMO_ASSERT(osmo_ss7_as_find_by_name(s7i, "as1") == NULL);
 	as = osmo_ss7_as_find_or_create(s7i, "as1", OSMO_SS7_ASP_PROT_M3UA);
@@ -296,9 +299,17 @@ static void test_as(void)
 	osmo_ss7_asp_restart(asp);
 
 	/* ask FSM to send ASP-UP.req */
-	osmo_fsm_inst_dispatch(asp->fi, XUA_ASP_E_M_ASP_UP_REQ, NULL);
-	osmo_fsm_inst_dispatch(asp->fi, XUA_ASP_E_ASPSM_ASPUP_ACK, NULL);
-	osmo_fsm_inst_dispatch(asp->fi, XUA_ASP_E_ASPTM_ASPAC_ACK, NULL);
+	rc = osmo_fsm_inst_dispatch(asp->fi, XUA_ASP_E_M_ASP_UP_REQ, NULL);
+	OSMO_ASSERT(rc == 0);
+
+	xua = xua_msg_alloc();
+	xua->hdr = XUA_HDR(SUA_MSGC_ASPSM, SUA_ASPSM_UP_ACK);
+	rc = osmo_fsm_inst_dispatch(asp->fi, XUA_ASP_E_ASPSM_ASPUP_ACK, xua);
+	xua_msg_free(xua);
+	OSMO_ASSERT(rc == 0);
+
+	rc = osmo_fsm_inst_dispatch(asp->fi, XUA_ASP_E_ASPTM_ASPAC_ACK, NULL);
+	OSMO_ASSERT(rc == 0);
 
 	OSMO_ASSERT(osmo_ss7_as_del_asp(as, "asp1") == 0);
 	OSMO_ASSERT(osmo_ss7_as_del_asp(as, "asp2") == -ENODEV);

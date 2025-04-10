@@ -461,6 +461,11 @@ static void xua_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	case XUA_ASP_E_ASPSM_ASPUP_ACK:
 		/* only if role ASP */
 		ENSURE_ASP_OR_IPSP(fi, event);
+		/* Optional ASP Identifier */
+		if ((asp_id_ie = xua_msg_find_tag(data, SUA_IEI_ASP_ID))) {
+			asp->remote_asp_id = xua_msg_part_get_u32(asp_id_ie);
+			asp->remote_asp_id_present = true;
+		}
 		osmo_fsm_inst_state_chg(fi, XUA_ASP_S_INACTIVE, 0, 0);
 		/* inform layer manager */
 		send_xlm_prim_simple(fi, OSMO_XLM_PRIM_M_ASP_UP, PRIM_OP_CONFIRM);
@@ -472,9 +477,8 @@ static void xua_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	case XUA_ASP_E_ASPSM_ASPUP:
 		/* only if role SG */
 		ENSURE_SG_OR_IPSP(fi, event);
-		asp_id_ie = xua_msg_find_tag(data, SUA_IEI_ASP_ID);
 		/* Optional ASP Identifier: Store for NTFY */
-		if (asp_id_ie) {
+		if ((asp_id_ie = xua_msg_find_tag(data, SUA_IEI_ASP_ID))) {
 			asp->remote_asp_id = xua_msg_part_get_u32(asp_id_ie);
 			asp->remote_asp_id_present = true;
 		}
