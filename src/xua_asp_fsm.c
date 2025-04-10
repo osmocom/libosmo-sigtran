@@ -805,7 +805,7 @@ struct osmo_fsm xua_asp_fsm = {
 static int ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
 			     enum osmo_ss7_asp_role role, int log_level);
 
-/*! \brief Start a new ASP finite stae machine for given ASP (stored in asp->fi)
+/*! \brief Start a new ASP finite state machine for given ASP (stored in asp->fi)
  *  \param[in] asp Application Server Process for which to start FSM
  *  \param[in] role Role (ASP, SG, IPSP) of this FSM
  *  \param[in] log_level Logging Level for ASP FSM logging
