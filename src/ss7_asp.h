@@ -43,9 +43,15 @@ struct osmo_ss7_asp {
 	/*! pre-formatted human readable local/remote socket name */
 	char *sock_name;
 
-	/* ASP Identifier for ASP-UP + NTFY */
-	uint32_t asp_id;
-	bool asp_id_present;
+	/* ASP Identifier for ASP-UP + NTFY, as received by the peer.
+	 * (In IPA ASPs it's used internally to hold 4-bit SLS).
+	 * FIXME: This should actually be stored in a AS-ASP relation, since it
+	 *        can be different per AS, see RFC4666 3.5.1
+	 * "The optional ASP Identifier parameter contains a unique value that
+	 *  is locally significant among the ASPs that support an AS".
+	 */
+	uint32_t remote_asp_id;
+	bool remote_asp_id_present;
 
 	/* Layer Manager to which we talk */
 	const struct osmo_xua_layer_manager *lm;

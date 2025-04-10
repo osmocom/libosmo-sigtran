@@ -83,9 +83,9 @@ static int as_notify_all_asp(struct osmo_ss7_as *as, struct osmo_xlm_prim_notify
 			continue;
 
 		/* Optional: ASP Identifier (if sent in ASP-UP) */
-		if (asp->asp_id_present) {
+		if (asp->remote_asp_id_present) {
 			npar->presence |= NOTIFY_PAR_P_ASP_ID;
-			npar->asp_id = asp->asp_id;
+			npar->asp_id = asp->remote_asp_id;
 		} else
 			npar->presence &= ~NOTIFY_PAR_P_ASP_ID;
 
@@ -370,8 +370,8 @@ static void notify_any_other_active_asp_as_inactive(struct osmo_ss7_as *as, stru
 		.status_info = M3UA_NOTIFY_I_OT_ALT_ASP_ACT,
 	};
 
-	if (asp_cmp->asp_id_present)
-		npar.asp_id = asp_cmp->asp_id;
+	if (asp_cmp->remote_asp_id_present)
+		npar.asp_id = asp_cmp->remote_asp_id;
 
 	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
 		struct osmo_ss7_asp *asp = as->cfg.asps[i];

@@ -215,8 +215,17 @@ static int peer_send(struct osmo_fsm_inst *fi, int out_event, struct xua_msg *in
 		/* RFC 3868 Ch. 3.5.1 */
 		xua->hdr = XUA_HDR(SUA_MSGC_ASPSM, SUA_ASPSM_UP);
 		/* Optional: ASP ID */
-		if (asp->asp_id_present)
-			xua_msg_add_u32(xua, SUA_IEI_ASP_ID, asp->asp_id);
+#if 0
+		/* TODO: RFC 4666 3.8.1:
+		 * 'The "ASP Identifier Required" error is sent by an SGP in
+		 * response to an ASP Up message that does not contain an ASP
+		 * Identifier parameter when the SGP requires one. The ASP SHOULD
+		 * resend the ASP Up message with an ASP Identifier.' */
+		if (ss7_asp_peer_requires_asp_id(asp)) { /* Maybe configure in VTY "asp" node? */
+			asp_id = /* get a unique id of asp within as, eg. the index in as->asps[] */;
+			xua_msg_add_u32(xua, SUA_IEI_ASP_ID, asp_id);
+		}
+#endif
 		/* Optional: Info String */
 		break;
 	case XUA_ASP_E_ASPSM_ASPUP_ACK:
@@ -455,8 +464,8 @@ static void xua_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		asp_id_ie = xua_msg_find_tag(data, SUA_IEI_ASP_ID);
 		/* Optional ASP Identifier: Store for NTFY */
 		if (asp_id_ie) {
-			asp->asp_id = xua_msg_part_get_u32(asp_id_ie);
-			asp->asp_id_present = true;
+			asp->remote_asp_id = xua_msg_part_get_u32(asp_id_ie);
+			asp->remote_asp_id_present = true;
 		}
 		/* send ACK */
 		peer_send(fi, XUA_ASP_E_ASPSM_ASPUP_ACK, NULL);
