@@ -127,6 +127,10 @@ struct osmo_ss7_as *ss7_as_alloc(struct osmo_ss7_instance *inst, const char *nam
 	as->cfg.mode = OSMO_SS7_AS_TMOD_OVERRIDE;
 	as->cfg.recovery_timeout_msec = 2000;
 	as->cfg.routing_key.l_rk_id = ss7_find_free_l_rk_id(inst);
+
+	/* Pick 1st ASP upon 1st roundrobin assignment: */
+	as->cfg.last_asp_idx_assigned = ARRAY_SIZE(as->cfg.asps) - 1;
+
 	as->fi = xua_as_fsm_start(as, LOGL_DEBUG);
 	llist_add_tail(&as->list, &inst->as_list);
 
@@ -356,7 +360,7 @@ static struct osmo_ss7_asp *ss7_as_select_asp_roundrobin(struct osmo_ss7_as *as)
 void ss7_as_loadshare_binding_table_reset(struct osmo_ss7_as *as)
 {
 	memset(&as->aesls_table[0], 0, sizeof(as->aesls_table));
-	as->cfg.last_asp_idx_assigned = 0;
+	as->cfg.last_asp_idx_assigned = ARRAY_SIZE(as->cfg.asps) - 1;
 }
 
 static as_ext_sls_t osmo_ss7_instance_calc_itu_as_ext_sls(const struct osmo_ss7_as *as, uint32_t opc, uint8_t sls)
