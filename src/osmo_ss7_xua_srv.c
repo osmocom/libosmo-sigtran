@@ -180,12 +180,6 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
 	if (asp->cfg.trans_proto == IPPROTO_SCTP) {
 		rc = ss7_asp_apply_peer_primary_address(asp);
 		rc = ss7_asp_apply_primary_address(asp);
-	} else {
-		if (asp->cfg.proto == OSMO_SS7_ASP_PROT_IPA) {
-			/* we use the lower 4 bits of the asp_id field as SLS;
-			 * let's initialize it here from a pseudo-random value */
-			asp->asp_id = rand() & 0xf;
-		}
 	}
 
 	/* send M-SCTP_ESTABLISH.ind to Layer Manager */
