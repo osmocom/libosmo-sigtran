@@ -11,6 +11,9 @@
 #include <osmocom/core/socket.h>
 #include <osmocom/core/rate_ctr.h>
 
+/* Maximum number of supported RCTXs present in RFC4666 Routing Context IE. */
+#define OSMO_SS7_MAX_RCTX_COUNT 128
+
 struct osmo_ss7_instance;
 
 extern struct llist_head osmo_ss7_instances;

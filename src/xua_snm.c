@@ -175,7 +175,7 @@ void xua_snm_pc_available(struct osmo_ss7_as *as, const uint32_t *aff_pc,
 {
 	struct osmo_ss7_instance *s7i = as->inst;
 	struct osmo_ss7_asp *asp;
-	uint32_t rctx[32];
+	uint32_t rctx[OSMO_SS7_MAX_RCTX_COUNT];
 	unsigned int num_rctx;
 
 	/* inform local users via a MTP-{PAUSE, RESUME} primitive */
@@ -217,7 +217,7 @@ static void sua_snm_ssn_available(struct osmo_ss7_as *as, uint32_t aff_pc, uint3
 {
 	struct osmo_ss7_instance *s7i = as->inst;
 	struct osmo_ss7_asp *asp;
-	uint32_t rctx[32];
+	uint32_t rctx[OSMO_SS7_MAX_RCTX_COUNT];
 	unsigned int num_rctx;
 	uint32_t _smi = smi ? *smi : 0; /* 0 == reserved/unknown in SUA */
 
@@ -252,7 +252,7 @@ static void xua_snm_upu(struct osmo_ss7_as *as, uint32_t dpc, uint16_t user, uin
 {
 	struct osmo_ss7_instance *s7i = as->inst;
 	struct osmo_ss7_asp *asp;
-	uint32_t rctx[32];
+	uint32_t rctx[OSMO_SS7_MAX_RCTX_COUNT];
 	unsigned int num_rctx;
 
 	/* Translate to MTP-STATUS.ind towards SCCP (will create N-PCSTATE.ind to SCU) */
@@ -284,7 +284,7 @@ static void xua_snm_scon(struct osmo_ss7_as *as, const uint32_t *aff_pc, unsigne
 {
 	struct osmo_ss7_instance *s7i = as->inst;
 	struct osmo_ss7_asp *asp;
-	uint32_t rctx[32];
+	uint32_t rctx[OSMO_SS7_MAX_RCTX_COUNT];
 	unsigned int num_rctx;
 
 	/* TODO: How to translate to MTP and towards SCCP (create N-PCSTATE.ind to SCU) */
@@ -318,7 +318,7 @@ void xua_snm_rx_daud(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	unsigned int num_aff_pc;
 	unsigned int num_rctx;
 	const uint32_t *aff_pc;
-	uint32_t rctx[32];
+	uint32_t rctx[OSMO_SS7_MAX_RCTX_COUNT];
 	int log_ss = osmo_ss7_asp_get_log_subsys(asp);
 	int i;
 

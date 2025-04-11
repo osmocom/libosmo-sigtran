@@ -174,7 +174,7 @@ static int determine_traf_mode(struct osmo_ss7_asp *asp)
 static int xua_msg_add_asp_rctx(struct xua_msg *xua, struct osmo_ss7_asp *asp)
 {
 	struct osmo_ss7_as *as;
-	uint32_t rctx[128];
+	uint32_t rctx[OSMO_SS7_MAX_RCTX_COUNT];
 	unsigned int i = 0;
 
 	/* iterate over all ASs and build array of routing contexts */
