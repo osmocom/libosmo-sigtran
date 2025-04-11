@@ -1313,8 +1313,8 @@ void ss7_asp_restart_after_reconfigure(struct osmo_ss7_asp *asp)
 }
 
 /* Obtain all routing contexts (in network byte order) that exist within the given ASP */
-unsigned int ss7_asp_get_all_rctx_be(const struct osmo_ss7_asp *asp, uint32_t *rctx, unsigned int rctx_size,
-				  const struct osmo_ss7_as *excl_as)
+static unsigned int _ss7_asp_get_all_rctx(const struct osmo_ss7_asp *asp, uint32_t *rctx, unsigned int rctx_size,
+					  const struct osmo_ss7_as *excl_as, bool network_byte_order)
 {
 	unsigned int count = 0;
 	struct osmo_ss7_as *as;
@@ -1328,8 +1328,25 @@ unsigned int ss7_asp_get_all_rctx_be(const struct osmo_ss7_asp *asp, uint32_t *r
 			continue;
 		if (count >= rctx_size)
 			break;
-		rctx[count] = htonl(as->cfg.routing_key.context);
+		if (network_byte_order)
+			rctx[count] = htonl(as->cfg.routing_key.context);
+		else
+			rctx[count] = as->cfg.routing_key.context;
 		count++;
 	}
 	return count;
+}
+
+/* Obtain all routing contexts (in network byte order) that exist within the given ASP */
+unsigned int ss7_asp_get_all_rctx_be(const struct osmo_ss7_asp *asp, uint32_t *rctx, unsigned int rctx_size,
+				     const struct osmo_ss7_as *excl_as)
+{
+	return _ss7_asp_get_all_rctx(asp, rctx, rctx_size, excl_as, true);
+}
+
+/* Obtain all routing contexts (in host byte order) that exist within the given ASP */
+unsigned int ss7_asp_get_all_rctx(const struct osmo_ss7_asp *asp, uint32_t *rctx, unsigned int rctx_size,
+				     const struct osmo_ss7_as *excl_as)
+{
+	return _ss7_asp_get_all_rctx(asp, rctx, rctx_size, excl_as, false);
 }

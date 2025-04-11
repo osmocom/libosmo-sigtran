@@ -39,7 +39,8 @@ struct osmo_xlm_prim_notify {
 	uint16_t status_type;
 	uint16_t status_info;
 	uint32_t asp_id;
-	uint32_t route_ctx;
+	uint32_t route_ctx_count;
+	uint32_t route_ctx[OSMO_SS7_MAX_RCTX_COUNT];
 	char *info_string;
 };
 

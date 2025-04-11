@@ -427,8 +427,11 @@ struct xua_msg *m3ua_encode_notify(const struct osmo_xlm_prim_notify *npar)
 		xua_msg_add_u32(xua, M3UA_IEI_ASP_ID, npar->asp_id);
 
 	/* Optional Routing Context */
-	if (npar->presence & NOTIFY_PAR_P_ROUTE_CTX)
-		xua_msg_add_u32(xua, M3UA_IEI_ROUTE_CTX, npar->route_ctx);
+	if (npar->presence & NOTIFY_PAR_P_ROUTE_CTX) {
+		xua_msg_add_u32_data(xua, M3UA_IEI_ROUTE_CTX,
+				     npar->route_ctx_count * sizeof(npar->route_ctx[0]),
+				     (uint8_t *)&npar->route_ctx[0]);
+	}
 
 	/* Optional: Info String */
 	if (npar->info_string)
@@ -468,7 +471,20 @@ int m3ua_decode_notify(struct osmo_xlm_prim_notify *npar, void *ctx,
 	}
 
 	if (rctx_ie) {
-		npar->route_ctx = xua_msg_part_get_u32(rctx_ie);
+		if (rctx_ie->len & 0x03) {
+			LOGP(DLM3UA, LOGL_ERROR,
+			     "M3UA NOTIFY with Routing Context IE length non-multiple of 4!\n");
+			return -1;
+		}
+		if (rctx_ie->len > sizeof(npar->route_ctx)) {
+			LOGP(DLM3UA, LOGL_ERROR,
+			     "M3UA NOTIFY with Routing Context IE containing > %zu items not supported!\n",
+			     ARRAY_SIZE(npar->route_ctx));
+			return -1;
+		}
+		npar->route_ctx_count = rctx_ie->len >> 2;
+		for (unsigned int i = 0; i < npar->route_ctx_count; i++)
+			npar->route_ctx[i] = ntohl(*(uint32_t *)&rctx_ie->dat[i << 2]);
 		npar->presence |= NOTIFY_PAR_P_ROUTE_CTX;
 	}
 

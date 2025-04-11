@@ -76,6 +76,7 @@ struct xua_msg *xua_msg_alloc(void);
 void xua_msg_free(struct xua_msg *msg);
 
 int xua_msg_add_data(struct xua_msg *msg, uint16_t tag, uint16_t len, const uint8_t *dat);
+int xua_msg_add_u32_data(struct xua_msg *msg, uint16_t tag, uint16_t len, const uint8_t *dat);
 
 struct xua_msg_part *xua_msg_find_tag(const struct xua_msg *msg, uint16_t tag);
 int xua_msg_free_tag(struct xua_msg *xua, uint16_t tag);

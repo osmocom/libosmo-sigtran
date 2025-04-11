@@ -83,6 +83,38 @@ int xua_msg_add_data(struct xua_msg *msg, uint16_t tag,
 	return 0;
 }
 
+/* Add Array of host-byte-order u32 converting them to network-byte-order: */
+int xua_msg_add_u32_data(struct xua_msg *msg, uint16_t tag,
+			 uint16_t len, const uint8_t *dat)
+{
+	struct xua_msg_part *part;
+
+	if (len & 0x03)
+		return -1; /* non-multiple-of-4 */
+
+	part = talloc_zero(msg, struct xua_msg_part);
+	if (!part)
+		return -1;
+
+	part->tag = tag;
+	part->len = len;
+
+	/* do we have any data? */
+	if (part->len != 0) {
+		part->dat = talloc_size(part, len);
+		if (!part->dat) {
+			talloc_free(part);
+			return -1;
+		}
+		/* Copy over data converting it to network-byte-order: */
+		for (unsigned int i = 0; i < len ; i += sizeof(uint32_t))
+			*((uint32_t *)&part->dat[i]) = htonl(*(uint32_t *)&dat[i]);
+	}
+
+	llist_add_tail(&part->entry, &msg->headers);
+	return 0;
+}
+
 struct xua_msg_part *xua_msg_find_tag(const struct xua_msg *xua, uint16_t tag)
 {
 	struct xua_msg_part *part;

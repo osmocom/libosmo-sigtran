@@ -128,6 +128,8 @@ int ss7_asp_apply_drop_local_address(const struct osmo_ss7_asp *asp, unsigned in
 void ss7_asp_restart_after_reconfigure(struct osmo_ss7_asp *asp);
 void osmo_ss7_asp_remove_default_lm(struct osmo_ss7_asp *asp);
 
+unsigned int ss7_asp_get_all_rctx(const struct osmo_ss7_asp *asp, uint32_t *rctx, unsigned int rctx_size,
+				  const struct osmo_ss7_as *excl_as);
 unsigned int ss7_asp_get_all_rctx_be(const struct osmo_ss7_asp *asp, uint32_t *rctx, unsigned int rctx_size,
 				  const struct osmo_ss7_as *excl_as);
 
