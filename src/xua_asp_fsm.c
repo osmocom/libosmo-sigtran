@@ -173,32 +173,14 @@ static int determine_traf_mode(struct osmo_ss7_asp *asp)
 /* add M3UA_IEI_ROUTE_CTX to xua_msg containig all routing keys of ASs within ASP */
 static int xua_msg_add_asp_rctx(struct xua_msg *xua, struct osmo_ss7_asp *asp)
 {
-	struct osmo_ss7_as *as;
 	uint32_t rctx[OSMO_SS7_MAX_RCTX_COUNT];
-	unsigned int i = 0;
+	unsigned int cnt;
 
-	/* iterate over all ASs and build array of routing contexts */
-	llist_for_each_entry(as, &asp->inst->as_list, list) {
-		if (!osmo_ss7_as_has_asp(as, asp))
-			continue;
-		rctx[i++] = htonl(as->cfg.routing_key.context);
-		if (i >= ARRAY_SIZE(rctx)-1) {
-			break;
-		}
-	}
-	/* add xUA IE with routing contests to the message (if any) */
-	if (i) {
-		/* bail out (and not add the IE) if there's only one routing context (and hence
-		 * only one AS) within this ASP, and that routing context is zero, meaning no routing
-		 * context IE shall be used */
-		if (i == 1 && rctx[0] == 0)
-			return 0;
-
-		xua_msg_add_data(xua, M3UA_IEI_ROUTE_CTX, i*sizeof(uint32_t), (uint8_t *)rctx);
-	}
-
+	cnt = ss7_asp_get_all_rctx_be(asp, rctx, ARRAY_SIZE(rctx), NULL);
+	if (cnt > 0)
+		xua_msg_add_data(xua, M3UA_IEI_ROUTE_CTX, cnt*sizeof(uint32_t), (uint8_t *)rctx);
 	/* return count of routing contexts added */
-	return i;
+	return cnt;
 }
 
 /* ask the xUA implementation to transmit a specific message */
