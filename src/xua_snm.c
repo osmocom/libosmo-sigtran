@@ -66,28 +66,6 @@ static const char *format_affected_pcs_c(void *ctx, const struct osmo_ss7_instan
 	return out;
 }
 
-/* obtain all routing contexts (in network byte order) that exist within the given ASP */
-static unsigned int get_all_rctx_for_asp(uint32_t *rctx, unsigned int rctx_size,
-					 struct osmo_ss7_asp *asp, struct osmo_ss7_as *excl_as)
-{
-	unsigned int count = 0;
-	struct osmo_ss7_as *as;
-
-	llist_for_each_entry(as, &asp->inst->as_list, list) {
-		if (as == excl_as)
-			continue;
-		if (!osmo_ss7_as_has_asp(as, asp))
-			continue;
-		if (as->cfg.routing_key.context == 0)
-			continue;
-		if (count >= rctx_size)
-			break;
-		rctx[count] = htonl(as->cfg.routing_key.context);
-		count++;
-	}
-	return count;
-}
-
 static void xua_tx_snm_available(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int num_rctx,
 				 const uint32_t *aff_pc, unsigned int num_aff_pc,
 				 const char *info_str, bool available)
@@ -192,7 +170,7 @@ void xua_snm_pc_available(struct osmo_ss7_as *as, const uint32_t *aff_pc,
 		if (asp->cfg.role != OSMO_SS7_ASP_ROLE_SG)
 			continue;
 
-		num_rctx = get_all_rctx_for_asp(rctx, ARRAY_SIZE(rctx), asp, as);
+		num_rctx = ss7_asp_get_all_rctx_be(asp, rctx, ARRAY_SIZE(rctx), as);
 		/* this can happen if the given ASP is only in the AS that reports the change,
 		 * which shall be excluded */
 		if (num_rctx == 0)
@@ -238,7 +216,7 @@ static void sua_snm_ssn_available(struct osmo_ss7_as *as, uint32_t aff_pc, uint3
 		if (asp->cfg.proto != OSMO_SS7_ASP_PROT_SUA)
 			continue;
 
-		num_rctx = get_all_rctx_for_asp(rctx, ARRAY_SIZE(rctx), asp, as);
+		num_rctx = ss7_asp_get_all_rctx_be(asp, rctx, ARRAY_SIZE(rctx), as);
 		/* this can happen if the given ASP is only in the AS that reports the change,
 		 * which shall be excluded */
 		if (num_rctx == 0)
@@ -269,7 +247,7 @@ static void xua_snm_upu(struct osmo_ss7_as *as, uint32_t dpc, uint16_t user, uin
 		if (asp->cfg.role != OSMO_SS7_ASP_ROLE_SG)
 			continue;
 
-		num_rctx = get_all_rctx_for_asp(rctx, ARRAY_SIZE(rctx), asp, as);
+		num_rctx = ss7_asp_get_all_rctx_be(asp, rctx, ARRAY_SIZE(rctx), as);
 		/* this can happen if the given ASP is only in the AS that reports the change,
 		 * which shall be excluded */
 		if (num_rctx == 0)
@@ -299,7 +277,7 @@ static void xua_snm_scon(struct osmo_ss7_as *as, const uint32_t *aff_pc, unsigne
 		if (asp->cfg.role != OSMO_SS7_ASP_ROLE_SG)
 			continue;
 
-		num_rctx = get_all_rctx_for_asp(rctx, ARRAY_SIZE(rctx), asp, as);
+		num_rctx = ss7_asp_get_all_rctx_be(asp, rctx, ARRAY_SIZE(rctx), as);
 		/* this can happen if the given ASP is only in the AS that reports the change,
 		 * which shall be excluded */
 		if (num_rctx == 0)
@@ -326,7 +304,7 @@ void xua_snm_rx_daud(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	aff_pc = (const uint32_t *) ie_aff_pc->dat;
 	num_aff_pc = ie_aff_pc->len / sizeof(uint32_t);
 
-	num_rctx = get_all_rctx_for_asp(rctx, ARRAY_SIZE(rctx), asp, NULL);
+	num_rctx = ss7_asp_get_all_rctx_be(asp, rctx, ARRAY_SIZE(rctx), NULL);
 
 	LOGPASP(asp, log_ss, LOGL_INFO, "Rx DAUD(%s) for %s\n", info_str ? info_str : "",
 		format_affected_pcs_c(xua, asp->inst, ie_aff_pc));

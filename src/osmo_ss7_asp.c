@@ -1300,3 +1300,25 @@ void ss7_asp_restart_after_reconfigure(struct osmo_ss7_asp *asp)
 
 	osmo_ss7_asp_restart(asp);
 }
+
+/* Obtain all routing contexts (in network byte order) that exist within the given ASP */
+unsigned int ss7_asp_get_all_rctx_be(const struct osmo_ss7_asp *asp, uint32_t *rctx, unsigned int rctx_size,
+				  const struct osmo_ss7_as *excl_as)
+{
+	unsigned int count = 0;
+	struct osmo_ss7_as *as;
+
+	llist_for_each_entry(as, &asp->inst->as_list, list) {
+		if (as == excl_as)
+			continue;
+		if (!osmo_ss7_as_has_asp(as, asp))
+			continue;
+		if (as->cfg.routing_key.context == 0)
+			continue;
+		if (count >= rctx_size)
+			break;
+		rctx[count] = htonl(as->cfg.routing_key.context);
+		count++;
+	}
+	return count;
+}
