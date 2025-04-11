@@ -419,8 +419,6 @@ static void xua_as_fsm_onenter(struct osmo_fsm_inst *fi, uint32_t old_state)
 	struct osmo_ss7_as *as = xafp->as;
 	struct osmo_xlm_prim_notify npar;
 
-	fill_notify_statchg_pars(fi, &npar);
-
 	switch (fi->state) {
 	case XUA_AS_S_INACTIVE:
 		/* continue below */
