@@ -92,9 +92,14 @@ osmo_sccp_user_find(struct osmo_sccp_instance *inst, uint16_t ssn, uint32_t pc)
 /*! \brief Bind a SCCP User to a given Point Code
  *  \param[in] inst SCCP Instance
  *  \param[in] name human-readable name
+ *  \param[in] prim_cb User provided callback to pass a primitive/msg up the stack
  *  \param[in] ssn Sub-System Number to bind to
  *  \param[in] pc Point Code to bind to, or OSMO_SS7_PC_INVALID if none.
- *  \returns Callee-allocated SCCP User on success; negative otherwise */
+ *  \returns Callee-allocated SCCP User on success; negative otherwise
+ *
+ * Ownership of oph->msg in prim_cb is transferred to the user of the
+ * registered callback when called.
+ */
 static struct osmo_sccp_user *
 sccp_user_bind_pc(struct osmo_sccp_instance *inst, const char *name,
 		  osmo_prim_cb prim_cb, uint16_t ssn, uint32_t pc)
@@ -127,9 +132,14 @@ sccp_user_bind_pc(struct osmo_sccp_instance *inst, const char *name,
 /*! \brief Bind a given SCCP User to a given SSN+PC
  *  \param[in] inst SCCP Instance
  *  \param[in] name human-readable name
+ *  \param[in] prim_cb User provided callback to pass a primitive/msg up the stack
  *  \param[in] ssn Sub-System Number to bind to
  *  \param[in] pc Point Code to bind to
- *  \returns Callee-allocated SCCP User on success; negative otherwise */
+ *  \returns Callee-allocated SCCP User on success; negative otherwise
+ *
+ * Ownership of oph->msg in prim_cb is transferred to the user of the
+ * registered callback when called.
+ */
 struct osmo_sccp_user *
 osmo_sccp_user_bind_pc(struct osmo_sccp_instance *inst, const char *name,
 		       osmo_prim_cb prim_cb, uint16_t ssn, uint32_t pc)
@@ -140,8 +150,13 @@ osmo_sccp_user_bind_pc(struct osmo_sccp_instance *inst, const char *name,
 /*! \brief Bind a given SCCP User to a given SSN (at any PC)
  *  \param[in] inst SCCP Instance
  *  \param[in] name human-readable name
+ *  \param[in] prim_cb User provided callback to pass a primitive/msg up the stack
  *  \param[in] ssn Sub-System Number to bind to
- *  \returns Callee-allocated SCCP User on success; negative otherwise */
+ *  \returns Callee-allocated SCCP User on success; negative otherwise
+ *
+ * Ownership of oph->msg in prim_cb is transferred to the user of the
+ * registered callback when called.
+ */
 struct osmo_sccp_user *
 osmo_sccp_user_bind(struct osmo_sccp_instance *inst, const char *name,
 		    osmo_prim_cb prim_cb, uint16_t ssn)
@@ -175,7 +190,10 @@ void *osmo_sccp_user_get_priv(struct osmo_sccp_user *scu)
 /*! \brief Send a SCCP User SAP Primitive up to the User
  *  \param[in] scu SCCP User to whom to send the primitive
  *  \param[in] prim Primitive to send to the user
- *  \returns return value of the SCCP User's prim_cb() function */
+ *  \returns return value of the SCCP User's prim_cb() function
+ *
+ * Ownership of prim->oph->msg is passed to the user of the registered callback
+ */
 int sccp_user_prim_up(struct osmo_sccp_user *scu, struct osmo_scu_prim *prim)
 {
 	LOGP(DLSCCP, LOGL_DEBUG, "Delivering %s to SCCP User '%s'\n",
