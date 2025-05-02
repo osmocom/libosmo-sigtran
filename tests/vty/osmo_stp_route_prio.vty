@@ -6,15 +6,21 @@ OsmoSTP(config-cs7)# ! CREATE 3 AS with 1 ASP EACH:
 OsmoSTP(config-cs7)# asp asp1 2905 54321 m3ua
 OsmoSTP(config-cs7-asp)# remote-ip 127.0.0.110
 OsmoSTP(config-cs7-asp)# local-ip 27.0.0.1
+OsmoSTP(config-cs7-asp)# no shutdown
 OsmoSTP(config-cs7-asp)# exit
+% NOTE: Skipping automatic restart of ASP since an explicit '[no] shutdown' command was entered
 OsmoSTP(config-cs7)# asp asp2 2905 54321 m3ua
 OsmoSTP(config-cs7-asp)# remote-ip 127.0.0.120
 OsmoSTP(config-cs7-asp)# local-ip 27.0.0.1
+OsmoSTP(config-cs7-asp)# no shutdown
 OsmoSTP(config-cs7-asp)# exit
+% NOTE: Skipping automatic restart of ASP since an explicit '[no] shutdown' command was entered
 OsmoSTP(config-cs7)# asp asp3 2905 54321 m3ua
 OsmoSTP(config-cs7-asp)# remote-ip 127.0.0.130
 OsmoSTP(config-cs7-asp)# local-ip 27.0.0.1
+OsmoSTP(config-cs7-asp)# no shutdown
 OsmoSTP(config-cs7-asp)# exit
+% NOTE: Skipping automatic restart of ASP since an explicit '[no] shutdown' command was entered
 OsmoSTP(config-cs7)# as as1 m3ua
 OsmoSTP(config-cs7-as)# asp asp1
 OsmoSTP(config-cs7-as)# routing-key 56 0.1.2
@@ -36,16 +42,19 @@ cs7 instance 0
   remote-ip 127.0.0.110
   role sg
   sctp-role server
+  no shutdown
  asp asp2 2905 54321 m3ua
   local-ip 27.0.0.1
   remote-ip 127.0.0.120
   role sg
   sctp-role server
+  no shutdown
  asp asp3 2905 54321 m3ua
   local-ip 27.0.0.1
   remote-ip 127.0.0.130
   role sg
   sctp-role server
+  no shutdown
  as as1 m3ua
   asp asp1
   routing-key 56 0.1.2

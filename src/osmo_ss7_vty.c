@@ -1113,6 +1113,9 @@ DEFUN_ATTR(cs7_asp, cs7_asp_cmd,
 		asp->cfg.role = OSMO_SS7_ASP_ROLE_SG;
 	}
 
+	/* Reset value, will be checked at osmo_ss7_vty_go_parent() */
+	asp->cfg.explicit_shutdown_state_by_vty_since_node_enter = false;
+
 	vty->node = L_CS7_ASP_NODE;
 	vty->index = asp;
 	vty->index_sub = &asp->cfg.description;
@@ -1424,9 +1427,33 @@ DEFUN_ATTR(asp_shutdown, asp_shutdown_cmd,
 	   "Terminates SCTP association; New associations will be rejected\n",
 	   CMD_ATTR_NODE_EXIT)
 {
-	/* TODO */
-	vty_out(vty, "Not supported yet%s", VTY_NEWLINE);
-	return CMD_WARNING;
+	struct osmo_ss7_asp *asp = vty->index;
+
+	LOGPASP(asp, DLSS7, LOGL_NOTICE, "Applying Adm State change: %s -> %s\n",
+		get_value_string(osmo_ss7_asp_admin_state_names, asp->cfg.adm_state),
+		get_value_string(osmo_ss7_asp_admin_state_names, OSMO_SS7_ASP_ADM_S_SHUTDOWN));
+
+	asp->cfg.explicit_shutdown_state_by_vty_since_node_enter = true;
+	asp->cfg.adm_state = OSMO_SS7_ASP_ADM_S_SHUTDOWN;
+	ss7_asp_restart_after_reconfigure(asp);
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(asp_no_shutdown, asp_no_shutdown_cmd,
+	"no shutdown",
+	NO_STR "Terminates SCTP association; New associations will be rejected\n",
+	CMD_ATTR_NODE_EXIT)
+{
+	struct osmo_ss7_asp *asp = vty->index;
+
+	LOGPASP(asp, DLSS7, LOGL_NOTICE, "Applying Adm State change: %s -> %s\n",
+		get_value_string(osmo_ss7_asp_admin_state_names, asp->cfg.adm_state),
+		get_value_string(osmo_ss7_asp_admin_state_names, OSMO_SS7_ASP_ADM_S_ENABLED));
+
+	asp->cfg.explicit_shutdown_state_by_vty_since_node_enter = true;
+	asp->cfg.adm_state = OSMO_SS7_ASP_ADM_S_ENABLED;
+	ss7_asp_restart_after_reconfigure(asp);
+	return CMD_SUCCESS;
 }
 
 DEFUN_ATTR(asp_quirk, asp_quirk_cmd,
@@ -2015,6 +2042,19 @@ static void write_one_asp(struct vty *vty, struct osmo_ss7_asp *asp, bool show_d
 		vty_out(vty, "  quirk %s%s", get_value_string(asp_quirk_names, (1 << i)), VTY_NEWLINE);
 	}
 	write_asp_timers(vty, "  ", asp);
+
+	switch (asp->cfg.adm_state) {
+	case OSMO_SS7_ASP_ADM_S_SHUTDOWN:
+		vty_out(vty, "  shutdown%s", VTY_NEWLINE);
+		break;
+	case OSMO_SS7_ASP_ADM_S_BLOCKED:
+		vty_out(vty, "  blocked%s", VTY_NEWLINE);
+		break;
+	case OSMO_SS7_ASP_ADM_S_ENABLED:
+		/* Default, no need to print: */
+		vty_out(vty, "  no shutdown%s", VTY_NEWLINE);
+		break;
+	}
 }
 
 
@@ -3282,7 +3322,26 @@ int osmo_ss7_vty_go_parent(struct vty *vty)
 	switch (vty->node) {
 	case L_CS7_ASP_NODE:
 		asp = vty->index;
-		ss7_asp_restart_after_reconfigure(asp);
+		if (asp->cfg.explicit_shutdown_state_by_vty_since_node_enter) {
+			/* Interactive VTY, inform of new behavior upon use of new '[no] shutdown' commands: */
+			if (vty->type != VTY_FILE)
+				vty_out(vty, "%% NOTE: Skipping automatic restart of ASP since an explicit '[no] shutdown' command was entered%s", VTY_NEWLINE);
+			asp->cfg.explicit_shutdown_state_by_vty_since_node_enter = false;
+		} else if (vty->type == VTY_FILE) {
+			/* Make sure config reading is backward compatible by starting the ASP if no explicit 'no shutdown' is read: */
+			vty_out(vty,
+				"%% VTY node 'asp' without a '[no] shutdown' command at the end is deprecated, "
+				"please make sure you update your cfg file for future compatibility.%s",
+				VTY_NEWLINE);
+			ss7_asp_restart_after_reconfigure(asp);
+		} else {
+			/* Interactive VTY without '[no] shutdown' explicit cmd, remind the user that we are no
+			 * longer automatically restarting the ASP when going out of the "asp" node: */
+			vty_out(vty,
+				"%% NOTE: Make sure to use '[no] shutdown' command in 'asp' node "
+				"in order to restart the ASP for new configs to be applied.%s",
+				VTY_NEWLINE);
+		}
 		vty->node = L_CS7_NODE;
 		vty->index = asp->inst;
 		break;
@@ -3431,12 +3490,13 @@ static void vty_init_shared(void *ctx)
 	install_lib_element(L_CS7_ASP_NODE, &asp_sctp_role_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_sctp_param_init_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_sctp_param_init_cmd);
-	install_lib_element(L_CS7_ASP_NODE, &asp_block_cmd);
-	install_lib_element(L_CS7_ASP_NODE, &asp_shutdown_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_quirk_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_quirk_cmd);
 	gen_asp_timer_cmd_strs(&asp_timer_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_timer_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_block_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_shutdown_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_no_shutdown_cmd);
 
 	install_node(&as_node, NULL);
 	install_lib_element_ve(&show_cs7_as_cmd);

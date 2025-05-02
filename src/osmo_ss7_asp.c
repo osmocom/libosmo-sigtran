@@ -124,6 +124,13 @@ struct value_string osmo_ss7_asp_protocol_vals[] = {
 	{ 0, NULL }
 };
 
+const struct value_string osmo_ss7_asp_admin_state_names[] = {
+	{ OSMO_SS7_ASP_ADM_S_SHUTDOWN,	"SHUTDOWN" },
+	{ OSMO_SS7_ASP_ADM_S_BLOCKED,	"BLOCKED" },
+	{ OSMO_SS7_ASP_ADM_S_ENABLED,	"ENABLED" },
+	{ 0, NULL }
+};
+
 const struct value_string osmo_ss7_asp_role_names[] = {
 	{ OSMO_SS7_ASP_ROLE_ASP,	"ASP" },
 	{ OSMO_SS7_ASP_ROLE_SG,		"SG" },
@@ -553,6 +560,8 @@ struct osmo_ss7_asp *ss7_asp_alloc(struct osmo_ss7_instance *inst, const char *n
 	}
 	rate_ctr_group_set_name(asp->ctrg, name);
 	asp->inst = inst;
+	/* ASP in "no shutdown" state by default: */
+	asp->cfg.adm_state = OSMO_SS7_ASP_ADM_S_ENABLED;
 	ss7_asp_peer_init(&asp->cfg.remote);
 	asp->cfg.remote.port = remote_port;
 	ss7_asp_peer_init(&asp->cfg.local);
@@ -745,6 +754,12 @@ int osmo_ss7_asp_restart(struct osmo_ss7_asp *asp)
 	if ((rc = xua_asp_fsm_start(asp, asp->cfg.role, LOGL_DEBUG)) < 0)
 		return rc;
 	OSMO_ASSERT(asp->fi);
+
+	if (asp->cfg.adm_state == OSMO_SS7_ASP_ADM_S_SHUTDOWN) {
+		LOGPASP(asp, DLSS7, LOGL_NOTICE, "Skipping start for ASP in administrative state %s\n",
+			get_value_string(osmo_ss7_asp_admin_state_names, OSMO_SS7_ASP_ADM_S_SHUTDOWN));
+		return 0;
+	}
 
 	/* Now start the new stream: */
 
@@ -1014,8 +1029,11 @@ static void xua_cli_close(struct osmo_stream_cli *cli)
 
 static int xua_cli_close_and_reconnect(struct osmo_stream_cli *cli)
 {
+	struct osmo_ss7_asp *asp = osmo_stream_cli_get_data(cli);
+	LOGPASP(asp, DLSS7, LOGL_NOTICE, "Closing and reconnecting ASP\n");
 	xua_cli_close(cli);
-	osmo_stream_cli_reconnect(cli);
+	if (asp->cfg.adm_state != OSMO_SS7_ASP_ADM_S_SHUTDOWN)
+		osmo_stream_cli_reconnect(cli);
 	return 0;
 }
 

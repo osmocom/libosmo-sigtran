@@ -248,6 +248,7 @@ enum osmo_ss7_asp_admin_state {
 	/*! in normal operation */
 	OSMO_SS7_ASP_ADM_S_ENABLED,
 };
+extern const struct value_string osmo_ss7_asp_admin_state_names[];
 
 enum osmo_ss7_asp_role {
 	OSMO_SS7_ASP_ROLE_ASP,

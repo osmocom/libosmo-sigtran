@@ -87,6 +87,12 @@ struct osmo_ss7_asp {
 		enum osmo_ss7_asp_role role;
 		bool role_set_by_vty;
 		bool trans_role_set_by_vty;
+		/* Used internally by "asp" node to figure out if "no shutdown"
+		 * was done explicitly, in order to avoid automatic asp
+		 * reconfiguring/restart at go_parent().
+		 * Can be dropped in the future once we make sure everybody uses
+		 * "[no] shutdown" explicitly in cfg files. */
+		bool explicit_shutdown_state_by_vty_since_node_enter;
 
 		struct osmo_ss7_asp_peer local;
 		struct osmo_ss7_asp_peer remote;
