@@ -153,7 +153,12 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
 							    oxs->cfg.local.host_cnt);
 				ss7_asp_peer_set_hosts(&asp->cfg.remote, asp,
 							    &hostbuf_ptr, 1);
-				osmo_ss7_asp_restart(asp);
+				if ((rc = xua_asp_fsm_start(asp, asp->cfg.role, LOGL_DEBUG)) < 0) {
+					talloc_free(sock_name);
+					osmo_ss7_asp_destroy(asp);
+					return rc;
+				}
+				OSMO_ASSERT(asp->fi);
 			}
 		}
 		if (!asp) {

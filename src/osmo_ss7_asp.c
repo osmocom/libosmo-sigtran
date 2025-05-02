@@ -699,6 +699,12 @@ int ss7_asp_disconnect_stream(struct osmo_ss7_asp *asp)
 			asp->client = NULL;
 			osmo_stream_cli_destroy(cli);
 		}
+		if (asp->server) {
+			/* Make sure we close the previous stream right now: */
+			srv = asp->server;
+			asp->server = NULL;
+			osmo_stream_srv_destroy(srv);
+		}
 	} else {
 		/* We are in client mode now */
 		if (asp->server) {
