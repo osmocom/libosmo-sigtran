@@ -686,22 +686,27 @@ static int ss7_asp_start_client(struct osmo_ss7_asp *asp)
  * announce disconnection to upper layers. */
 int ss7_asp_disconnect_stream(struct osmo_ss7_asp *asp)
 {
+	struct osmo_stream_cli *cli;
+	struct osmo_stream_srv *srv;
+
 	/* First tear down previous state if existing: */
 	if (asp->cfg.is_server) {
 		/* We are in server mode now */
 		if (asp->client) {
 			/* if we previously were in client mode,
 			 * destroy it */
-			osmo_stream_cli_destroy(asp->client);
+			cli = asp->client;
 			asp->client = NULL;
+			osmo_stream_cli_destroy(cli);
 		}
 	} else {
 		/* We are in client mode now */
 		if (asp->server) {
 			/* if we previously were in server mode,
 			 * destroy it */
-			osmo_stream_srv_destroy(asp->server);
+			srv = asp->server;
 			asp->server = NULL;
+			osmo_stream_srv_destroy(srv);
 		}
 		if (asp->client) {
 			/* Make sure we close the previous stream before starting a new one: */
