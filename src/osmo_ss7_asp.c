@@ -735,6 +735,7 @@ int osmo_ss7_asp_restart(struct osmo_ss7_asp *asp)
 {
 	int rc;
 	char bufloc[512], bufrem[512];
+	bool destroyed = asp->dyn_allocated && asp->cfg.is_server;
 
 	OSMO_ASSERT(ss7_initialized);
 	ss7_asp_peer_snprintf(bufloc, sizeof(bufloc), &asp->cfg.local);
@@ -744,6 +745,10 @@ int osmo_ss7_asp_restart(struct osmo_ss7_asp *asp)
 
 	/* First tear down previous state if existing: */
 	ss7_asp_disconnect_stream(asp);
+
+	/* Dynamic ASPs in SCTP=server are destroyed when connection is closed. */
+	if (destroyed)
+		return 0;
 
 	/* The ASP FSM must be terminated *after* tearing down the conn, so that
 	 * DISCONNECT events go up the stack */
