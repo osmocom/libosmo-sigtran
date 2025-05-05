@@ -160,17 +160,6 @@ static int handle_reg_conf(struct osmo_fsm_inst *fi, uint32_t l_rk_id, uint32_t 
 	return 0;
 }
 
-static void restart_asp(struct osmo_fsm_inst *fi)
-{
-	struct lm_fsm_priv *lmp = fi->priv;
-	struct osmo_ss7_asp *asp = lmp->asp;
-	int log_level = fi->log_level;
-
-	osmo_ss7_asp_restart(asp);
-	osmo_ss7_asp_use_default_lm(asp, log_level);
-}
-
-
 static void lm_idle(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct lm_fsm_priv *lmp = fi->priv;
@@ -317,7 +306,7 @@ static void lm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		OSMO_ASSERT(oxp->oph.operation == PRIM_OP_INDICATION);
 		if (oxp->u.notify.status_type == M3UA_NOTIFY_T_STATCHG &&
 		    oxp->u.notify.status_info != M3UA_NOTIFY_I_AS_ACT)
-			restart_asp(fi);
+			lm_fsm_state_chg(fi, S_IDLE);
 		break;
 	}
 }
@@ -326,7 +315,7 @@ static void lm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	switch (event) {
 	case LM_E_SCTP_DISC_IND:
-		restart_asp(fi);
+		lm_fsm_state_chg(fi, S_IDLE);
 		break;
 	}
 }
@@ -334,30 +323,38 @@ static void lm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 static const struct osmo_fsm_state lm_states[] = {
 	[S_IDLE] = {
 		.in_event_mask = S(LM_E_SCTP_EST_IND),
-		.out_state_mask = S(S_WAIT_ASP_UP),
+		.out_state_mask = S(S_IDLE) |
+				  S(S_WAIT_ASP_UP),
 		.name = "IDLE",
 		.action = lm_idle,
 	},
 	[S_WAIT_ASP_UP] = {
 		.in_event_mask = S(LM_E_ASP_UP_CONF),
-		.out_state_mask = S(S_WAIT_NOTIFY),
+		.out_state_mask = S(S_IDLE) |
+				  S(S_WAIT_NOTIFY),
 		.name = "WAIT_ASP_UP",
 		.action = lm_wait_asp_up,
 	},
 	[S_WAIT_NOTIFY] = {
-		.in_event_mask = S(LM_E_AS_INACTIVE_IND) | S(LM_E_NOTIFY_IND),
-		.out_state_mask = S(S_RKM_REG) | S(S_ACTIVE),
+		.in_event_mask = S(LM_E_AS_INACTIVE_IND) |
+				 S(LM_E_NOTIFY_IND),
+		.out_state_mask = S(S_IDLE) |
+				  S(S_RKM_REG) |
+				  S(S_ACTIVE),
 		.name = "WAIT_NOTIFY",
 		.action = lm_wait_notify,
 	},
 	[S_RKM_REG] = {
 		.in_event_mask = S(LM_E_RKM_REG_CONF),
-		.out_state_mask = S(S_WAIT_NOTIFY),
+		.out_state_mask = S(S_IDLE) |
+				  S(S_WAIT_NOTIFY),
 		.name = "RKM_REG",
 		.action = lm_rkm_reg,
 	},
 	[S_ACTIVE] = {
-		.in_event_mask = S(LM_E_AS_INACTIVE_IND) | S(LM_E_NOTIFY_IND),
+		.in_event_mask = S(LM_E_AS_INACTIVE_IND) |
+				 S(LM_E_NOTIFY_IND),
+		.out_state_mask = S(S_IDLE),
 		.name = "ACTIVE",
 		.action = lm_active,
 	},
