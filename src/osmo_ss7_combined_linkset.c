@@ -274,19 +274,22 @@ ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const
 
 	/* No normal route selected yet: */
 	if (!eslse->normal_rt) {
+		bool rt_avail;
 		/* Establish a Normal Route, regardless of available state: */
 		rt = ss7_combined_linkset_assign_route_roundrobin(clset);
 		/* No route found for Normal Route, regardless of state... */
 		if (!rt)
 			return NULL;
 		eslse->normal_rt = rt;
-		LOGPCLSET(clset, DLSS7, LOGL_DEBUG, "RT loookup: OPC=%u=%s,DPC=%u=%s,SLS=%u -> eSLS=%u: "
-			  "picked Normal Route via '%s' round-robin style\n",
+		rt_avail = ss7_route_is_available(eslse->normal_rt);
+		LOGPCLSET(clset, DLSS7, LOGL_INFO, "RT loookup: OPC=%u=%s,DPC=%u=%s,SLS=%u -> eSLS=%u: "
+			  "picked Normal Route via '%s' round-robin style (%s)\n",
 			  rtlabel->opc, osmo_ss7_pointcode_print(inst, rtlabel->opc),
 			  rtlabel->dpc, osmo_ss7_pointcode_print2(inst, rtlabel->dpc),
 			  rtlabel->sls, esls,
-			  rt->dest.as ? rt->dest.as->cfg.name : "<linkset>");
-		if (ss7_route_is_available(eslse->normal_rt)) {
+			  rt->dest.as ? rt->dest.as->cfg.name : "<linkset>",
+			  rt_avail ? "available" : "unavailable");
+		if (rt_avail) {
 			/* Found available Normal Route: */
 			return eslse->normal_rt;
 		}
@@ -306,6 +309,14 @@ ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const
 			  rtlabel->sls, esls,
 			  eslse->normal_rt->dest.as ? eslse->normal_rt->dest.as->cfg.name : "<linkset>",
 			  eslse->alt_rt->dest.as ? eslse->alt_rt->dest.as->cfg.name : "<linkset>");
+	} else {
+		/* No alternative route found, NULL is returned. */
+		LOGPCLSET(clset, DLSS7, LOGL_INFO, "RT Lookup: OPC=%u=%s,DPC=%u=%s,SLS=%u -> eSLS=%u: "
+			  "Normal Route via '%s' unavailable, all Alternative Routes unavailable\n",
+			  rtlabel->opc, osmo_ss7_pointcode_print(inst, rtlabel->opc),
+			  rtlabel->dpc, osmo_ss7_pointcode_print2(inst, rtlabel->dpc),
+			  rtlabel->sls, esls,
+			  eslse->normal_rt->dest.as ? eslse->normal_rt->dest.as->cfg.name : "<linkset>");
 	}
 	return rt;
 }
