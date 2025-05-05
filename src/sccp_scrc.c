@@ -62,9 +62,38 @@ static bool sua_is_cr(struct xua_msg *xua)
 	return false;
 }
 
-static bool dpc_accessible(struct osmo_sccp_instance *inst, uint32_t pc)
+/* ITU Q.714: "DPC accessible ?"
+ * Figure C.1/Q.714 - SCCP routing control procedures (SCRC)
+ * "sheet 4 of 12", "sheet 5 of 12", "sheet 10 of 12"
+ */
+static bool dpc_accessible(struct osmo_sccp_instance *inst, uint32_t dpc)
 {
-	/* TODO: implement this! */
+	struct osmo_ss7_instance *ss7 = inst->ss7;
+	struct osmo_ss7_route *rt;
+	struct osmo_ss7_route_label rtlabel;
+	char buf_dpc[MAX_PC_STR_LEN];
+
+	if (osmo_ss7_pc_is_local(ss7, dpc)) {
+		LOGPSCI(inst, LOGL_DEBUG, "dpc_accessible(DPC=%u=%s): true (local)\n",
+			dpc, osmo_ss7_pointcode_print_buf(buf_dpc, sizeof(buf_dpc), ss7, dpc));
+		return true;
+	}
+
+	rtlabel = (struct osmo_ss7_route_label){
+		.opc = 0,
+		.dpc = dpc,
+		.sls = 0,
+	};
+
+	rt = ss7_instance_lookup_route(ss7, &rtlabel);
+	if (!rt) {
+		LOGPSCI(inst, LOGL_INFO, "dpc_accessible(DPC=%u=%s): false\n",
+			dpc, osmo_ss7_pointcode_print_buf(buf_dpc, sizeof(buf_dpc), ss7, dpc));
+		return false;
+	}
+
+	LOGPSCI(inst, LOGL_DEBUG, "dpc_accessible(DPC=%u=%s): true\n",
+		dpc, osmo_ss7_pointcode_print_buf(buf_dpc, sizeof(buf_dpc), ss7, dpc));
 	return true;
 }
 
