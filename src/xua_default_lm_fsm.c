@@ -429,6 +429,8 @@ int osmo_ss7_asp_use_default_lm(struct osmo_ss7_asp *asp, int log_level)
 	}
 
 	fi = osmo_fsm_inst_alloc(&xua_default_lm_fsm, asp, NULL, log_level, asp->cfg.name);
+	if (!fi)
+		return -EINVAL;
 
 	lmp = talloc_zero(fi, struct lm_fsm_priv);
 	if (!lmp) {

@@ -663,6 +663,8 @@ struct osmo_fsm_inst *xua_as_fsm_start(struct osmo_ss7_as *as, int log_level)
 	struct xua_as_fsm_priv *xafp;
 
 	fi = osmo_fsm_inst_alloc(&xua_as_fsm, as, NULL, log_level, as->cfg.name);
+	if (!fi)
+		return NULL;
 
 	xafp = talloc_zero(fi, struct xua_as_fsm_priv);
 	if (!xafp) {

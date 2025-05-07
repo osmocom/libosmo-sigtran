@@ -827,6 +827,8 @@ int xua_asp_fsm_start(struct osmo_ss7_asp *asp,
 
 	/* allocate as child of AS? */
 	fi = osmo_fsm_inst_alloc(&xua_asp_fsm, asp, NULL, log_level, asp->cfg.name);
+	if (!fi)
+		return -EINVAL;
 
 	xafp = talloc_zero(fi, struct xua_asp_fsm_priv);
 	if (!xafp) {
@@ -1304,6 +1306,8 @@ static int ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
 
 	/* allocate as child of AS? */
 	fi = osmo_fsm_inst_alloc(&ipa_asp_fsm, asp, NULL, log_level, asp->cfg.name);
+	if (!fi)
+		return -EINVAL;
 
 	iafp = talloc_zero(fi, struct ipa_asp_fsm_priv);
 	if (!iafp) {
