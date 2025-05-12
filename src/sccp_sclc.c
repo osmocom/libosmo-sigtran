@@ -185,7 +185,7 @@ static int sclc_rx_cldt(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 	struct osmo_scu_prim *prim;
 	struct osmo_scu_unitdata_param *param;
 	struct xua_msg_part *data_ie = xua_msg_find_tag(xua, SUA_IEI_DATA);
-	struct msgb *upmsg = sccp_msgb_alloc(__func__);
+	struct msgb *upmsg;
 	struct osmo_sccp_user *scu;
 	uint32_t protocol_class;
 
@@ -194,6 +194,7 @@ static int sclc_rx_cldt(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 		return -1;
 	}
 
+	upmsg = sccp_msgb_alloc(__func__);
 	/* fill primitive */
 	prim = (struct osmo_scu_prim *) msgb_put(upmsg, sizeof(*prim));
 	param = &prim->u.unitdata;
@@ -234,7 +235,7 @@ static int sclc_rx_cldr(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 	struct osmo_scu_prim *prim;
 	struct osmo_scu_notice_param *param;
 	struct xua_msg_part *data_ie = xua_msg_find_tag(xua, SUA_IEI_DATA);
-	struct msgb *upmsg = sccp_msgb_alloc(__func__);
+	struct msgb *upmsg;
 	struct osmo_sccp_user *scu;
 
 	if (!data_ie) {
@@ -242,6 +243,7 @@ static int sclc_rx_cldr(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 		return -1;
 	}
 
+	upmsg = sccp_msgb_alloc(__func__);
 	/* fill primitive */
 	prim = (struct osmo_scu_prim *) msgb_put(upmsg, sizeof(*prim));
 	param = &prim->u.notice;
