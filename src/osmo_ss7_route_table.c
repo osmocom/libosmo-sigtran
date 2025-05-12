@@ -38,11 +38,14 @@
 
 char *ss7_route_label_to_str(char *buf, size_t buf_len, const struct osmo_ss7_instance *inst, const struct osmo_ss7_route_label *rtlb)
 {
+	char buf_opc[MAX_PC_STR_LEN];
+	char buf_dpc[MAX_PC_STR_LEN];
+
 	if (buf_len == 0)
 		return NULL;
 	snprintf(buf, buf_len, "OPC=%u=%s,DPC=%u=%s,SLS=%u",
-		 rtlb->opc, osmo_ss7_pointcode_print(inst, rtlb->opc),
-		 rtlb->dpc, osmo_ss7_pointcode_print2(inst, rtlb->dpc),
+		 rtlb->opc, osmo_ss7_pointcode_print_buf(buf_opc, sizeof(buf_opc), inst, rtlb->opc),
+		 rtlb->dpc, osmo_ss7_pointcode_print_buf(buf_dpc, sizeof(buf_dpc), inst, rtlb->dpc),
 		 rtlb->sls);
 	return buf;
 }

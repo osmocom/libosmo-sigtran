@@ -241,6 +241,7 @@ ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const
 	struct osmo_ss7_instance *inst = clset->rtable->inst;
 	ext_sls_t esls = osmo_ss7_instance_calc_itu_ext_sls(inst, rtlabel);
 	struct osmo_ss7_esls_entry *eslse = &clset->esls_table[esls];
+	char buf[256];
 
 	/* First check if we have a cached route for this ESLS */
 	rt = current_rt(eslse);
@@ -249,20 +250,16 @@ ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const
 			/* We can transmit over normal route.
 			 * Clean up alternative route since it's not needed anymore */
 			if (eslse->alt_rt) {
-				LOGPCLSET(clset, DLSS7, LOGL_NOTICE, "RT lookup: OPC=%u=%s,DPC=%u=%s,SLS=%u -> eSLS=%u: "
+				LOGPCLSET(clset, DLSS7, LOGL_NOTICE, "RT lookup: %s -> eSLS=%u: "
 					  "Normal Route via '%s' became available, drop use of Alternative Route via '%s'\n",
-					  rtlabel->opc, osmo_ss7_pointcode_print(inst, rtlabel->opc),
-					  rtlabel->dpc, osmo_ss7_pointcode_print2(inst, rtlabel->dpc),
-					  rtlabel->sls, esls,
+					  ss7_route_label_to_str(buf, sizeof(buf), inst, rtlabel), esls,
 					  eslse->normal_rt->dest.as ? eslse->normal_rt->dest.as->cfg.name : "<linkset>",
 					  eslse->alt_rt->dest.as ? eslse->alt_rt->dest.as->cfg.name : "<linkset>");
 				eslse->alt_rt = NULL;
 			}
 			LOGPCLSET(clset, DLSS7, LOGL_DEBUG,
-				  "RT lookup: OPC=%u=%s,DPC=%u=%s,SLS=%u -> eSLS=%u: use Normal Route via '%s'\n",
-				  rtlabel->opc, osmo_ss7_pointcode_print(inst, rtlabel->opc),
-				  rtlabel->dpc, osmo_ss7_pointcode_print2(inst, rtlabel->dpc),
-				  rtlabel->sls, esls,
+				  "RT lookup: %s -> eSLS=%u: use Normal Route via '%s'\n",
+				  ss7_route_label_to_str(buf, sizeof(buf), inst, rtlabel), esls,
 				  eslse->normal_rt->dest.as ? eslse->normal_rt->dest.as->cfg.name : "<linkset>");
 			return rt;
 		}
@@ -282,11 +279,9 @@ ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const
 			return NULL;
 		eslse->normal_rt = rt;
 		rt_avail = ss7_route_is_available(eslse->normal_rt);
-		LOGPCLSET(clset, DLSS7, LOGL_INFO, "RT loookup: OPC=%u=%s,DPC=%u=%s,SLS=%u -> eSLS=%u: "
+		LOGPCLSET(clset, DLSS7, LOGL_INFO, "RT loookup: %s -> eSLS=%u: "
 			  "picked Normal Route via '%s' round-robin style (%s)\n",
-			  rtlabel->opc, osmo_ss7_pointcode_print(inst, rtlabel->opc),
-			  rtlabel->dpc, osmo_ss7_pointcode_print2(inst, rtlabel->dpc),
-			  rtlabel->sls, esls,
+			  ss7_route_label_to_str(buf, sizeof(buf), inst, rtlabel), esls,
 			  rt->dest.as ? rt->dest.as->cfg.name : "<linkset>",
 			  rt_avail ? "available" : "unavailable");
 		if (rt_avail) {
@@ -302,20 +297,16 @@ ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const
 	rt = ss7_combined_linkset_select_route_roundrobin(clset);
 	if (rt) {
 		eslse->alt_rt = rt;
-		LOGPCLSET(clset, DLSS7, LOGL_NOTICE, "RT Lookup: OPC=%u=%s,DPC=%u=%s,SLS=%u -> eSLS=%u: "
+		LOGPCLSET(clset, DLSS7, LOGL_NOTICE, "RT Lookup: %s -> eSLS=%u: "
 			  "Normal Route via '%s' unavailable, picked Alternative Route via '%s' round-robin style\n",
-			  rtlabel->opc, osmo_ss7_pointcode_print(inst, rtlabel->opc),
-			  rtlabel->dpc, osmo_ss7_pointcode_print2(inst, rtlabel->dpc),
-			  rtlabel->sls, esls,
+			  ss7_route_label_to_str(buf, sizeof(buf), inst, rtlabel), esls,
 			  eslse->normal_rt->dest.as ? eslse->normal_rt->dest.as->cfg.name : "<linkset>",
 			  eslse->alt_rt->dest.as ? eslse->alt_rt->dest.as->cfg.name : "<linkset>");
 	} else {
 		/* No alternative route found, NULL is returned. */
-		LOGPCLSET(clset, DLSS7, LOGL_INFO, "RT Lookup: OPC=%u=%s,DPC=%u=%s,SLS=%u -> eSLS=%u: "
+		LOGPCLSET(clset, DLSS7, LOGL_INFO, "RT Lookup: %s -> eSLS=%u: "
 			  "Normal Route via '%s' unavailable, all Alternative Routes unavailable\n",
-			  rtlabel->opc, osmo_ss7_pointcode_print(inst, rtlabel->opc),
-			  rtlabel->dpc, osmo_ss7_pointcode_print2(inst, rtlabel->dpc),
-			  rtlabel->sls, esls,
+			  ss7_route_label_to_str(buf, sizeof(buf), inst, rtlabel), esls,
 			  eslse->normal_rt->dest.as ? eslse->normal_rt->dest.as->cfg.name : "<linkset>");
 	}
 	return rt;
