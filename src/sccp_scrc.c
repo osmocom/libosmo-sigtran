@@ -87,7 +87,7 @@ static int sua2sccp_tx_m3ua(struct osmo_sccp_instance *inst,
 	/* 1) encode the SUA in xua_msg to SCCP message */
 	msg = osmo_sua_to_sccp(sua);
 	if (!msg) {
-		LOGP(DLSCCP, LOGL_ERROR, "Cannot encode SUA to SCCP\n");
+		LOGPSCI(inst, LOGL_ERROR, "Cannot encode SUA to SCCP\n");
 		return -1;
 	}
 
@@ -101,8 +101,8 @@ static int sua2sccp_tx_m3ua(struct osmo_sccp_instance *inst,
 		param->opc = sua->mtp.opc;
 	else {
 		if (!osmo_ss7_pc_is_valid(s7i->cfg.primary_pc)) {
-			LOGP(DLSCCP, LOGL_ERROR, "SS7 instance %u: no primary point-code set\n",
-			     s7i->cfg.id);
+			LOGPSCI(inst, LOGL_ERROR, "SS7 instance %u: no primary point-code set\n",
+				s7i->cfg.id);
 			return -1;
 		}
 		param->opc = s7i->cfg.primary_pc;
@@ -140,8 +140,7 @@ static int gen_mtp_transfer_req_xua(struct osmo_sccp_instance *inst,
 	if (called->presence & OSMO_SCCP_ADDR_T_PC)
 		xua->mtp.dpc = called->pc;
 	if (!xua->mtp.dpc) {
-		LOGP(DLSCCP, LOGL_ERROR, "MTP-TRANSFER.req from SCCP "
-			"without DPC?!? called=%s\n",
+		LOGPSCI(inst, LOGL_ERROR, "MTP-TRANSFER.req from SCCP without DPC?!? called=%s\n",
 			osmo_sccp_addr_dump(called));
 		return -1;
 	}
@@ -155,8 +154,8 @@ static int gen_mtp_transfer_req_xua(struct osmo_sccp_instance *inst,
 	rt = ss7_instance_lookup_route(inst->ss7, &rtlabel);
 	if (!rt) {
 		char buf[256];
-		LOGP(DLSCCP, LOGL_ERROR, "MTP-TRANSFER.req from SCCP for %s: no route!\n",
-		     ss7_route_label_to_str(buf, sizeof(buf), inst->ss7, &rtlabel));
+		LOGPSCI(inst, LOGL_ERROR, "MTP-TRANSFER.req from SCCP for %s: no route!\n",
+			ss7_route_label_to_str(buf, sizeof(buf), inst->ss7, &rtlabel));
 		return -1;
 	}
 
@@ -169,12 +168,12 @@ static int gen_mtp_transfer_req_xua(struct osmo_sccp_instance *inst,
 		case OSMO_SS7_ASP_PROT_IPA:
 			return sua2sccp_tx_m3ua(inst, xua);
 		default:
-			LOGP(DLSCCP, LOGL_ERROR, "MTP-TRANSFER.req for "
+			LOGPSCI(inst, LOGL_ERROR, "MTP-TRANSFER.req for "
 				"unknown protocol %u\n", as->cfg.proto);
 			break;
 		}
 	} else if (rt->dest.linkset) {
-		LOGP(DLSCCP, LOGL_ERROR, "MTP-TRANSFER.req from SCCP for "
+		LOGPSCI(inst, LOGL_ERROR, "MTP-TRANSFER.req from SCCP for "
 			"linkset %s unsupported\n", rt->dest.linkset->cfg.name);
 	} else {
 		OSMO_ASSERT(0);
@@ -292,7 +291,7 @@ static int scrc_translate_node_9(struct osmo_sccp_instance *inst,
 	if (translated.ri != OSMO_SCCP_RI_SSN_PC &&
 	    translated.ri != OSMO_SCCP_RI_SSN_IP) {
 		/* TODO: GT Routing */
-		LOGP(DLSCCP, LOGL_NOTICE, "GT Routing not implemented yet\n");
+		LOGPSCI(inst, LOGL_NOTICE, "GT Routing not implemented yet\n");
 #if 1
 		/* Prevent endless recursion, see OS#2666. */
 		sccp_sclc_rx_scrc_rout_fail(inst, xua,
@@ -335,9 +334,8 @@ static int scrc_node_6(struct osmo_sccp_instance *inst,
 	/* Is subsystem equipped? */
 	if (!scu) {
 		/* Error: unequipped user */
-		LOGP(DLSCCP, LOGL_NOTICE,
-		     "Unable to find user for SSN=%u PC=%s\n",
-		     called->ssn, osmo_ss7_pointcode_print(inst->ss7, called->pc));
+		LOGPSCI(inst, LOGL_NOTICE, "Unable to find user for SSN=%u PC=%s\n",
+			called->ssn, osmo_ss7_pointcode_print(inst->ss7, called->pc));
 		return scrc_node_4(inst, xua,
 				   SCCP_RETURN_CAUSE_UNEQUIPPED_USER);
 	}
@@ -412,7 +410,7 @@ int sccp_scrc_rx_scoc_conn_msg(struct osmo_sccp_instance *inst,
 {
 	struct osmo_sccp_addr called;
 
-	LOGP(DLSS7, LOGL_DEBUG, "%s: %s\n", __func__, xua_msg_dump(xua, &xua_dialect_sua));
+	LOGPSCI(inst, LOGL_DEBUG, "%s: %s\n", __func__, xua_msg_dump(xua, &xua_dialect_sua));
 
 	sua_addr_parse(&called, xua, SUA_IEI_DEST_ADDR);
 
@@ -434,7 +432,7 @@ int sccp_scrc_rx_sclc_msg(struct osmo_sccp_instance *inst,
 {
 	struct osmo_sccp_addr called;
 
-	LOGP(DLSS7, LOGL_DEBUG, "%s: %s\n", __func__, xua_msg_dump(xua, &xua_dialect_sua));
+	LOGPSCI(inst, LOGL_DEBUG, "%s: %s\n", __func__, xua_msg_dump(xua, &xua_dialect_sua));
 
 	sua_addr_parse(&called, xua, SUA_IEI_DEST_ADDR);
 
@@ -483,7 +481,7 @@ int scrc_rx_mtp_xfer_ind_xua(struct osmo_sccp_instance *inst,
 	uint32_t proto_class;
 	struct xua_msg_part *hop_ctr_part;
 
-	LOGP(DLSS7, LOGL_DEBUG, "%s: %s\n", __func__, xua_msg_dump(xua, &xua_dialect_sua));
+	LOGPSCI(inst, LOGL_DEBUG, "%s: %s\n", __func__, xua_msg_dump(xua, &xua_dialect_sua));
 	/* TODO: SCCP or nodal congestion? */
 
 	/* CR or CL message? */

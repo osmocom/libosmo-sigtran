@@ -437,8 +437,8 @@ static int conn_add_node(struct osmo_sccp_instance *inst, struct sccp_connection
 		} else if (conn->conn_id > it->conn_id) {
 			n = &((*n)->rb_right);
 		} else {
-			LOGP(DLSCCP, LOGL_ERROR,
-			     "Trying to reserve already reserved conn_id %u\n", conn->conn_id);
+			LOGPSCI(inst, LOGL_ERROR, "Trying to reserve already reserved conn_id %u\n",
+				conn->conn_id);
 			return -EEXIST;
 		}
 	}
@@ -1546,14 +1546,14 @@ static struct osmo_sccp_user *sccp_find_user(struct osmo_sccp_instance *inst,
 
 	rc = sua_addr_parse(&called_addr, xua, SUA_IEI_DEST_ADDR);
 	if (rc < 0) {
-		LOGP(DLSCCP, LOGL_ERROR, "Cannot find SCCP User for XUA "
+		LOGPSCI(inst, LOGL_ERROR, "Cannot find SCCP User for XUA "
 			"Message %s without valid DEST_ADDR\n",
 			xua_hdr_dump(xua, &xua_dialect_sua));
 		return NULL;
 	}
 
 	if (!(called_addr.presence & OSMO_SCCP_ADDR_T_SSN)) {
-		LOGP(DLSCCP, LOGL_ERROR, "Cannot resolve SCCP User for "
+		LOGPSCI(inst, LOGL_ERROR, "Cannot resolve SCCP User for "
 			"XUA Message %s without SSN in CalledAddr\n",
 			xua_hdr_dump(xua, &xua_dialect_sua));
 		return NULL;
@@ -1572,8 +1572,8 @@ void sccp_scoc_rx_scrc_rout_fail(struct osmo_sccp_instance *inst,
 	uint32_t conn_id;
 	struct sccp_connection *conn;
 
-	LOGP(DLSCCP, LOGL_NOTICE, "SCRC Routing Failure for message %s\n",
-	     xua_hdr_dump(xua, &xua_dialect_sua));
+	LOGPSCI(inst, LOGL_NOTICE, "SCRC Routing Failure for message %s\n",
+		xua_hdr_dump(xua, &xua_dialect_sua));
 
 	/* try to dispatch to connection FSM (if any) */
 	conn_id = xua_msg_get_u32(xua, SUA_IEI_DEST_REF);
@@ -1738,8 +1738,7 @@ static void sccp_scoc_rx_unass_local_ref(struct osmo_sccp_instance *inst,
 		tx_relco_from_xua(inst, xua);
 		break;
 	default:
-		LOGP(DLSCCP, LOGL_NOTICE, "Unhandled %s\n",
-			xua_hdr_dump(xua, &xua_dialect_sua));
+		LOGPSCI(inst, LOGL_NOTICE, "Unhandled %s\n", xua_hdr_dump(xua, &xua_dialect_sua));
 		break;
 	}
 }
@@ -1830,8 +1829,7 @@ void sccp_scoc_rx_from_scrc(struct osmo_sccp_instance *inst,
 			/* this shouldn't happen, as the caller should
 			 * have already verified that a local user is
 			 * equipped for this SSN */
-			LOGP(DLSCCP, LOGL_ERROR, "Cannot find user for "
-				"CORE ?!?\n");
+			LOGPSCI(inst, LOGL_ERROR, "Cannot find user for CORE ?!?\n");
 			return;
 		}
 		/* Allocate new connection */
@@ -1843,8 +1841,8 @@ void sccp_scoc_rx_from_scrc(struct osmo_sccp_instance *inst,
 		conn_id = xua_msg_get_u32(xua, SUA_IEI_DEST_REF);
 		conn = conn_find_by_id(inst, conn_id);
 		if (!conn) {
-			LOGP(DLSCCP, LOGL_NOTICE, "Received %s: Cannot find connection for "
-			     "local reference %u\n", xua_hdr_dump(xua, &xua_dialect_sua), conn_id);
+			LOGPSCI(inst, LOGL_NOTICE, "Received %s: Cannot find connection for "
+				"local reference %u\n", xua_hdr_dump(xua, &xua_dialect_sua), conn_id);
 			sccp_scoc_rx_unass_local_ref(inst, xua);
 			return;
 		}

@@ -108,14 +108,14 @@ sccp_user_bind_pc(struct osmo_sccp_instance *inst, const char *name,
 
 	scu = sccp_user_find(inst, ssn, pc);
 	if (scu) {
-		LOGP(DLSCCP, LOGL_ERROR,
-		     "Cannot bind user '%s' to SSN=%u PC=%s, this SSN and PC"
-		     " is already bound by '%s'\n",
-		     name, ssn, osmo_ss7_pointcode_print(inst->ss7, pc), scu->name);
+		LOGPSCI(inst, LOGL_ERROR,
+			"Cannot bind user '%s' to SSN=%u PC=%s, this SSN and PC"
+			" is already bound by '%s'\n",
+			name, ssn, osmo_ss7_pointcode_print(inst->ss7, pc), scu->name);
 		return NULL;
 	}
 
-	LOGP(DLSCCP, LOGL_INFO, "Binding user '%s' to SSN=%u PC=%s\n",
+	LOGPSCI(inst, LOGL_INFO, "Binding user '%s' to SSN=%u PC=%s\n",
 		name, ssn, osmo_ss7_pointcode_print(inst->ss7, pc));
 
 	scu = talloc_zero(inst, struct osmo_sccp_user);
@@ -216,7 +216,7 @@ static int mtp_user_prim_cb(struct osmo_prim_hdr *oph, void *ctx)
 		/* Convert from SCCP to SUA in xua_msg format */
 		xua = osmo_sccp_to_xua(oph->msg);
 		if (!xua) {
-			LOGP(DLSCCP, LOGL_ERROR, "Couldn't convert SCCP to SUA: %s\n",
+			LOGPSCI(inst, LOGL_ERROR, "Couldn't convert SCCP to SUA: %s\n",
 				msgb_hexdump(oph->msg));
 			rc = -1;
 			break;
@@ -227,7 +227,7 @@ static int mtp_user_prim_cb(struct osmo_prim_hdr *oph, void *ctx)
 		xua_msg_free(xua);
 		break;
 	default:
-		LOGP(DLSCCP, LOGL_ERROR, "Unknown primitive %u:%u receivd\n",
+		LOGPSCI(inst, LOGL_ERROR, "Unknown primitive %u:%u receivd\n",
 			oph->primitive, oph->operation);
 		rc = -1;
 	}

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <inttypes.h>
+
 #include <osmocom/core/fsm.h>
 #include <osmocom/core/prim.h>
 #include <osmocom/core/linuxlist.h>
@@ -56,6 +58,11 @@ struct osmo_sccp_instance {
 
 	uint32_t max_optional_data;
 };
+#define _LOGPSCI(sci, subsys, level, fmt, args ...) \
+	_LOGSS7((sci)->ss7, subsys, level, "SCCP(rctx=%" PRIu32 ") " fmt, (sci)->route_ctx, ## args)
+#define LOGPSCI(sci, level, fmt, args ...) \
+	_LOGPSCI(sci, DLSCCP, level, fmt, ## args)
+
 
 struct osmo_sccp_user {
 	/*! \brief entry in list of sccp users of \ref osmo_sccp_instance */

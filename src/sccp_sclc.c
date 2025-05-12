@@ -56,6 +56,7 @@
 #include <osmocom/sccp/sccp_types.h>
 
 #include "xua_internal.h"
+#include "ss7_internal.h"
 #include "sccp_internal.h"
 
 /* generate a 'struct xua_msg' of requested type from primitive data */
@@ -190,7 +191,7 @@ static int sclc_rx_cldt(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 	uint32_t protocol_class;
 
 	if (!data_ie) {
-		LOGP(DLSCCP, LOGL_ERROR, "SCCP/SUA CLDT without user data?!?\n");
+		LOGPSCI(inst, LOGL_ERROR, "SCCP/SUA CLDT without user data?!?\n");
 		return -1;
 	}
 
@@ -212,8 +213,8 @@ static int sclc_rx_cldt(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 
 	if (!scu) {
 		/* FIXME: Send destination unreachable? */
-		LOGP(DLSUA, LOGL_NOTICE, "Received SUA message for unequipped SSN %u\n",
-			param->called_addr.ssn);
+		_LOGPSCI(inst, DLSUA, LOGL_NOTICE, "Received SUA message for unequipped SSN %u\n",
+			 param->called_addr.ssn);
 		msgb_free(upmsg);
 		return 0;
 	}
@@ -238,7 +239,7 @@ static int sclc_rx_cldr(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 	struct osmo_sccp_user *scu;
 
 	if (!data_ie) {
-		LOGP(DLSCCP, LOGL_ERROR, "SCCP/SUA CLDR without user data?!?\n");
+		LOGPSCI(inst, LOGL_ERROR, "SCCP/SUA CLDR without user data?!?\n");
 		return -1;
 	}
 
@@ -258,8 +259,8 @@ static int sclc_rx_cldr(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 			     param->called_addr.pc);
 	if (!scu) {
 		/* FIXME: Send destination unreachable? */
-		LOGP(DLSUA, LOGL_NOTICE, "Received CLDR for unequipped SSN %u\n",
-			param->called_addr.ssn);
+		_LOGPSCI(inst, DLSUA, LOGL_NOTICE, "Received CLDR for unequipped SSN %u\n",
+			 param->called_addr.ssn);
 		msgb_free(upmsg);
 		return 0;
 	}
@@ -294,8 +295,8 @@ int sccp_sclc_rx_from_scrc(struct osmo_sccp_instance *inst,
 		rc = sclc_rx_cldr(inst, xua);
 		break;
 	default:
-		LOGP(DLSUA, LOGL_NOTICE, "Received unknown/unsupported "
-		     "message %s\n", xua_hdr_dump(xua, &xua_dialect_sua));
+		_LOGPSCI(inst, DLSUA, LOGL_NOTICE, "Received unknown/unsupported message %s\n",
+			 xua_hdr_dump(xua, &xua_dialect_sua));
 		break;
 	}
 
