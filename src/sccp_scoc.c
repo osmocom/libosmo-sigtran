@@ -127,6 +127,10 @@ struct sccp_connection {
 	struct osmo_timer_list t_int;
 	struct osmo_timer_list t_rep_rel;
 };
+#define _LOGPSCC(scc, subsys, level, fmt, args ...) \
+	_LOGPSCU((scc)->user, subsys, level, "CONN(%d) " fmt, (conn)->conn_id, ## args)
+#define LOGPSCC(scc, level, fmt, args ...) \
+	_LOGPSCC(scc, DLSCCP, level, fmt, ## args)
 
 /***********************************************************************
  * various helper functions
@@ -642,8 +646,9 @@ static void xua_opt_data_send_cache(struct sccp_connection *conn, int exp_type, 
 		 * Compare this information with source of Optional Data recorded while caching
 		 * to make sure we're on the same page.
 		 */
-		LOGP(DLSCCP, LOGL_ERROR, "unexpected message type %s != cache source %s\n",
-			 xua_class_msg_name(xmc, exp_type), xua_class_msg_name(xmc, conn->opt_data_cache->cb[0]));
+		LOGPSCC(conn, LOGL_ERROR, "unexpected message type %s != cache source %s\n",
+			xua_class_msg_name(xmc, exp_type),
+			xua_class_msg_name(xmc, conn->opt_data_cache->cb[0]));
 	} else {
 		osmo_sccp_tx_data(conn->user, conn->conn_id, msgb_data(conn->opt_data_cache), msgb_length(conn->opt_data_cache));
 	}
@@ -676,8 +681,8 @@ static bool xua_opt_data_cache_keep(struct sccp_connection *conn, const struct o
 	if (msgb_l2len(prim->oph.msg) > max_optional_data) {
 		if (conn->opt_data_cache) {
 			/* Caching optional data, but there already is optional data occupying the cache: */
-			LOGP(DLSCCP, LOGL_ERROR, "replacing unsent %u bytes of optional data cache with %s optional data\n",
-				 msgb_length(conn->opt_data_cache), osmo_scu_prim_name(&prim->oph));
+			LOGPSCC(conn, LOGL_ERROR, "replacing unsent %u bytes of optional data cache with %s optional data\n",
+				msgb_length(conn->opt_data_cache), osmo_scu_prim_name(&prim->oph));
 			msgb_trim(conn->opt_data_cache, 0);
 		} else {
 			conn->opt_data_cache = msgb_alloc_c(conn, SCCP_MAX_DATA, "SCCP optional data cache for CR/CC/RLSD");
@@ -844,7 +849,7 @@ static struct xua_msg *xua_gen_msg_co(struct sccp_connection *conn, uint32_t eve
 		break;
 	/* FIXME */
 	default:
-		LOGP(DLSCCP, LOGL_ERROR, "Don't know how to encode msg_type %u\n", msg_type);
+		LOGPSCC(conn, LOGL_ERROR, "Don't know how to encode msg_type %u\n", msg_type);
 		xua_msg_free(xua);
 		return NULL;
 	}
@@ -852,8 +857,8 @@ static struct xua_msg *xua_gen_msg_co(struct sccp_connection *conn, uint32_t eve
 
 prim_needed:
 	xua_msg_free(xua);
-	LOGP(DLSCCP, LOGL_ERROR, "%s must be called with valid 'prim' "
-	     "pointer for msg_type=%u\n", __func__, msg_type);
+	LOGPSCC(conn, LOGL_ERROR, "%s must be called with valid 'prim' pointer for msg_type=%u\n",
+		__func__, msg_type);
 	return NULL;
 }
 
@@ -1748,9 +1753,9 @@ static void sccp_scoc_rx_inval_src_ref(struct sccp_connection *conn,
 				       struct xua_msg *xua,
 				       uint32_t inval_src_ref)
 {
-	LOGP(DLSCCP, LOGL_NOTICE,
-	     "Received message for source ref %u on conn with mismatching remote ref %u\n",
-	     inval_src_ref, conn->remote_ref);
+	LOGPSCC(conn, LOGL_NOTICE,
+		"Received message for source ref %u on conn with mismatching remote ref %u\n",
+		inval_src_ref, conn->remote_ref);
 
 	/* we have received a message with invalid source local
 	 * reference and thus apply the action indicated in Table
@@ -1770,8 +1775,7 @@ static void sccp_scoc_rx_inval_src_ref(struct sccp_connection *conn,
 		/* DISCARD */
 		break;
 	default:
-		LOGP(DLSCCP, LOGL_NOTICE, "Unhandled %s\n",
-			xua_hdr_dump(xua, &xua_dialect_sua));
+		LOGPSCC(conn, LOGL_NOTICE, "Unhandled %s\n", xua_hdr_dump(xua, &xua_dialect_sua));
 		break;
 	}
 }
@@ -1780,11 +1784,11 @@ static void sccp_scoc_rx_inval_src_ref(struct sccp_connection *conn,
 static void sccp_scoc_rx_inval_opc(struct sccp_connection *conn,
 				   struct xua_msg *xua)
 {
-	LOGP(DLSCCP, LOGL_NOTICE,
-	     "Received message %s for opc=%u=%s on conn with mismatching remote pc=%u=%s\n",
-	     xua_hdr_dump(xua, &xua_dialect_sua),
-	     xua->mtp.opc, osmo_ss7_pointcode_print(conn->inst->ss7, xua->mtp.opc),
-	     conn->remote_pc, osmo_ss7_pointcode_print2(conn->inst->ss7, conn->remote_pc));
+	LOGPSCC(conn, LOGL_NOTICE,
+		"Received message %s for opc=%u=%s on conn with mismatching remote pc=%u=%s\n",
+		xua_hdr_dump(xua, &xua_dialect_sua),
+		xua->mtp.opc, osmo_ss7_pointcode_print(conn->inst->ss7, xua->mtp.opc),
+		conn->remote_pc, osmo_ss7_pointcode_print2(conn->inst->ss7, conn->remote_pc));
 	/* we have received a message with invalid origin PC and thus
 	 * apply the action indicated in Table B.2/Q.714 */
 	switch (xua->hdr.msg_type) {
@@ -1801,7 +1805,7 @@ static void sccp_scoc_rx_inval_opc(struct sccp_connection *conn,
 		/* DISCARD */
 		break;
 	default:
-		LOGP(DLSCCP, LOGL_NOTICE, "Unhandled %s\n",
+		LOGPSCC(conn, LOGL_NOTICE, "Unhandled %s\n",
 			xua_hdr_dump(xua, &xua_dialect_sua));
 		break;
 	}
@@ -1850,8 +1854,7 @@ void sccp_scoc_rx_from_scrc(struct osmo_sccp_instance *inst,
 	OSMO_ASSERT(conn);
 	OSMO_ASSERT(conn->fi);
 
-	DEBUGP(DLSCCP, "Received %s for local reference %u\n",
-		xua_hdr_dump(xua, &xua_dialect_sua), conn->conn_id);
+	LOGPSCC(conn, LOGL_DEBUG, "Received %s\n", xua_hdr_dump(xua, &xua_dialect_sua));
 
 	if (xua->hdr.msg_type != SUA_CO_CORE &&
 	    xua->hdr.msg_type != SUA_CO_COAK &&
@@ -1876,7 +1879,7 @@ void sccp_scoc_rx_from_scrc(struct osmo_sccp_instance *inst,
 	/* Map from XUA message to event */
 	event = xua_msg_event_map(xua, sua_scoc_event_map, ARRAY_SIZE(sua_scoc_event_map));
 	if (event < 0) {
-		LOGP(DLSCCP, LOGL_ERROR, "Cannot map SCRC msg %s to event\n",
+		LOGPSCC(conn, LOGL_ERROR, "Cannot map SCRC msg %s to event\n",
 			xua_hdr_dump(xua, &xua_dialect_sua));
 		/* Table B.1/Q714 states DISCARD for any message with
 		 * unknown type */
