@@ -34,6 +34,7 @@
 #include <osmocom/sccp/sccp_types.h>
 
 #include "xua_internal.h"
+#include "ss7_internal.h"
 #include "sccp_internal.h"
 
 /* ITU-T Q.714 5.3.3 Subsystem allowed */
@@ -262,7 +263,7 @@ static int scmg_rx(struct osmo_sccp_user *scu, const struct osmo_sccp_addr *call
 	case SCCP_SCMG_MSGT_SOG:
 	case SCCP_SCMG_MSGT_SSC:
 	default:
-		LOGP(DLSCCP, LOGL_NOTICE, "Rx unsupported SCCP SCMG %s, ignoring\n",
+		LOGPSCU(scu, LOGL_NOTICE, "Rx unsupported SCCP SCMG %s, ignoring\n",
 			sccp_scmg_msgt_name(scmg->msg_type));
 		break;
 	}
@@ -296,10 +297,10 @@ static int scmg_prim_cb(struct osmo_prim_hdr *oph, void *_scu)
 		rc = scmg_rx(scu, &param->calling_addr, &param->called_addr, scmg);
 		break;
 	case OSMO_PRIM(OSMO_SCU_PRIM_N_PCSTATE, PRIM_OP_INDICATION):
-		LOGP(DLSCCP, LOGL_DEBUG, "Ignoring SCCP user primitive %s\n", osmo_scu_prim_name(oph));
+		LOGPSCU(scu, LOGL_DEBUG, "Ignoring SCCP user primitive %s\n", osmo_scu_prim_name(oph));
 		break;
 	default:
-		LOGP(DLSCCP, LOGL_ERROR, "unsupported SCCP user primitive %s\n",
+		LOGPSCU(scu, LOGL_ERROR, "unsupported SCCP user primitive %s\n",
 			osmo_scu_prim_name(oph));
 		break;
 	}

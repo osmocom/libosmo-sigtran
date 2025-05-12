@@ -86,6 +86,10 @@ struct osmo_sccp_user {
 	/* Application Server FSM Instance */
 	struct osmo_fsm_inst *as_fi;
 };
+#define _LOGPSCU(scu, subsys, level, fmt, args ...) \
+	_LOGPSCI((scu)->inst, subsys, level, "SCU(%s) " fmt, osmo_sccp_user_name(scu), ## args)
+#define LOGPSCU(scu, level, fmt, args ...) \
+	_LOGPSCU(scu, DLSCCP, level, fmt, ## args)
 
 extern int DSCCP;
 

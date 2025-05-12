@@ -169,9 +169,7 @@ osmo_sccp_user_bind(struct osmo_sccp_instance *inst, const char *name,
  *  		at the time this function returns. */
 void osmo_sccp_user_unbind(struct osmo_sccp_user *scu)
 {
-	LOGP(DLSCCP, LOGL_INFO, "Unbinding user '%s' from SSN=%u PC=%s\n",
-		scu->name, scu->ssn,
-		osmo_ss7_pointcode_print(scu->inst->ss7, scu->pc));
+	LOGPSCU(scu, LOGL_INFO, "Unbinding user\n");
 	/* FIXME: free/release all connections held by this user? */
 	llist_del(&scu->list);
 	talloc_free(scu);
@@ -196,8 +194,8 @@ void *osmo_sccp_user_get_priv(struct osmo_sccp_user *scu)
  */
 int sccp_user_prim_up(struct osmo_sccp_user *scu, struct osmo_scu_prim *prim)
 {
-	LOGP(DLSCCP, LOGL_DEBUG, "Delivering %s to SCCP User '%s'\n",
-		osmo_scu_prim_name(&prim->oph), scu->name);
+	LOGPSCU(scu, LOGL_DEBUG, "Delivering to SCCP User: %s\n",
+		osmo_scu_prim_name(&prim->oph));
 	return scu->prim_cb(&prim->oph, scu);
 }
 

@@ -159,9 +159,8 @@ int sccp_sclc_user_sap_down_nofree(struct osmo_sccp_user *scu, struct osmo_prim_
 		/* Connectionless by-passes this altogether */
 		return xua_gen_encode_and_send(scu, -1, prim, SUA_CL_CLDT);
 	default:
-		LOGP(DLSCCP, LOGL_ERROR, "Received unknown SCCP User "
-		     "primitive %s from user\n",
-		     osmo_scu_prim_name(&prim->oph));
+		LOGPSCU(scu, LOGL_ERROR, "Received unknown SCCP User primitive %s from user\n",
+			osmo_scu_prim_name(&prim->oph));
 		return -1;
 	}
 }

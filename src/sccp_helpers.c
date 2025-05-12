@@ -33,6 +33,7 @@
 #include <osmocom/sigtran/sccp_sap.h>
 #include <osmocom/sigtran/sccp_helpers.h>
 
+#include "ss7_internal.h"
 #include "sccp_internal.h"
 
 #define SCU_MSG_SIZE		2048
@@ -159,12 +160,12 @@ int osmo_sccp_tx_data(struct osmo_sccp_user *scu, uint32_t conn_id,
 	struct osmo_scu_prim *prim;
 
 	if (!osmo_sccp_conn_id_exists(scu->inst, conn_id)) {
-		LOGP(DLSCCP, LOGL_ERROR, "N-DATA.req TX error: unable to find connection ID (local_ref) %u\n", conn_id);
+		LOGPSCU(scu, LOGL_ERROR, "N-DATA.req TX error: unable to find connection ID (local_ref) %u\n", conn_id);
 		return -ENOTCONN;
 	}
 
 	if (len > SCCP_MAX_DATA) {
-		LOGP(DLSCCP, LOGL_ERROR, "N-DATA.req TX error: amount of data %u > %u - ITU-T Rec. Q.713 §4.7 limit\n",
+		LOGPSCU(scu, LOGL_ERROR, "N-DATA.req TX error: amount of data %u > %u - ITU-T Rec. Q.713 §4.7 limit\n",
 			 len, SCCP_MAX_DATA);
 		return -EMSGSIZE;
 	}
@@ -203,7 +204,7 @@ int osmo_sccp_tx_disconn_data(struct osmo_sccp_user *scu, uint32_t conn_id,
 	struct osmo_scu_disconn_param *param;
 
 	if (!osmo_sccp_conn_id_exists(scu->inst, conn_id)) {
-		LOGP(DLSCCP, LOGL_ERROR, "N-DISCONNECT.req TX error: unable to find connection ID (local_ref) %u\n", conn_id);
+		LOGPSCU(scu, LOGL_ERROR, "N-DISCONNECT.req TX error: unable to find connection ID (local_ref) %u\n", conn_id);
 		return -ENOTCONN;
 	}
 
@@ -244,7 +245,7 @@ int osmo_sccp_tx_conn_resp_msg(struct osmo_sccp_user *scu, uint32_t conn_id,
 	struct osmo_scu_connect_param *param;
 
 	if (!osmo_sccp_conn_id_exists(scu->inst, conn_id)) {
-		LOGP(DLSCCP, LOGL_ERROR, "N-CONNECT.resp TX error: unable to find connection ID (local_ref) %u\n", conn_id);
+		LOGPSCU(scu, LOGL_ERROR, "N-CONNECT.resp TX error: unable to find connection ID (local_ref) %u\n", conn_id);
 		return -ENOTCONN;
 	}
 

@@ -1917,7 +1917,7 @@ int osmo_sccp_user_sap_down_nofree(struct osmo_sccp_user *scu, struct osmo_prim_
 	int rc = 0;
 	int event;
 
-	LOGP(DLSCCP, LOGL_DEBUG, "Received SCCP User Primitive (%s)\n",
+	LOGPSCU(scu, LOGL_DEBUG, "Received SCCP User Primitive (%s)\n",
 		osmo_scu_prim_name(&prim->oph));
 
 	switch (OSMO_PRIM_HDR(&prim->oph)) {
@@ -1930,8 +1930,8 @@ int osmo_sccp_user_sap_down_nofree(struct osmo_sccp_user *scu, struct osmo_prim_
 		conn = conn_create_id(scu, prim->u.connect.conn_id);
 		if (!conn) {
 			/* FIXME: inform SCCP user with proper reply */
-			LOGP(DLSCCP, LOGL_ERROR, "Cannot create conn-id for primitive %s\n",
-			     osmo_scu_prim_name(&prim->oph));
+			LOGPSCU(scu, LOGL_ERROR, "Cannot create conn-id for primitive %s\n",
+				osmo_scu_prim_name(&prim->oph));
 			return rc;
 		}
 		break;
@@ -1943,13 +1943,13 @@ int osmo_sccp_user_sap_down_nofree(struct osmo_sccp_user *scu, struct osmo_prim_
 		conn = conn_find_by_id(inst, scu_prim_conn_id(prim));
 		if (!conn) {
 			/* FIXME: inform SCCP user with proper reply */
-			LOGP(DLSCCP, LOGL_ERROR, "Received unknown conn-id %u for primitive %s\n",
-			     scu_prim_conn_id(prim), osmo_scu_prim_name(&prim->oph));
+			LOGPSCU(scu, LOGL_ERROR, "Received unknown conn-id %u for primitive %s\n",
+				scu_prim_conn_id(prim), osmo_scu_prim_name(&prim->oph));
 			return rc;
 		}
 		break;
 	default:
-		LOGP(DLSCCP, LOGL_ERROR, "Received unknown primitive %s\n",
+		LOGPSCU(scu, LOGL_ERROR, "Received unknown primitive %s\n",
 			osmo_scu_prim_name(&prim->oph));
 		return -1;
 	}
