@@ -44,6 +44,7 @@
  */
 
 #include <string.h>
+#include <errno.h>
 
 #include <osmocom/core/utils.h>
 #include <osmocom/core/linuxlist.h>
@@ -188,6 +189,7 @@ static int sclc_rx_cldt(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 	struct msgb *upmsg;
 	struct osmo_sccp_user *scu;
 	uint32_t protocol_class;
+	int rc;
 
 	if (!data_ie) {
 		LOGPSCI(inst, LOGL_ERROR, "SCCP/SUA CLDT without user data?!?\n");
@@ -201,8 +203,23 @@ static int sclc_rx_cldt(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 	osmo_prim_init(&prim->oph, SCCP_SAP_USER,
 			OSMO_SCU_PRIM_N_UNITDATA,
 			PRIM_OP_INDICATION, upmsg);
-	sua_addr_parse(&param->called_addr, xua, SUA_IEI_DEST_ADDR);
-	sua_addr_parse(&param->calling_addr, xua, SUA_IEI_SRC_ADDR);
+
+	rc = sua_addr_parse(&param->called_addr, xua, SUA_IEI_DEST_ADDR);
+	if (rc < 0) {
+		LOGPSCI(inst, LOGL_ERROR, "XUA Message %s without valid DEST_ADDR\n",
+			xua_hdr_dump(xua, &xua_dialect_sua));
+		msgb_free(upmsg);
+		return -EINVAL;
+	}
+
+	rc = sua_addr_parse(&param->calling_addr, xua, SUA_IEI_SRC_ADDR);
+	if (rc < 0) {
+		LOGPSCI(inst, LOGL_ERROR, "XUA Message %s without valid SRC_ADDR\n",
+			xua_hdr_dump(xua, &xua_dialect_sua));
+		msgb_free(upmsg);
+		return -EINVAL;
+	}
+
 	param->in_sequence_control = xua_msg_get_u32(xua, SUA_IEI_SEQ_CTRL);
 	protocol_class = xua_msg_get_u32(xua, SUA_IEI_PROTO_CLASS);
 	param->return_option = protocol_class & 0x80;
@@ -210,7 +227,6 @@ static int sclc_rx_cldt(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 
 	scu = sccp_user_find(inst, param->called_addr.ssn,
 			     param->called_addr.pc);
-
 	if (!scu) {
 		/* FIXME: Send destination unreachable? */
 		_LOGPSCI(inst, DLSUA, LOGL_NOTICE, "Received SUA message for unequipped SSN %u\n",
@@ -237,6 +253,7 @@ static int sclc_rx_cldr(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 	struct xua_msg_part *data_ie = xua_msg_find_tag(xua, SUA_IEI_DATA);
 	struct msgb *upmsg;
 	struct osmo_sccp_user *scu;
+	int rc;
 
 	if (!data_ie) {
 		LOGPSCI(inst, LOGL_ERROR, "SCCP/SUA CLDR without user data?!?\n");
@@ -251,8 +268,22 @@ static int sclc_rx_cldr(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 			OSMO_SCU_PRIM_N_NOTICE,
 			PRIM_OP_INDICATION, upmsg);
 
-	sua_addr_parse(&param->called_addr, xua, SUA_IEI_DEST_ADDR);
-	sua_addr_parse(&param->calling_addr, xua, SUA_IEI_SRC_ADDR);
+	rc = sua_addr_parse(&param->called_addr, xua, SUA_IEI_DEST_ADDR);
+	if (rc < 0) {
+		LOGPSCI(inst, LOGL_ERROR, "XUA Message %s without valid DEST_ADDR\n",
+			xua_hdr_dump(xua, &xua_dialect_sua));
+		msgb_free(upmsg);
+		return -EINVAL;
+	}
+
+	rc = sua_addr_parse(&param->calling_addr, xua, SUA_IEI_SRC_ADDR);
+	if (rc < 0) {
+		LOGPSCI(inst, LOGL_ERROR, "XUA Message %s without valid SRC_ADDR\n",
+			xua_hdr_dump(xua, &xua_dialect_sua));
+		msgb_free(upmsg);
+		return -EINVAL;
+	}
+
 	param->importance = xua_msg_get_u32(xua, SUA_IEI_IMPORTANCE);
 	param->cause = xua_msg_get_u32(xua, SUA_IEI_CAUSE);
 
@@ -335,13 +366,14 @@ static struct xua_msg *gen_ret_msg(struct osmo_sccp_instance *inst,
 	/* Optional: Data */
 	xua_msg_copy_part(xua_out, SUA_IEI_DATA, xua_in, SUA_IEI_DATA);
 
-	sua_addr_parse(&called, xua_out, SUA_IEI_DEST_ADDR);
+	OSMO_ASSERT(sua_addr_parse(&called, xua_out, SUA_IEI_DEST_ADDR) == 0);
+
 	/* Route on PC + SSN ? */
 	if (called.ri == OSMO_SCCP_RI_SSN_PC) {
 		/* if no PC, copy OPC into called addr */
 		if (!(called.presence & OSMO_SCCP_ADDR_T_PC)) {
 			struct osmo_sccp_addr calling;
-			sua_addr_parse(&calling, xua_out, SUA_IEI_SRC_ADDR);
+			OSMO_ASSERT(sua_addr_parse(&calling, xua_out, SUA_IEI_SRC_ADDR) == 0);
 			called.presence |= OSMO_SCCP_ADDR_T_PC;
 			called.pc = calling.pc;
 			/* Re-encode / replace called address */

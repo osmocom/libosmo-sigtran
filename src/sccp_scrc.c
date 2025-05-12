@@ -21,6 +21,7 @@
  */
 
 #include <stdbool.h>
+#include <errno.h>
 
 #include <osmocom/core/logging.h>
 #include <osmocom/core/msgb.h>
@@ -443,10 +444,16 @@ int sccp_scrc_rx_scoc_conn_msg(struct osmo_sccp_instance *inst,
 				struct xua_msg *xua)
 {
 	struct osmo_sccp_addr called;
+	int rc;
 
 	LOGPSCI(inst, LOGL_DEBUG, "%s: %s\n", __func__, xua_msg_dump(xua, &xua_dialect_sua));
 
-	sua_addr_parse(&called, xua, SUA_IEI_DEST_ADDR);
+	rc = sua_addr_parse(&called, xua, SUA_IEI_DEST_ADDR);
+	if (rc < 0) {
+		LOGPSCI(inst, LOGL_ERROR, "XUA Message %s without valid DEST_ADDR\n",
+			xua_hdr_dump(xua, &xua_dialect_sua));
+		return -EINVAL;
+	}
 
 	/* Is this a CR message ? */
 	if (xua->hdr.msg_type != SUA_CO_CORE)
@@ -465,10 +472,16 @@ int sccp_scrc_rx_sclc_msg(struct osmo_sccp_instance *inst,
 			  struct xua_msg *xua)
 {
 	struct osmo_sccp_addr called;
+	int rc;
 
 	LOGPSCI(inst, LOGL_DEBUG, "%s: %s\n", __func__, xua_msg_dump(xua, &xua_dialect_sua));
 
-	sua_addr_parse(&called, xua, SUA_IEI_DEST_ADDR);
+	rc = sua_addr_parse(&called, xua, SUA_IEI_DEST_ADDR);
+	if (rc < 0) {
+		LOGPSCI(inst, LOGL_ERROR, "XUA Message %s without valid DEST_ADDR\n",
+			xua_hdr_dump(xua, &xua_dialect_sua));
+		return -EINVAL;
+	}
 
 	/* Message Type */
 	if (xua->hdr.msg_type == SUA_CL_CLDR) {
@@ -487,12 +500,18 @@ int sccp_scrc_rx_sclc_msg(struct osmo_sccp_instance *inst,
 }
 
 /* ensure the CallingParty address doesn't just contain SSN, but at least SSN+PC */
-static void ensure_opc_in_calling_ssn(struct osmo_sccp_instance *inst,
+static int ensure_opc_in_calling_ssn(struct osmo_sccp_instance *inst,
 				      struct xua_msg *xua)
 {
 	struct osmo_sccp_addr calling;
+	int rc;
 
-	sua_addr_parse(&calling, xua, SUA_IEI_SRC_ADDR);
+	rc = sua_addr_parse(&calling, xua, SUA_IEI_SRC_ADDR);
+	if (rc < 0) {
+		LOGPSCI(inst, LOGL_ERROR, "XUA Message %s without valid SRC_ADDR\n",
+			xua_hdr_dump(xua, &xua_dialect_sua));
+		return -EINVAL;
+	}
 
 	/* if we route on SSN and only have a SSN in the address... */
 	if (calling.ri == OSMO_SCCP_RI_SSN_PC &&
@@ -504,6 +523,7 @@ static void ensure_opc_in_calling_ssn(struct osmo_sccp_instance *inst,
 		xua_msg_free_tag(xua, SUA_IEI_SRC_ADDR);
 		xua_msg_add_sccp_addr(xua, SUA_IEI_SRC_ADDR, &calling);
 	}
+	return 0;
 }
 
 /* Figure C.1/Q.714 Sheet 1 of 12, after we converted the
@@ -514,6 +534,7 @@ int scrc_rx_mtp_xfer_ind_xua(struct osmo_sccp_instance *inst,
 	struct osmo_sccp_addr called;
 	uint32_t proto_class;
 	struct xua_msg_part *hop_ctr_part;
+	int rc;
 
 	LOGPSCI(inst, LOGL_DEBUG, "%s: %s\n", __func__, xua_msg_dump(xua, &xua_dialect_sua));
 	/* TODO: SCCP or nodal congestion? */
@@ -528,9 +549,16 @@ int scrc_rx_mtp_xfer_ind_xua(struct osmo_sccp_instance *inst,
 	/* We only treat connectionless and CR below */
 
 	/* ensure we have at least OPC+SSN and not just SSN in CallingParty (OS#5146) */
-	ensure_opc_in_calling_ssn(inst, xua);
+	rc = ensure_opc_in_calling_ssn(inst, xua);
+	if (rc < 0)
+		return -EINVAL;
 
-	sua_addr_parse(&called, xua, SUA_IEI_DEST_ADDR);
+	rc = sua_addr_parse(&called, xua, SUA_IEI_DEST_ADDR);
+	if (rc < 0) {
+		LOGPSCI(inst, LOGL_ERROR, "XUA Message %s without valid DEST_ADDR\n",
+			xua_hdr_dump(xua, &xua_dialect_sua));
+		return -EINVAL;
+	}
 
 	/* Route on GT? */
 	if (called.ri != OSMO_SCCP_RI_GT) {
