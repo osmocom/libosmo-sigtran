@@ -635,9 +635,10 @@ static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	OSMO_ASSERT(dh);
 	m3ua_dh_to_xfer_param(&xua->mtp, dh);
 	LOGPASP(asp, DLM3UA, LOGL_DEBUG,
-		"%s(): M3UA data header: opc=%u=%s dpc=%u=%s\n",
+		"%s(): M3UA data header: opc=%u=%s dpc=%u=%s sls=%u\n",
 		__func__, xua->mtp.opc, osmo_ss7_pointcode_print(asp->inst, xua->mtp.opc),
-		xua->mtp.dpc, osmo_ss7_pointcode_print2(asp->inst, xua->mtp.dpc));
+		xua->mtp.dpc, osmo_ss7_pointcode_print2(asp->inst, xua->mtp.dpc),
+		xua->mtp.sls);
 	OSMO_ASSERT(xua->mtp.sls <= 0xf);
 	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_SLS_0 + xua->mtp.sls);
 
