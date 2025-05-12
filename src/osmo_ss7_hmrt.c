@@ -129,8 +129,7 @@ static int hmdt_message_for_distribution(struct osmo_ss7_instance *inst, struct 
 			service_ind = mdh->si & 0xf;
 			break;
 		default:
-			LOGP(DLSS7, LOGL_ERROR, "Unknown M3UA XFER Message "
-				"Type %u\n", xua->hdr.msg_type);
+			LOGSS7(inst, LOGL_ERROR, "Unknown M3UA XFER Message Type %u\n", xua->hdr.msg_type);
 			xua_msg_free(xua);
 			return -1;
 		}
@@ -141,8 +140,7 @@ static int hmdt_message_for_distribution(struct osmo_ss7_instance *inst, struct 
 		/* FIXME: SI = Signalling Network Testing and Maintenance -> SLTC */
 	default:
 		/* Discard Message */
-		LOGP(DLSS7, LOGL_ERROR, "Unknown M3UA Message Class %u\n",
-			xua->hdr.msg_class);
+		LOGSS7(inst, LOGL_ERROR, "Unknown M3UA Message Class %u\n", xua->hdr.msg_class);
 		xua_msg_free(xua);
 		return -1;
 	}
@@ -152,7 +150,7 @@ static int hmdt_message_for_distribution(struct osmo_ss7_instance *inst, struct 
 	if (osu) {
 		return deliver_to_mtp_user(osu, xua);
 	} else {
-		LOGP(DLSS7, LOGL_NOTICE, "No MTP-User for SI %u\n", service_ind);
+		LOGSS7(inst, LOGL_NOTICE, "No MTP-User for SI %u\n", service_ind);
 		/* Discard Message */
 		/* FIXME: User Part Unavailable HMDT -> HMRT */
 		xua_msg_free(xua);
@@ -192,7 +190,7 @@ static int hmrt_message_for_routing(struct osmo_ss7_instance *inst,
 				 * osmo_ss7_pointcode_print2(), guard against its static buffer being
 				 * overwritten. */
 				const char *rt_name = osmo_ss7_route_name(rt, false);
-				DEBUGP(DLSS7, "Found route for dpc=%u=%s: %s\n",
+				LOGSS7(inst, LOGL_DEBUG, "Found route for dpc=%u=%s: %s\n",
 				       dpc, osmo_ss7_pointcode_print(inst, dpc), rt_name);
 			}
 
@@ -202,14 +200,14 @@ static int hmrt_message_for_routing(struct osmo_ss7_instance *inst,
 
 			switch (as->cfg.proto) {
 			case OSMO_SS7_ASP_PROT_M3UA:
-				DEBUGP(DLSS7, "rt->dest.as proto is M3UA for dpc=%u=%s\n",
+				LOGSS7(inst, LOGL_DEBUG, "rt->dest.as proto is M3UA for dpc=%u=%s\n",
 				       dpc, osmo_ss7_pointcode_print(inst, dpc));
 				return m3ua_tx_xua_as(as, xua);
 			case OSMO_SS7_ASP_PROT_IPA:
 				return ipa_tx_xua_as(as, xua);
 			default:
-				LOGP(DLSS7, LOGL_ERROR, "MTP message for ASP of unknown protocol %u\n",
-				     as->cfg.proto);
+				LOGSS7(inst, LOGL_ERROR, "MTP message for ASP of unknown protocol %u\n",
+				       as->cfg.proto);
 				break;
 			}
 		} else if (rt->dest.linkset) {
@@ -218,15 +216,15 @@ static int hmrt_message_for_routing(struct osmo_ss7_instance *inst,
 				 * osmo_ss7_pointcode_print2(), guard against its static buffer being
 				 * overwritten. */
 				const char *rt_name = osmo_ss7_route_name(rt, false);
-				LOGP(DLSS7, LOGL_ERROR,
-				     "Found route for dpc=%u=%s: %s, but MTP-TRANSFER.req unsupported for linkset.\n",
-				     dpc, osmo_ss7_pointcode_print(inst, dpc), rt_name);
+				LOGSS7(inst, LOGL_ERROR,
+				       "Found route for dpc=%u=%s: %s, but MTP-TRANSFER.req unsupported for linkset.\n",
+				       dpc, osmo_ss7_pointcode_print(inst, dpc), rt_name);
 			}
 		} else
 			OSMO_ASSERT(0);
 	} else {
-		LOGP(DLSS7, LOGL_ERROR, "MTP-TRANSFER.req for dpc=%u=%s: no route!\n",
-		     dpc, osmo_ss7_pointcode_print(inst, dpc));
+		LOGSS7(inst, LOGL_ERROR, "MTP-TRANSFER.req for dpc=%u=%s: no route!\n",
+		       dpc, osmo_ss7_pointcode_print(inst, dpc));
 		/* DPC unknown HMRT -> MGMT */
 		/* Message Received for inaccesible SP HMRT ->RTPC */
 		/* Discard Message */
@@ -243,12 +241,12 @@ int m3ua_hmdc_rx_from_l2(struct osmo_ss7_instance *inst, struct xua_msg *xua)
 {
 	uint32_t dpc = xua->mtp.dpc;
 	if (osmo_ss7_pc_is_local(inst, dpc)) {
-		DEBUGP(DLSS7, "%s(): found dpc=%u=%s as local\n", __func__,
-		       dpc, osmo_ss7_pointcode_print(inst, dpc));
+		LOGSS7(inst, LOGL_DEBUG, "%s(): found dpc=%u=%s as local\n",
+		       __func__, dpc, osmo_ss7_pointcode_print(inst, dpc));
 		return hmdt_message_for_distribution(inst, xua);
 	} else {
-		DEBUGP(DLSS7, "%s(): dpc=%u=%s not local, message is for routing\n", __func__,
-		       dpc, osmo_ss7_pointcode_print(inst, dpc));
+		LOGSS7(inst, LOGL_DEBUG, "%s(): dpc=%u=%s not local, message is for routing\n",
+		       __func__, dpc, osmo_ss7_pointcode_print(inst, dpc));
 		return hmrt_message_for_routing(inst, xua);
 	}
 }
@@ -277,8 +275,8 @@ int osmo_ss7_user_mtp_xfer_req(struct osmo_ss7_instance *inst,
 		rc = m3ua_hmdc_rx_from_l2(inst, xua);
 		break;
 	default:
-		LOGP(DLSS7, LOGL_ERROR, "Ignoring unknown primitive %u:%u\n",
-			omp->oph.primitive, omp->oph.operation);
+		LOGSS7(inst, LOGL_ERROR, "Ignoring unknown primitive %u:%u\n",
+		       omp->oph.primitive, omp->oph.operation);
 		rc = -1;
 	}
 
