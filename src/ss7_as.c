@@ -58,6 +58,7 @@ struct value_string osmo_ss7_as_traffic_mode_vals[] = {
 #define SS7_AS_CTR_RX_MSU_SLS_STR "Number of MSU received on SLS "
 #define SS7_AS_CTR_TX_MSU_SLS_STR "Number of MSU transmitted on SLS "
 static const struct rate_ctr_desc ss7_as_rcd[] = {
+	[SS7_AS_CTR_RX_MSU_DISCARD] = {	"rx:msu:discard",	"Total number of incoming MSU discarded" },
 	[SS7_AS_CTR_RX_MSU_TOTAL] = {	"rx:msu:total",		"Total number of MSU received" },
 	[SS7_AS_CTR_RX_MSU_SLS_0] = {	"rx:msu:sls:0",		SS7_AS_CTR_RX_MSU_SLS_STR "0" },
 	[SS7_AS_CTR_RX_MSU_SLS_1] = {	"rx:msu:sls:1",		SS7_AS_CTR_RX_MSU_SLS_STR "1" },

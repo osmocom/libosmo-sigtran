@@ -625,9 +625,14 @@ static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	if (rc)
 		goto ret_free;
 
-	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_TOTAL);
+	if (!osmo_ss7_as_active(as)) {
+		rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_DISCARD);
+		LOGPAS(as, DLM3UA, LOGL_INFO, "Discarding received XUA Message %s, AS state %s\n",
+		       xua_hdr_dump(xua, &xua_dialect_sua), osmo_fsm_inst_state_name(as->fi));
+		goto ret_free;
+	}
 
-	/* FIXME: check for AS state == ACTIVE */
+	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_TOTAL);
 
 	/* store the MTP-level information in the xua_msg for use by
 	 * higher layer protocols */

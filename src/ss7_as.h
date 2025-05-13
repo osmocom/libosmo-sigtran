@@ -25,6 +25,7 @@ enum osmo_ss7_as_patch_sccp_mode {
 };
 
 enum ss7_as_ctr {
+	SS7_AS_CTR_RX_MSU_DISCARD,
 	SS7_AS_CTR_RX_MSU_TOTAL,
 	SS7_AS_CTR_RX_MSU_SLS_0,
 	SS7_AS_CTR_RX_MSU_SLS_1,
