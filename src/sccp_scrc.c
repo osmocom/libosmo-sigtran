@@ -252,7 +252,16 @@ static int scrc_node_2(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 
 	rc = sua_addr_parse(&called, xua, SUA_IEI_DEST_ADDR);
 	if (rc < 0) {
-		LOGPSCI(inst, LOGL_ERROR, "XUA Message %s without valid DEST_ADDR\n",
+		/* Q.714 2.2.2: It is expectd that CO msgs != CREQ have no "Called Address".
+		* Use MTP DPC info provided by SCOC in xua->mtp.dpc instead. */
+		called = (struct osmo_sccp_addr){
+			.ri = OSMO_SCCP_RI_SSN_PC,
+			.presence = OSMO_SCCP_ADDR_T_PC,
+			.pc = xua->mtp.dpc,
+		};
+	}
+	if (!(called.presence & OSMO_SCCP_ADDR_T_PC)) {
+		LOGPSCI(inst, LOGL_ERROR, "XUA Message %s without valid DPC address information\n",
 			xua_hdr_dump(xua, &xua_dialect_sua));
 		return -EINVAL;
 	}
