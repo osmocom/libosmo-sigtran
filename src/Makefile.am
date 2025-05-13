@@ -41,20 +41,6 @@ LIBVERSION=11:0:0
 libosmo_sigtran_la_SOURCES = \
 	ipa.c \
 	m3ua.c \
-	osmo_ss7.c \
-	osmo_ss7_as.c \
-	osmo_ss7_asp.c \
-	osmo_ss7_asp_peer.c \
-	osmo_ss7_combined_linkset.c \
-	osmo_ss7_hmrt.c \
-	osmo_ss7_instance.c \
-	osmo_ss7_link.c \
-	osmo_ss7_linkset.c \
-	osmo_ss7_vty.c \
-	osmo_ss7_xua_srv.c \
-	osmo_ss7_route.c \
-	osmo_ss7_route_table.c \
-	osmo_ss7_user.c \
 	sccp2sua.c \
 	sccp_helpers.c \
 	sccp_lbcs.c \
@@ -66,6 +52,20 @@ libosmo_sigtran_la_SOURCES = \
 	sccp_types.c \
 	sccp_user.c \
 	sccp_vty.c \
+	ss7.c \
+	ss7_as.c \
+	ss7_asp.c \
+	ss7_asp_peer.c \
+	ss7_combined_linkset.c \
+	ss7_hmrt.c \
+	ss7_instance.c \
+	ss7_link.c \
+	ss7_linkset.c \
+	ss7_vty.c \
+	ss7_xua_srv.c \
+	ss7_route.c \
+	ss7_route_table.c \
+	ss7_user.c \
 	sua.c \
 	xua_asp_fsm.c \
 	xua_as_fsm.c \
