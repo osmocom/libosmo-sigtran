@@ -245,12 +245,20 @@ static int scrc_node_12(struct osmo_sccp_instance *inst, struct xua_msg *xua,
 
 /* "Figure C.1/Q.714 - SCCP routing control procedures (SCRC) (sheet 5 of 12)"
  * Only used for Connection Oriented messages */
-static int scrc_node_2(struct osmo_sccp_instance *inst, struct xua_msg *xua,
-			const struct osmo_sccp_addr *called)
+static int scrc_node_2(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 {
-	/* Node 2 on Sheet 5, only CO */
+	struct osmo_sccp_addr called;
+	int rc;
+
+	rc = sua_addr_parse(&called, xua, SUA_IEI_DEST_ADDR);
+	if (rc < 0) {
+		LOGPSCI(inst, LOGL_ERROR, "XUA Message %s without valid DEST_ADDR\n",
+			xua_hdr_dump(xua, &xua_dialect_sua));
+		return -EINVAL;
+	}
+
 	/* Is DPC accessible? */
-	if (!dpc_accessible(inst, called->pc)) {
+	if (!dpc_accessible(inst, called.pc)) {
 		/* Error: MTP Failure */
 		/* Routing Failure SCRC -> SCOC */
 		sccp_scoc_rx_scrc_rout_fail(inst, xua,
@@ -258,14 +266,14 @@ static int scrc_node_2(struct osmo_sccp_instance *inst, struct xua_msg *xua,
 		return 0;
 	}
 	/* Is SCCP available? */
-	if (!sccp_available(inst, called)) {
+	if (!sccp_available(inst, &called)) {
 		/* Error: SCCP Failure */
 		/* Routing Failure SCRC -> SCOC */
 		sccp_scoc_rx_scrc_rout_fail(inst, xua,
 				SCCP_RETURN_CAUSE_SCCP_FAILURE);
 		return 0;
 	}
-	return scrc_node_12(inst, xua, called);
+	return scrc_node_12(inst, xua, &called);
 }
 
 static int scrc_node_7(struct osmo_sccp_instance *inst,
@@ -448,20 +456,20 @@ int sccp_scrc_rx_scoc_conn_msg(struct osmo_sccp_instance *inst,
 
 	LOGPSCI(inst, LOGL_DEBUG, "%s: %s\n", __func__, xua_msg_dump(xua, &xua_dialect_sua));
 
+	/* Is this a CR message ? */
+	if (xua->hdr.msg_type != SUA_CO_CORE)
+		return scrc_node_2(inst, xua);
+
+#if 0
+	if (/* TODO: Coupling performed (not supported) */)
+		return scrc_node_2(inst, xua);
+#endif
+
 	rc = sua_addr_parse(&called, xua, SUA_IEI_DEST_ADDR);
 	if (rc < 0) {
 		LOGPSCI(inst, LOGL_ERROR, "XUA Message %s without valid DEST_ADDR\n",
 			xua_hdr_dump(xua, &xua_dialect_sua));
 		return -EINVAL;
-	}
-
-	/* Is this a CR message ? */
-	if (xua->hdr.msg_type != SUA_CO_CORE)
-		return scrc_node_2(inst, xua, &called);
-
-	/* TOOD: Coupling performed (not supported) */
-	if (0) {
-		return scrc_node_2(inst, xua, &called);
 	}
 
 	return scrc_local_out_common(inst, xua, &called);
