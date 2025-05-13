@@ -242,6 +242,8 @@ static int scrc_node_12(struct osmo_sccp_instance *inst, struct xua_msg *xua,
 	return gen_mtp_transfer_req_xua(inst, xua, called);
 }
 
+/* "Figure C.1/Q.714 - SCCP routing control procedures (SCRC) (sheet 5 of 12)"
+ * Only used for Connection Oriented messages */
 static int scrc_node_2(struct osmo_sccp_instance *inst, struct xua_msg *xua,
 			const struct osmo_sccp_addr *called)
 {
@@ -394,6 +396,9 @@ static int scrc_node_6(struct osmo_sccp_instance *inst,
 	return 0;
 }
 
+/* "Figure C.1/Q.714 - SCCP routing control procedures (SCRC) (sheet 1 of 12)",
+ * Group of blocks on the bottom-right starting from "Call-ed address includes DPC"
+ */
 static int scrc_local_out_common(struct osmo_sccp_instance *inst,
 				 struct xua_msg *xua,
 				 const struct osmo_sccp_addr *called)
