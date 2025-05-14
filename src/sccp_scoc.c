@@ -916,8 +916,14 @@ static void scu_gen_encode_and_send(struct sccp_connection *conn, uint32_t event
 		//udisp->in_sequence_control;
 		if (xua) {
 			udisp->cause = xua_msg_get_u32(xua, SUA_IEI_CAUSE);
-			if (xua_msg_find_tag(xua, SUA_IEI_SRC_ADDR))
-				sua_addr_parse(&udisp->responding_addr, xua, SUA_IEI_SRC_ADDR);
+			if (xua_msg_find_tag(xua, SUA_IEI_SRC_ADDR)) {
+				if (sua_addr_parse(&udisp->responding_addr, xua, SUA_IEI_SRC_ADDR) < 0) {
+					LOGPSCC(conn, LOGL_ERROR, "XUA Message %s without valid SRC_ADDR\n",
+						xua_hdr_dump(xua, &xua_dialect_sua));
+					talloc_free(scu_prim->oph.msg);
+					return;
+				}
+			}
 			data_ie = xua_msg_find_tag(xua, SUA_IEI_DATA);
 			udisp->importance = xua_msg_get_u32(xua, SUA_IEI_IMPORTANCE);
 			if (data_ie) {
@@ -1035,11 +1041,16 @@ static void scoc_fsm_idle(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	case SCOC_E_RCOC_CONN_IND:
 		xua = data;
 		/* copy relevant parameters from xua to conn */
-		sua_addr_parse(&conn->calling_addr, xua, SUA_IEI_SRC_ADDR);
-		sua_addr_parse(&conn->called_addr, xua, SUA_IEI_DEST_ADDR);
 		conn->remote_ref = xua_msg_get_u32(xua, SUA_IEI_SRC_REF);
 		conn->sccp_class = xua_msg_get_u32(xua, SUA_IEI_PROTO_CLASS) & 3;
 		conn->importance = xua_msg_get_u32(xua, SUA_IEI_IMPORTANCE);
+
+		rc = sua_addr_parse(&conn->calling_addr, xua, SUA_IEI_SRC_ADDR);
+		if (rc < 0) {
+			LOGPSCC(conn, LOGL_ERROR, "XUA Message %s without valid SRC_ADDR\n",
+				xua_hdr_dump(xua, &xua_dialect_sua));
+			goto refuse_destroy_conn;
+		}
 		/* 3.1.6.1 The originating node of the CR message
 		 * (identified by the OPC in the calling party address
 		 * or by default by the OPC in the MTP label, [and the
@@ -1052,12 +1063,24 @@ static void scoc_fsm_idle(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 			conn->remote_pc = xua->mtp.opc;
 		}
 
+		rc = sua_addr_parse(&conn->called_addr, xua, SUA_IEI_DEST_ADDR);
+		if (rc < 0) {
+			LOGPSCC(conn, LOGL_ERROR, "XUA Message %s without valid DEST_ADDR\n",
+				xua_hdr_dump(xua, &xua_dialect_sua));
+			goto refuse_destroy_conn;
+		}
+
 		osmo_fsm_inst_state_chg(fi, S_CONN_PEND_IN, 0, 0);
 		/* N-CONNECT.ind to User */
 		scu_gen_encode_and_send(conn, event, xua, OSMO_SCU_PRIM_N_CONNECT,
 					PRIM_OP_INDICATION);
 		break;
 	}
+	return;
+
+refuse_destroy_conn:
+	xua_gen_encode_and_send(conn, event, NULL, SUA_CO_COREF);
+	osmo_fsm_inst_state_chg(fi, S_IDLE, 0, 0);
 }
 
 static void scoc_fsm_idle_onenter(struct osmo_fsm_inst *fi, uint32_t old_state)
@@ -1405,7 +1428,8 @@ static const struct osmo_fsm_state sccp_scoc_states[] = {
 				 S(SCOC_E_RCOC_RLSD_IND) |
 				 S(SCOC_E_RCOC_REL_COMPL_IND) |
 				 S(SCOC_E_RCOC_OTHER_NPDU),
-		.out_state_mask = S(S_CONN_PEND_OUT) |
+		.out_state_mask = S(S_IDLE) |
+				  S(S_CONN_PEND_OUT) |
 				  S(S_CONN_PEND_IN),
 	},
 	[S_CONN_PEND_IN] = {
