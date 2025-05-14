@@ -1608,7 +1608,7 @@ void sccp_scoc_rx_scrc_rout_fail(struct osmo_sccp_instance *inst,
 		xua_hdr_dump(xua, &xua_dialect_sua));
 
 	/* try to dispatch to connection FSM (if any) */
-	conn_id = xua_msg_get_u32(xua, SUA_IEI_DEST_REF);
+	conn_id = xua_msg_get_u32(xua, SUA_IEI_SRC_REF);
 	conn = conn_find_by_id(inst, conn_id);
 	if (conn) {
 		osmo_fsm_inst_dispatch(conn->fi,
