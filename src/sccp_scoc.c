@@ -63,6 +63,7 @@
 
 #include "xua_internal.h"
 #include "sccp_internal.h"
+#include "ss7_internal.h"
 #include "ss7_instance.h"
 
 #define S(x)	(1 << (x))
@@ -128,7 +129,8 @@ struct sccp_connection {
 	struct osmo_timer_list t_rep_rel;
 };
 #define _LOGPSCC(scc, subsys, level, fmt, args ...) \
-	_LOGPSCU((scc)->user, subsys, level, "CONN(%d) " fmt, (conn)->conn_id, ## args)
+	_LOGPSCU((scc)->user, subsys, level, "CONN(%d,remPC=%u=%s) " fmt, \
+		 (conn)->conn_id, (conn)->remote_pc, osmo_ss7_pointcode_print((conn)->inst->ss7, (conn)->remote_pc), ## args)
 #define LOGPSCC(scc, level, fmt, args ...) \
 	_LOGPSCC(scc, DLSCCP, level, fmt, ## args)
 
@@ -1808,11 +1810,14 @@ static void sccp_scoc_rx_inval_src_ref(struct sccp_connection *conn,
 static void sccp_scoc_rx_inval_opc(struct sccp_connection *conn,
 				   struct xua_msg *xua)
 {
+	char buf_opc[MAX_PC_STR_LEN];
+
 	LOGPSCC(conn, LOGL_NOTICE,
-		"Received message %s for opc=%u=%s on conn with mismatching remote pc=%u=%s\n",
+		"Received message %s on conn with mismatching remote pc=%u=%s\n",
 		xua_hdr_dump(xua, &xua_dialect_sua),
-		xua->mtp.opc, osmo_ss7_pointcode_print(conn->inst->ss7, xua->mtp.opc),
-		conn->remote_pc, osmo_ss7_pointcode_print2(conn->inst->ss7, conn->remote_pc));
+		xua->mtp.opc,
+		osmo_ss7_pointcode_print_buf(buf_opc, sizeof(buf_opc), conn->inst->ss7, xua->mtp.opc));
+
 	/* we have received a message with invalid origin PC and thus
 	 * apply the action indicated in Table B.2/Q.714 */
 	switch (xua->hdr.msg_type) {
