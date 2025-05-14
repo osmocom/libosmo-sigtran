@@ -43,9 +43,12 @@ static int refuser_prim_cb(struct osmo_prim_hdr *oph, void *_scu)
 static int echo_prim_cb(struct osmo_prim_hdr *oph, void *_scu)
 {
 	struct osmo_sccp_user *scu = _scu;
+	struct osmo_sccp_instance *sccp = NULL;
+	struct osmo_ss7_instance *ss7 = NULL;
 	struct osmo_scu_prim *scu_prim = (struct osmo_scu_prim *) oph;
 	const uint8_t *data = msgb_l2(oph->msg);
 	unsigned int data_len = msgb_l2len(oph->msg);
+	char buf_pc[32];
 
 	switch (OSMO_PRIM_HDR(&scu_prim->oph)) {
 	case OSMO_PRIM(OSMO_SCU_PRIM_N_CONNECT, PRIM_OP_INDICATION):
@@ -71,6 +74,15 @@ static int echo_prim_cb(struct osmo_prim_hdr *oph, void *_scu)
 		LOGP(DMAIN, LOGL_INFO, "Got N-DISCONNECT.ind (local_ref=%u, cause=%u, importance=%u)\n",
 		     scu_prim->u.disconnect.conn_id, scu_prim->u.disconnect.cause,
 		     scu_prim->u.disconnect.importance);
+		break;
+	case OSMO_PRIM(OSMO_SCU_PRIM_N_PCSTATE, PRIM_OP_INDICATION):
+		sccp = osmo_sccp_get_sccp(scu);
+		ss7 = osmo_sccp_get_ss7(sccp);
+		LOGP(DMAIN, LOGL_INFO, "Got N-PCSTATE.ind (affected_pc=%u=%s sp_status=%s remote_sccp_status=%s)\n",
+		     scu_prim->u.pcstate.affected_pc,
+		     osmo_ss7_pointcode_print_buf(buf_pc, sizeof(buf_pc), ss7, scu_prim->u.pcstate.affected_pc),
+		     osmo_sccp_sp_status_name(scu_prim->u.pcstate.sp_status),
+		     osmo_sccp_rem_sccp_status_name(scu_prim->u.pcstate.remote_sccp_status));
 		break;
 	default:
 		LOGP(DMAIN, LOGL_NOTICE, "Unknown primitive %s\n",
