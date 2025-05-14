@@ -1603,7 +1603,8 @@ void sccp_scoc_rx_scrc_rout_fail(struct osmo_sccp_instance *inst,
 	uint32_t conn_id;
 	struct sccp_connection *conn;
 
-	LOGPSCI(inst, LOGL_NOTICE, "SCRC Routing Failure for message %s\n",
+	LOGPSCI(inst, LOGL_NOTICE, "SCRC Routing Failure (%s) for message %s\n",
+		osmo_sccp_return_cause_name(return_cause),
 		xua_hdr_dump(xua, &xua_dialect_sua));
 
 	/* try to dispatch to connection FSM (if any) */
