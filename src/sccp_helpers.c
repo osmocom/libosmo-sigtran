@@ -355,11 +355,12 @@ static int sccp_addr_to_str_buf(char *buf, size_t buf_len, const struct osmo_ss7
 {
 	struct osmo_strbuf sb = { .buf = buf, .len = buf_len };
 	char ipbuf[INET6_ADDRSTRLEN];
+	char buf_pc[MAX_PC_STR_LEN];
 
 	OSMO_STRBUF_PRINTF(sb, "RI=%s", osmo_sccp_routing_ind_name(addr->ri));
 
 	if (addr->presence & OSMO_SCCP_ADDR_T_PC)
-		OSMO_STRBUF_PRINTF(sb, "%cPC=%s", sep_char, osmo_ss7_pointcode_print(ss7, addr->pc));
+		OSMO_STRBUF_PRINTF(sb, "%cPC=%s", sep_char, osmo_ss7_pointcode_print_buf(buf_pc, sizeof(buf_pc), ss7, addr->pc));
 	if (addr->presence & OSMO_SCCP_ADDR_T_SSN)
 		OSMO_STRBUF_PRINTF(sb, "%cSSN=%s", sep_char, osmo_sccp_ssn_name(addr->ssn));
 	if (addr->presence & OSMO_SCCP_ADDR_T_IPv4)
