@@ -879,6 +879,14 @@ static void log_sctp_notification(struct osmo_ss7_asp *asp, const char *pfx,
 int ss7_asp_ipa_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struct msgb *msg)
 {
 	struct osmo_ss7_asp *asp = osmo_stream_srv_get_data(conn);
+	struct osmo_stream_srv_link *link = osmo_stream_srv_get_master(conn);
+
+	/* Reparent msg to srv_link, to avoid "msg" being automatically freed if
+	 * "conn" is teared down during msg handling (or if its associated
+	 * dynamic ASP becomes unused), which would then result in a double-free
+	 * if same code path then explicitly frees the msgb through msgb_free().
+	 */
+	talloc_steal(link, msg);
 
 	if (res <= 0) {
 		if (res == -EAGAIN) {
@@ -899,9 +907,17 @@ int ss7_asp_ipa_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struct msg
 int ss7_asp_xua_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struct msgb *msg)
 {
 	struct osmo_ss7_asp *asp = osmo_stream_srv_get_data(conn);
+	struct osmo_stream_srv_link *link = osmo_stream_srv_get_master(conn);
 	unsigned int ppid;
 	int flags;
 	int rc = 0;
+
+	/* Reparent msg to srv_link, to avoid "msg" being automatically freed if
+	 * "conn" is teared down during msg handling (or if its associated
+	 * dynamic ASP becomes unused), which would then result in a double-free
+	 * if same code path then explicitly frees the msgb through msgb_free().
+	 */
+	talloc_steal(link, msg);
 
 	/* process the received xUA message */
 	flags = msgb_sctp_msg_flags(msg);
@@ -964,8 +980,16 @@ int xua_tcp_segmentation_cb(struct msgb *msg)
 int ss7_asp_m3ua_tcp_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struct msgb *msg)
 {
 	struct osmo_ss7_asp *asp = osmo_stream_srv_get_data(conn);
+	struct osmo_stream_srv_link *link = osmo_stream_srv_get_master(conn);
 	const struct xua_common_hdr *hdr;
 	int rc;
+
+	/* Reparent msg to srv_link, to avoid "msg" being automatically freed if
+	 * "conn" is teared down during msg handling (or if its associated
+	 * dynamic ASP becomes unused), which would then result in a double-free
+	 * if same code path then explicitly frees the msgb through msgb_free().
+	 */
+	talloc_steal(link, msg);
 
 	if (res <= 0) {
 		if (res == -EAGAIN) {
