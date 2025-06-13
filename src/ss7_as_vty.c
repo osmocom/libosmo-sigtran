@@ -222,7 +222,7 @@ DEFUN_ATTR(as_bindingtable_reset, as_bindingtable_reset_cmd,
 
 DEFUN_ATTR(as_recov_tout, as_recov_tout_cmd,
 	   "recovery-timeout <1-2000>",
-	   "Specifies the recovery timeout value in milliseconds\n"
+	   "Specifies RFC4666 recovery timer T(r) timeout\n"
 	   "Recovery Timeout in Milliseconds\n",
 	   CMD_ATTR_IMMEDIATE)
 {

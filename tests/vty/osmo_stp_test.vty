@@ -389,7 +389,7 @@ OsmoSTP(config-cs7-as)# ?
   traffic-mode      Specifies traffic mode of operation of the ASP within the AS
   sls-shift         Shift SLS bits used during routing decision
   binding-table     AS Loadshare binding table operations
-  recovery-timeout  Specifies the recovery timeout value in milliseconds
+  recovery-timeout  Specifies RFC4666 recovery timer T(r) timeout
   qos-class         Specity QoS Class of AS
   routing-key       Define a routing key
   point-code        Point Code Specific Features

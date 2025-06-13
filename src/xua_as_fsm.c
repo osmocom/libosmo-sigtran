@@ -222,7 +222,7 @@ static const struct value_string xua_as_event_names[] = {
 
 struct xua_as_fsm_priv {
 	struct osmo_ss7_as *as;
-	struct {
+	struct { /* RFC4666 recovery timer T(r) */
 		struct osmo_timer_list t_r;
 		struct llist_head queued_xua_msgs;
 	} recovery;
