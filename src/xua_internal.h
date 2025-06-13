@@ -111,10 +111,6 @@ extern struct osmo_fsm xua_default_lm_fsm;
 extern const struct value_string m3ua_rkm_reg_status_vals[];
 extern const struct value_string m3ua_rkm_dereg_status_vals[];
 
-#define CS7_STR	"ITU-T Signaling System 7\n"
-#define PC_STR	"Point Code\n"
-#define INST_STR "An instance of the SS7 stack\n"
-
 int xua_as_transmit_msg(struct osmo_ss7_as *as, struct xua_msg *xua);
 
 int xua_find_as_for_asp(struct osmo_ss7_as **as, const struct osmo_ss7_asp *asp,

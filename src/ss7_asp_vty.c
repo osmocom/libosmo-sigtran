@@ -519,9 +519,65 @@ DEFUN_ATTR(asp_no_quirk, asp_no_quirk_cmd,
 	return CMD_SUCCESS;
 }
 
+/* timer xua <name> <1-999999>
+ * (cmdstr and doc are dynamically generated from ss7_asp_xua_timer_names.) */
+DEFUN_ATTR(asp_timer_xua, asp_timer_xua_cmd,
+	   NULL, NULL, CMD_ATTR_IMMEDIATE)
+{
+	struct osmo_ss7_asp *asp = vty->index;
+	enum ss7_asp_xua_timer timer = get_string_value(ss7_asp_xua_timer_names, argv[0]);
+
+	if (timer <= 0 || timer >= SS7_ASP_XUA_TIMERS_LEN) {
+		vty_out(vty, "%% Invalid timer: %s%s", argv[0], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	osmo_tdef_set(asp->cfg.T_defs_xua, timer, atoi(argv[1]), OSMO_TDEF_S);
+	return CMD_SUCCESS;
+}
+
+static void gen_asp_timer_xua_cmd_strs(struct cmd_element *cmd)
+{
+	int i;
+	char *cmd_str = NULL;
+	char *doc_str = NULL;
+
+	OSMO_ASSERT(cmd->string == NULL);
+	OSMO_ASSERT(cmd->doc == NULL);
+
+	osmo_talloc_asprintf(tall_vty_ctx, cmd_str, "timer xua (");
+	osmo_talloc_asprintf(tall_vty_ctx, doc_str,
+			     "Configure ASP default timer values\n"
+			     "Configure ASP default xua timer values\n");
+
+	for (i = 0; ss7_asp_xua_timer_names[i].str; i++) {
+		const struct osmo_tdef *def;
+		enum ss7_asp_xua_timer timer;
+
+		timer = ss7_asp_xua_timer_names[i].value;
+		def = osmo_tdef_get_entry((struct osmo_tdef *)&ss7_asp_xua_timer_defaults, timer);
+		OSMO_ASSERT(def);
+
+		osmo_talloc_asprintf(tall_vty_ctx, cmd_str, "%s%s",
+				     i ? "|" : "",
+				     ss7_asp_xua_timer_names[i].str);
+		osmo_talloc_asprintf(tall_vty_ctx, doc_str, "%s (default: %lu)\n",
+				     def->desc,
+				     def->default_val);
+	}
+
+	osmo_talloc_asprintf(tall_vty_ctx, cmd_str, ") <1-999999>");
+	osmo_talloc_asprintf(tall_vty_ctx, doc_str,
+			     "Timer value, in seconds\n");
+
+	cmd->string = cmd_str;
+	cmd->doc = doc_str;
+}
+
+
 /* timer lm <name> <1-999999>
  * (cmdstr and doc are dynamically generated from ss7_asp_lm_timer_names.) */
-DEFUN_ATTR(asp_timer, asp_timer_cmd,
+DEFUN_ATTR(asp_timer_lm, asp_timer_lm_cmd,
 	   NULL, NULL, CMD_ATTR_IMMEDIATE)
 {
 	struct osmo_ss7_asp *asp = vty->index;
@@ -536,7 +592,7 @@ DEFUN_ATTR(asp_timer, asp_timer_cmd,
 	return CMD_SUCCESS;
 }
 
-static void gen_asp_timer_cmd_strs(struct cmd_element *cmd)
+static void gen_asp_timer_lm_cmd_strs(struct cmd_element *cmd)
 {
 	int i;
 	char *cmd_str = NULL;
@@ -574,7 +630,23 @@ static void gen_asp_timer_cmd_strs(struct cmd_element *cmd)
 	cmd->doc = doc_str;
 }
 
-static void write_asp_timers(struct vty *vty, const char *indent,
+static void write_asp_timers_xua(struct vty *vty, const char *indent,
+				 struct osmo_ss7_asp *asp)
+{
+	int i;
+
+	for (i = 0; ss7_asp_xua_timer_names[i].str; i++) {
+		const struct osmo_tdef *tdef = osmo_tdef_get_entry(asp->cfg.T_defs_xua, ss7_asp_xua_timer_names[i].value);
+		if (!tdef)
+			continue;
+		if (tdef->val == tdef->default_val)
+			continue;
+		vty_out(vty, "%stimer xua %s %lu%s", indent, ss7_asp_xua_timer_names[i].str,
+			tdef->val, VTY_NEWLINE);
+	}
+}
+
+static void write_asp_timers_lm(struct vty *vty, const char *indent,
 				struct osmo_ss7_asp *asp)
 {
 	int i;
@@ -1074,7 +1146,8 @@ void ss7_vty_write_one_asp(struct vty *vty, struct osmo_ss7_asp *asp, bool show_
 			continue;
 		vty_out(vty, "  quirk %s%s", get_value_string(asp_quirk_names, (1 << i)), VTY_NEWLINE);
 	}
-	write_asp_timers(vty, "  ", asp);
+	write_asp_timers_xua(vty, "  ", asp);
+	write_asp_timers_lm(vty, "  ", asp);
 
 	switch (asp->cfg.adm_state) {
 	case OSMO_SS7_ASP_ADM_S_SHUTDOWN:
@@ -1155,8 +1228,10 @@ void ss7_vty_init_node_asp(void)
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_sctp_param_init_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_quirk_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_quirk_cmd);
-	gen_asp_timer_cmd_strs(&asp_timer_cmd);
-	install_lib_element(L_CS7_ASP_NODE, &asp_timer_cmd);
+	gen_asp_timer_xua_cmd_strs(&asp_timer_xua_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_timer_xua_cmd);
+	gen_asp_timer_lm_cmd_strs(&asp_timer_lm_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_timer_lm_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_block_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_shutdown_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_shutdown_cmd);

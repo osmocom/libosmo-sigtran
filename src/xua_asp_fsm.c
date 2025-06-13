@@ -44,9 +44,6 @@
  * *
  */
 
-/* According to SUA RFC3868 Section 8, M3UA RFC4666 Section 4.3.4.1 */
-#define XUA_T_ACK_SEC	2
-
 static const struct value_string xua_asp_event_names[] = {
 	{ XUA_ASP_E_M_ASP_UP_REQ,	"M-ASP_UP.req" },
 	{ XUA_ASP_E_M_ASP_ACTIVE_REQ,	"M-ASP_ACTIVE.req" },
@@ -317,6 +314,7 @@ static void xua_t_ack_cb(void *data)
 {
 	struct osmo_fsm_inst *fi = data;
 	struct xua_asp_fsm_priv *xafp = fi->priv;
+	uint32_t timeout_sec;
 
 	LOGPFSML(fi, LOGL_INFO, "T(ack) callback: re-transmitting event %s\n",
 		osmo_fsm_event_name(fi->fsm, xafp->t_ack.out_event));
@@ -325,13 +323,15 @@ static void xua_t_ack_cb(void *data)
 	peer_send(fi, xafp->t_ack.out_event, NULL);
 
 	/* Re-start the timer */
-	osmo_timer_schedule(&xafp->t_ack.timer, XUA_T_ACK_SEC, 0);
+	timeout_sec = osmo_tdef_get(xafp->asp->cfg.T_defs_xua, SS7_ASP_XUA_T_ACK, OSMO_TDEF_S, -1);
+	osmo_timer_schedule(&xafp->t_ack.timer, timeout_sec, 0);
 }
 
 static int peer_send_and_start_t_ack(struct osmo_fsm_inst *fi,
 				     int out_event)
 {
 	struct xua_asp_fsm_priv *xafp = fi->priv;
+	uint32_t timeout_sec;
 	int rc;
 
 	rc = peer_send(fi, out_event, NULL);
@@ -342,7 +342,8 @@ static int peer_send_and_start_t_ack(struct osmo_fsm_inst *fi,
 	xafp->t_ack.timer.cb = xua_t_ack_cb,
 	xafp->t_ack.timer.data = fi;
 
-	osmo_timer_schedule(&xafp->t_ack.timer, XUA_T_ACK_SEC, 0);
+	timeout_sec = osmo_tdef_get(xafp->asp->cfg.T_defs_xua, SS7_ASP_XUA_T_ACK, OSMO_TDEF_S, -1);
+	osmo_timer_schedule(&xafp->t_ack.timer, timeout_sec, 0);
 
 	return rc;
 }

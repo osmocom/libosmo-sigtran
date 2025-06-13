@@ -19,6 +19,20 @@
 struct osmo_ss7_instance;
 struct osmo_xua_layer_manager;
 
+enum ss7_asp_xua_timer {
+	/* 0 kept unused on purpose since it's handled specially by osmo_fsm */
+	SS7_ASP_XUA_T_ACK = 1, /* RFC3868 & RFC4666 timer T(ack) */
+	SS7_ASP_XUA_T_BEAT, /* RFC3868 & RFC4666 timer T(beat) */
+	/* This must remain the last item: */
+	SS7_ASP_XUA_TIMERS_LEN
+};
+extern const struct value_string ss7_asp_xua_timer_names[];
+extern const struct osmo_tdef ss7_asp_xua_timer_defaults[SS7_ASP_XUA_TIMERS_LEN];
+/* According to SUA RFC3868 Section 8, M3UA RFC4666 Section 4.3.4.1 */
+#define SS7_ASP_XUA_DEFAULT_T_ACK_SEC	2
+/* According to SUA RFC3868 Section 8 */
+#define SS7_ASP_XUA_DEFAULT_T_BEAT_SEC	30
+
 enum ss7_asp_ctr {
 	SS7_ASP_CTR_PKT_RX_TOTAL,
 	SS7_ASP_CTR_PKT_RX_UNKNOWN,
@@ -98,6 +112,9 @@ struct osmo_ss7_asp {
 		struct osmo_ss7_asp_peer remote;
 		uint8_t qos_class;
 		uint32_t quirks;
+
+		/* T_defs used by the default_lm: */
+		struct osmo_tdef *T_defs_xua;
 
 		/* T_defs used by the default_lm: */
 		struct osmo_tdef *T_defs_lm;

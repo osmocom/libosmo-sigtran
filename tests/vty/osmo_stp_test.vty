@@ -285,6 +285,7 @@ OsmoSTP(config-cs7-asp)# list
   no sctp-param init (num-ostreams|max-instreams|max-attempts|timeout)
   quirk (no_notify|daud_in_asp|snm_inactive)
   no quirk (no_notify|daud_in_asp|snm_inactive)
+  timer xua (ack|beat) <1-999999>
   timer lm (wait_asp_up|wait_notify|wait_notify_rkm|wait_rk_reg_resp) <1-999999>
   block
   shutdown

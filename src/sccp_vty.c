@@ -42,6 +42,7 @@
 #include "xua_internal.h"
 #include "sccp_internal.h"
 #include "ss7_instance.h"
+#include "ss7_vty.h"
 
 static void show_user(struct vty *vty, struct osmo_sccp_user *user)
 {

@@ -113,6 +113,29 @@ static int _setsockopt_primary_addr(int fd, const struct osmo_sockaddr *saddr)
 }
 
 /***********************************************************************
+ * Timer Handling
+ ***********************************************************************/
+
+const struct osmo_tdef ss7_asp_xua_timer_defaults[SS7_ASP_XUA_TIMERS_LEN] = {
+	{ .T = SS7_ASP_XUA_T_ACK,	.default_val = SS7_ASP_XUA_DEFAULT_T_ACK_SEC,	.unit = OSMO_TDEF_S,
+	  .desc = "Resend ASP Up/Down/Active/Inactive after timeout waiting for ASP Up/Down/Active/Inactive ACK (ASP role)(s)" },
+	{ .T = SS7_ASP_XUA_T_BEAT,	.default_val = SS7_ASP_XUA_DEFAULT_T_BEAT_SEC,	.unit = OSMO_TDEF_S,
+	  .desc = "Heartbeat Timer (0 = disabled) (s)" },
+	{}
+};
+
+/* Appendix C.4 of ITU-T Q.714 */
+const struct value_string ss7_asp_xua_timer_names[] = {
+	{ SS7_ASP_XUA_T_ACK, "ack" },
+	{ SS7_ASP_XUA_T_BEAT, "beat" },
+	{}
+};
+
+osmo_static_assert(ARRAY_SIZE(ss7_asp_xua_timer_defaults) == (SS7_ASP_XUA_TIMERS_LEN) &&
+		   ARRAY_SIZE(ss7_asp_xua_timer_names) == (SS7_ASP_XUA_TIMERS_LEN),
+		   assert_ss7_asp_xua_timer_count);
+
+/***********************************************************************
  * SS7 Application Server Process
  ***********************************************************************/
 
@@ -570,6 +593,9 @@ struct osmo_ss7_asp *ss7_asp_alloc(struct osmo_ss7_instance *inst, const char *n
 	asp->cfg.proto = proto;
 	asp->cfg.name = talloc_strdup(asp, name);
 
+	asp->cfg.T_defs_xua = talloc_memdup(asp, ss7_asp_xua_timer_defaults,
+					    sizeof(ss7_asp_xua_timer_defaults));
+	osmo_tdefs_reset(asp->cfg.T_defs_xua);
 	asp->cfg.T_defs_lm = talloc_memdup(asp, ss7_asp_lm_timer_defaults,
 					   sizeof(ss7_asp_lm_timer_defaults));
 	osmo_tdefs_reset(asp->cfg.T_defs_lm);
