@@ -15,6 +15,7 @@ noinst_HEADERS = \
 	ss7_route.h \
 	ss7_route_table.h \
 	ss7_user.h \
+	ss7_vty.h \
 	ss7_xua_srv.h \
 	xua_asp_fsm.h \
 	xua_as_fsm.h \
@@ -54,7 +55,9 @@ libosmo_sigtran_la_SOURCES = \
 	sccp_vty.c \
 	ss7.c \
 	ss7_as.c \
+	ss7_as_vty.c \
 	ss7_asp.c \
+	ss7_asp_vty.c \
 	ss7_asp_peer.c \
 	ss7_combined_linkset.c \
 	ss7_hmrt.c \
@@ -63,6 +66,7 @@ libosmo_sigtran_la_SOURCES = \
 	ss7_linkset.c \
 	ss7_vty.c \
 	ss7_xua_srv.c \
+	ss7_xua_srv_vty.c \
 	ss7_route.c \
 	ss7_route_table.c \
 	ss7_user.c \

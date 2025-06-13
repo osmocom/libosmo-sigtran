@@ -28,3 +28,6 @@ int ss7_asp_m3ua_tcp_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struc
 int ss7_asp_xua_srv_conn_closed_cb(struct osmo_stream_srv *srv);
 
 int xua_tcp_segmentation_cb(struct msgb *msg);
+
+/* VTY */
+#define XUA_VAR_STR	"(sua|m3ua|ipa)"
