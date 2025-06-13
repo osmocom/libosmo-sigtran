@@ -89,6 +89,12 @@ struct xua_asp_fsm_priv {
 		struct osmo_timer_list timer;
 		int out_event;
 	} t_ack;
+
+	/* Timer for tracking HEARTBEAT without HEARTBEAT ACK */
+	struct {
+		struct osmo_timer_list timer;
+		uint32_t unacked_beats;
+	} t_beat;
 };
 
 struct osmo_xlm_prim *xua_xlm_prim_alloc(enum osmo_xlm_prim_type prim_type,
@@ -388,6 +394,67 @@ static void check_stop_t_ack(struct osmo_fsm_inst *fi, uint32_t event)
 	}
 }
 
+static void xua_t_beat_stop(struct osmo_fsm_inst *fi)
+{
+	struct xua_asp_fsm_priv *xafp = fi->priv;
+
+	LOGPFSML(fi, LOGL_DEBUG, "T(beat) stopped\n");
+	osmo_timer_del(&xafp->t_beat.timer);
+	xafp->t_beat.unacked_beats = 0;
+}
+
+static void xua_t_beat_send(struct osmo_fsm_inst *fi)
+{
+	struct xua_asp_fsm_priv *xafp = fi->priv;
+	uint32_t timeout_sec;
+
+	timeout_sec = osmo_tdef_get(xafp->asp->cfg.T_defs_xua, SS7_ASP_XUA_T_BEAT, OSMO_TDEF_S, -1);
+
+	/* T(beat) disabled */
+	if (timeout_sec == 0) {
+		xua_t_beat_stop(fi);
+		return;
+	}
+
+	LOGPFSML(fi, LOGL_DEBUG, "Tx HEARTBEAT (%u unacked)\n", xafp->t_beat.unacked_beats);
+
+	/* Avoid increasing in case some extra gratuitous PING is transmitted: */
+	if (!osmo_timer_pending(&xafp->t_beat.timer))
+		xafp->t_beat.unacked_beats++;
+
+	/* (re-)arm T(beat): */
+	osmo_timer_schedule(&xafp->t_beat.timer, timeout_sec, 0);
+
+	/* Send HEARTBEAT: */
+	peer_send(fi, XUA_ASP_E_ASPSM_BEAT, NULL);
+
+}
+
+static void xua_t_beat_cb(void *_fi)
+{
+	struct osmo_fsm_inst *fi = _fi;
+	struct xua_asp_fsm_priv *xafp = fi->priv;
+
+	if (xafp->t_beat.unacked_beats < 2) {
+		if (xafp->t_beat.unacked_beats == 1)
+			LOGPFSML(fi, LOGL_NOTICE,
+				 "Peer didn't respond to HEARTBEAT with HEARTBEAT ACK, retrying once more\n");
+		xua_t_beat_send(fi);
+		return;
+	}
+
+	/* RFC4666 4.3.4.6: If no Heartbeat Ack message (or any other M3UA
+	 * message) is received from the M3UA peer within 2*T(beat), the remote
+	 * M3UA peer is considered unavailable.  Transmission of Heartbeat
+	 * messages is stopped, and the signalling process SHOULD attempt to
+	 * re-establish communication if it is configured as the client for the
+	 * disconnected M3UA peer.
+	 */
+	LOGPFSML(fi, LOGL_NOTICE, "Peer didn't respond to HEARTBEAT with HEARTBEAT ACK and became disconnected\n");
+	ss7_asp_disconnect_stream(xafp->asp);
+
+}
+
 #define ENSURE_ASP_OR_IPSP(fi, event) 					\
 	do {								\
 		struct xua_asp_fsm_priv *_xafp = fi->priv;		\
@@ -423,6 +490,7 @@ static void xua_asp_fsm_down_onenter(struct osmo_fsm_inst *fi, uint32_t prev_sta
 {
 	struct xua_asp_fsm_priv *xafp = fi->priv;
 	struct osmo_ss7_asp *asp = xafp->asp;
+	xua_t_beat_stop(fi);
 	dispatch_to_all_as(fi, XUA_ASPAS_ASP_DOWN_IND, asp);
 }
 
@@ -489,6 +557,13 @@ static void xua_asp_fsm_inactive_onenter(struct osmo_fsm_inst *fi, uint32_t prev
 {
 	struct xua_asp_fsm_priv *xafp = fi->priv;
 	struct osmo_ss7_asp *asp = xafp->asp;
+	bool went_up = (prev_state == XUA_ASP_S_DOWN);
+
+	if (went_up) {
+		/* Now we are done with IPA handshake, Start Hearbeat Procedure, T(beat): */
+		xua_t_beat_send(fi);
+	}
+
 	/* RFC4666 4.3.4.5: "When an ASP moves from ASP-DOWN to ASP-INACTIVE within a
 	 * particular AS, a Notify message SHOULD be sent, by the ASP-UP receptor,
 	 * after sending the ASP-UP-ACK, in order to inform the ASP of the current AS
@@ -498,7 +573,7 @@ static void xua_asp_fsm_inactive_onenter(struct osmo_fsm_inst *fi, uint32_t prev
 	struct xua_as_event_asp_inactive_ind_pars pars = {
 		.asp = asp,
 		.asp_requires_notify = (asp->cfg.role != OSMO_SS7_ASP_ROLE_ASP) &&
-				       (prev_state == XUA_ASP_S_DOWN),
+				       went_up,
 	};
 	dispatch_to_all_as(fi, XUA_ASPAS_ASP_INACTIVE_IND, &pars);
 }
@@ -620,6 +695,13 @@ static void xua_asp_fsm_active_onenter(struct osmo_fsm_inst *fi, uint32_t prev_s
 {
 	struct xua_asp_fsm_priv *xafp = fi->priv;
 	struct osmo_ss7_asp *asp = xafp->asp;
+	bool went_up = (prev_state == XUA_ASP_S_DOWN);
+
+	if (went_up) {
+		/* Now we are done with IPA handshake, Start Hearbeat Procedure, T(beat): */
+		xua_t_beat_send(fi);
+	}
+
 	dispatch_to_all_as(fi, XUA_ASPAS_ASP_ACTIVE_IND, asp);
 }
 
@@ -717,7 +799,8 @@ static void xua_asp_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		peer_send(fi, XUA_ASP_E_ASPSM_BEAT_ACK, xua);
 		break;
 	case XUA_ASP_E_ASPSM_BEAT_ACK:
-		/* FIXME: stop timer, if any */
+		LOGPFSML(fi, LOGL_DEBUG, "Rx HEARTBEAT ACK\n");
+		xafp->t_beat.unacked_beats = 0;
 		break;
 	case XUA_ASP_E_AS_ASSIGNED:
 		/* Ignore, only used in IPA asps so far. */
@@ -742,6 +825,7 @@ static void xua_asp_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cau
 		return;
 
 	osmo_timer_del(&xafp->t_ack.timer);
+	xua_t_beat_stop(fi);
 
 	if (xafp->asp)
 		xafp->asp->fi = NULL;
@@ -838,6 +922,8 @@ int xua_asp_fsm_start(struct osmo_ss7_asp *asp,
 	}
 	xafp->role = role;
 	xafp->asp = asp;
+
+	osmo_timer_setup(&xafp->t_beat.timer, xua_t_beat_cb, fi);
 
 	fi->priv = xafp;
 
