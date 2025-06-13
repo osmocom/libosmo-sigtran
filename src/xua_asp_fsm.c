@@ -44,7 +44,7 @@
  * *
  */
 
-/* According to RFC3868 Section 8 */
+/* According to SUA RFC3868 Section 8, M3UA RFC4666 Section 4.3.4.1 */
 #define XUA_T_ACK_SEC	2
 
 static const struct value_string xua_asp_event_names[] = {
@@ -88,7 +88,7 @@ struct xua_asp_fsm_priv {
 	/* routing context[s]: list of 32bit integers */
 	/* ACTIVE: traffic mode type, tid label, drn label ? */
 
-	struct {
+	struct { /* RFC3868 & RFC4666 timer T(ack) */
 		struct osmo_timer_list timer;
 		int out_event;
 	} t_ack;
