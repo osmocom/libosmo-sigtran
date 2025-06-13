@@ -52,6 +52,20 @@
 #include "ss7_internal.h"
 #include "xua_asp_fsm.h"
 
+/* generate a msgb containing an IPA CCM PING message */
+struct msgb *ipa_gen_ping(void)
+{
+	/* sufficient headroom for osmo_ipa_msg_push_header() */
+	struct msgb *msg = ipa_msg_alloc(16);
+	if (!msg)
+		return NULL;
+
+	msgb_put_u8(msg, IPAC_MSGT_PING);
+	ipa_prepend_header(msg, IPAC_PROTO_IPACCESS);
+
+	return msg;
+}
+
 struct msgb *ipa_to_msg(struct xua_msg *xua)
 {
 	struct xua_msg_part *data_ie;

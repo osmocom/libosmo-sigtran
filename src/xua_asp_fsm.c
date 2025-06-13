@@ -879,8 +879,11 @@ struct ipa_asp_fsm_priv {
 
 	/* Structure holding parsed data of the IPA CCM ID exchange */
 	struct ipaccess_unit *ipa_unit;
-	/* Timer for tracking if no PONG is received in response to PING */
-	struct osmo_timer_list pong_timer;
+	/* Timer for tracking PING without PONG response */
+	struct {
+		struct osmo_timer_list timer;
+		uint32_t unacked_beats;
+	} t_beat;
 	/* Did we receive IPA ID ACK before IPA ID RESP ? */
 	bool ipa_id_ack_rcvd;
 };
@@ -907,11 +910,82 @@ static int get_fd_from_iafp(struct ipa_asp_fsm_priv *iafp)
 	return fd;
 }
 
+static void ipa_t_beat_stop(struct osmo_fsm_inst *fi)
+{
+	struct ipa_asp_fsm_priv *iafp = fi->priv;
+
+	LOGPFSML(fi, LOGL_DEBUG, "T(beat) stopped\n");
+	osmo_timer_del(&iafp->t_beat.timer);
+	iafp->t_beat.unacked_beats = 0;
+}
+
+static void ipa_t_beat_send(struct osmo_fsm_inst *fi)
+{
+	struct ipa_asp_fsm_priv *iafp = fi->priv;
+	struct msgb *msg;
+	uint32_t timeout_sec;
+
+	timeout_sec = osmo_tdef_get(iafp->asp->cfg.T_defs_xua, SS7_ASP_XUA_T_BEAT, OSMO_TDEF_S, -1);
+
+	/* T(beat) disabled */
+	if (timeout_sec == 0) {
+		ipa_t_beat_stop(fi);
+		return;
+	}
+
+	LOGPFSML(fi, LOGL_DEBUG, "Tx HEARTBEAT (%u unacked)\n", iafp->t_beat.unacked_beats);
+
+	/* Avoid increasing in case some extra gratuitous PING is transmitted: */
+	if (!osmo_timer_pending(&iafp->t_beat.timer))
+		iafp->t_beat.unacked_beats++;
+
+	/* (re-)arm T(beat): */
+	osmo_timer_schedule(&iafp->t_beat.timer, timeout_sec, 0);
+
+	/* Send PING: */
+	if ((msg = ipa_gen_ping()))
+		osmo_ss7_asp_send(iafp->asp, msg);
+	/* we don't own msg anymore in any case here */
+}
+
+static void ipa_t_beat_cb(void *_fi)
+{
+	struct osmo_fsm_inst *fi = _fi;
+	struct ipa_asp_fsm_priv *iafp = fi->priv;
+
+	if (iafp->t_beat.unacked_beats < 2) {
+		if (iafp->t_beat.unacked_beats == 1)
+			LOGPFSML(fi, LOGL_NOTICE,
+				 "Peer didn't respond to PING with PONG, retrying once more\n");
+		ipa_t_beat_send(fi);
+		return;
+	}
+
+	/* RFC4666 4.3.4.6: If no Heartbeat Ack message (or any other M3UA
+	 * message) is received from the M3UA peer within 2*T(beat), the remote
+	 * M3UA peer is considered unavailable.  Transmission of Heartbeat
+	 * messages is stopped, and the signalling process SHOULD attempt to
+	 * re-establish communication if it is configured as the client for the
+	 * disconnected M3UA peer.
+	 */
+	LOGPFSML(fi, LOGL_NOTICE, "Peer didn't respond to PING with PONG and became disconnected\n");
+	ss7_asp_disconnect_stream(iafp->asp);
+
+}
+
 /***************
 ** FSM states **
 ***************/
 
 /* Server + Client: Initial State, wait for M-ASP-UP.req */
+static void ipa_asp_fsm_down_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct xua_asp_fsm_priv *xafp = fi->priv;
+	struct osmo_ss7_asp *asp = xafp->asp;
+	ipa_t_beat_stop(fi);
+	dispatch_to_all_as(fi, XUA_ASPAS_ASP_DOWN_IND, asp);
+}
+
 static void ipa_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct ipa_asp_fsm_priv *iafp = fi->priv;
@@ -1079,6 +1153,10 @@ static void ipa_asp_fsm_active_onenter(struct osmo_fsm_inst *fi, uint32_t prev_s
 		.asp = asp,
 		.asp_requires_notify = false,
 	};
+
+	/* Now we are done with IPA handshake, Start Hearbeat Procedure, T(beat): */
+	ipa_t_beat_send(fi);
+
 	dispatch_to_all_as(fi, XUA_ASPAS_ASP_INACTIVE_IND, &pars);
 	dispatch_to_all_as(fi, XUA_ASPAS_ASP_ACTIVE_IND, asp);
 }
@@ -1163,8 +1241,8 @@ static void ipa_asp_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 			ipaccess_send_pong(fd);
 		break;
 	case XUA_ASP_E_ASPSM_BEAT_ACK:
-		/* stop timer, if any */
-		osmo_timer_del(&iafp->pong_timer);
+		LOGPFSML(fi, LOGL_DEBUG, "Rx HEARTBEAT ACK\n");
+		iafp->t_beat.unacked_beats = 0;
 		break;
 	case XUA_ASP_E_AS_ASSIGNED:
 		as = data;
@@ -1183,16 +1261,6 @@ static void ipa_asp_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	}
 }
 
-static void ipa_pong_timer_cb(void *_fi)
-{
-	struct osmo_fsm_inst *fi = _fi;
-	struct ipa_asp_fsm_priv *iafp = fi->priv;
-
-	LOGPFSML(fi, LOGL_NOTICE, "Peer didn't respond to PING? with PONG!\n");
-	/* kill ASP and (wait for) re-connect */
-	osmo_ss7_asp_disconnect(iafp->asp);
-}
-
 static int ipa_asp_fsm_timer_cb(struct osmo_fsm_inst *fi)
 {
 	struct ipa_asp_fsm_priv *iafp = fi->priv;
@@ -1207,7 +1275,12 @@ static void ipa_asp_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cau
 {
 	struct ipa_asp_fsm_priv *iafp = fi->priv;
 
-	if (iafp && iafp->asp)
+	if (!iafp)
+		return;
+
+	ipa_t_beat_stop(fi);
+
+	if (iafp->asp)
 		iafp->asp->fi = NULL;
 }
 
@@ -1219,7 +1292,7 @@ static const struct osmo_fsm_state ipa_asp_states[] = {
 				  S(IPA_ASP_S_WAIT_ID_RESP),
 		.name = "ASP_DOWN",
 		.action = ipa_asp_fsm_down,
-		.onenter = xua_asp_fsm_down_onenter,
+		.onenter = ipa_asp_fsm_down_onenter,
 	},
 	/* Server Side */
 	[IPA_ASP_S_WAIT_ID_RESP] = {
@@ -1340,8 +1413,7 @@ static int ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
 	iafp->asp = asp;
 	iafp->ipa_unit = talloc_zero(iafp, struct ipaccess_unit);
 	iafp->ipa_unit->unit_name = talloc_strdup(iafp->ipa_unit, unit_name);
-	iafp->pong_timer.cb = ipa_pong_timer_cb;
-	iafp->pong_timer.data = fi;
+	osmo_timer_setup(&iafp->t_beat.timer, ipa_t_beat_cb, fi);
 
 	fi->priv = iafp;
 
