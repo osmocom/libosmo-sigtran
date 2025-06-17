@@ -281,6 +281,28 @@ ss7_xua_server_create(struct osmo_ss7_instance *inst,
 					   local_port, local_host);
 }
 
+static int ss7_xua_srv_apply_sctp_init_pars(struct osmo_xua_server *xs)
+{
+	uint8_t byte;
+	OSMO_ASSERT(xs->server);
+
+	byte = 1; /*AUTH is needed by ASCONF. enable, don't abort socket creation if AUTH can't be enabled */
+	osmo_stream_srv_link_set_param(xs->server, OSMO_STREAM_SRV_LINK_PAR_SCTP_SOCKOPT_AUTH_SUPPORTED,
+				       &byte, sizeof(byte));
+	byte = 1; /* enable, don't abort socket creation if ASCONF can't be enabled */
+	osmo_stream_srv_link_set_param(xs->server, OSMO_STREAM_SRV_LINK_PAR_SCTP_SOCKOPT_ASCONF_SUPPORTED,
+				       &byte, sizeof(byte));
+	if (xs->cfg.sctp_init.num_ostreams_present)
+		osmo_stream_srv_link_set_param(xs->server, OSMO_STREAM_SRV_LINK_PAR_SCTP_INIT_NUM_OSTREAMS,
+					&xs->cfg.sctp_init.num_ostreams_value,
+					sizeof(xs->cfg.sctp_init.num_ostreams_value));
+	if (xs->cfg.sctp_init.max_instreams_present)
+		osmo_stream_srv_link_set_param(xs->server, OSMO_STREAM_SRV_LINK_PAR_SCTP_INIT_MAX_INSTREAMS,
+					&xs->cfg.sctp_init.max_instreams_value,
+					sizeof(xs->cfg.sctp_init.max_instreams_value));
+	return 0;
+}
+
 /*! \brief Set the xUA server to bind/listen to the currently configured ip/port
  *  \param[in] xs xUA server to operate
  *  \returns 0 on success, negative value on error.
@@ -290,7 +312,6 @@ ss7_xua_server_bind(struct osmo_xua_server *xs)
 {
 	char buf[512];
 	int rc;
-	uint8_t byte;
 	const char *proto = get_value_string(osmo_ss7_asp_protocol_vals, xs->cfg.proto);
 
 	rc = ss7_asp_peer_snprintf(buf, sizeof(buf), &xs->cfg.local);
@@ -302,18 +323,10 @@ ss7_xua_server_bind(struct osmo_xua_server *xs)
 	}
 
 	/* Applying xUA Server config which may have changed through VTY on the srv_link before opening it: */
-	byte = 1; /*AUTH is needed by ASCONF. enable, don't abort socket creation if AUTH can't be enabled */
-	osmo_stream_srv_link_set_param(xs->server, OSMO_STREAM_SRV_LINK_PAR_SCTP_SOCKOPT_AUTH_SUPPORTED, &byte, sizeof(byte));
-	byte = 1; /* enable, don't abort socket creation if ASCONF can't be enabled */
-	osmo_stream_srv_link_set_param(xs->server, OSMO_STREAM_SRV_LINK_PAR_SCTP_SOCKOPT_ASCONF_SUPPORTED, &byte, sizeof(byte));
-	if (xs->cfg.sctp_init.num_ostreams_present)
-		osmo_stream_srv_link_set_param(xs->server, OSMO_STREAM_SRV_LINK_PAR_SCTP_INIT_NUM_OSTREAMS,
-					       &xs->cfg.sctp_init.num_ostreams_value,
-					       sizeof(xs->cfg.sctp_init.num_ostreams_value));
-	if (xs->cfg.sctp_init.max_instreams_present)
-		osmo_stream_srv_link_set_param(xs->server, OSMO_STREAM_SRV_LINK_PAR_SCTP_INIT_MAX_INSTREAMS,
-					       &xs->cfg.sctp_init.max_instreams_value,
-					       sizeof(xs->cfg.sctp_init.max_instreams_value));
+	if (xs->cfg.trans_proto == IPPROTO_SCTP) {
+		if ((rc = ss7_xua_srv_apply_sctp_init_pars(xs)) < 0)
+			LOGP(DLSS7, LOGL_NOTICE, "Failed applying %s Server SCTP INIT parameters\n", proto);
+	}
 
 	return osmo_stream_srv_link_open(xs->server);
 }

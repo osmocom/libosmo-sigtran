@@ -416,6 +416,34 @@ static void asp_handle_sctp_notif_monitor_primary_address(const struct osmo_ss7_
 	}
 }
 
+static int asp_client_apply_sctp_init_pars(struct osmo_ss7_asp *asp)
+{
+	uint8_t byte;
+
+	OSMO_ASSERT(asp->client);
+	byte = 1; /*AUTH is needed by ASCONF. enable, don't abort socket creation if AUTH can't be enabled */
+	osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_SOCKOPT_AUTH_SUPPORTED, &byte, sizeof(byte));
+	byte = 1; /* enable, don't abort socket creation if ASCONF can't be enabled */
+	osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_SOCKOPT_ASCONF_SUPPORTED, &byte, sizeof(byte));
+	if (asp->cfg.sctp_init.num_ostreams_present)
+		osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_NUM_OSTREAMS,
+					&asp->cfg.sctp_init.num_ostreams_value,
+					sizeof(asp->cfg.sctp_init.num_ostreams_value));
+	if (asp->cfg.sctp_init.max_instreams_present)
+		osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_MAX_INSTREAMS,
+					&asp->cfg.sctp_init.max_instreams_value,
+					sizeof(asp->cfg.sctp_init.max_instreams_value));
+	if (asp->cfg.sctp_init.max_attempts_present)
+		osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_MAX_ATTEMPTS,
+					&asp->cfg.sctp_init.max_attempts_value,
+					sizeof(asp->cfg.sctp_init.max_attempts_value));
+	if (asp->cfg.sctp_init.max_init_timeo_present)
+		osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_TIMEOUT,
+					&asp->cfg.sctp_init.max_init_timeo_value,
+					sizeof(asp->cfg.sctp_init.max_init_timeo_value));
+	return 0;
+}
+
 /* Set default values for local and remote peer hosts if they are not yet set.
  *  \param[in] asp ASP for which to set default hosts.
  *  \returns true if values where changed, false otherwise.
@@ -650,7 +678,6 @@ static int xua_cli_close_and_reconnect(struct osmo_stream_cli *cli);
 
 static int ss7_asp_start_client(struct osmo_ss7_asp *asp)
 {
-	uint8_t byte;
 	int rc;
 
 	if (!asp->client)
@@ -693,26 +720,10 @@ static int ss7_asp_start_client(struct osmo_ss7_asp *asp)
 		break;
 	}
 	osmo_stream_cli_set_data(asp->client, asp);
-	byte = 1; /*AUTH is needed by ASCONF. enable, don't abort socket creation if AUTH can't be enabled */
-	osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_SOCKOPT_AUTH_SUPPORTED, &byte, sizeof(byte));
-	byte = 1; /* enable, don't abort socket creation if ASCONF can't be enabled */
-	osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_SOCKOPT_ASCONF_SUPPORTED, &byte, sizeof(byte));
-	if (asp->cfg.sctp_init.num_ostreams_present)
-		osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_NUM_OSTREAMS,
-					&asp->cfg.sctp_init.num_ostreams_value,
-					sizeof(asp->cfg.sctp_init.num_ostreams_value));
-	if (asp->cfg.sctp_init.max_instreams_present)
-		osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_MAX_INSTREAMS,
-					&asp->cfg.sctp_init.max_instreams_value,
-					sizeof(asp->cfg.sctp_init.max_instreams_value));
-	if (asp->cfg.sctp_init.max_attempts_present)
-		osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_MAX_ATTEMPTS,
-					&asp->cfg.sctp_init.max_attempts_value,
-					sizeof(asp->cfg.sctp_init.max_attempts_value));
-	if (asp->cfg.sctp_init.max_init_timeo_present)
-		osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_SCTP_INIT_TIMEOUT,
-					&asp->cfg.sctp_init.max_init_timeo_value,
-					sizeof(asp->cfg.sctp_init.max_init_timeo_value));
+
+	if (asp->cfg.trans_proto == IPPROTO_SCTP)
+		asp_client_apply_sctp_init_pars(asp);
+
 	rc = osmo_stream_cli_open(asp->client);
 	return rc;
 }
