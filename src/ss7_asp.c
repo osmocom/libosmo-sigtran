@@ -227,6 +227,80 @@ static const struct rate_ctr_group_desc ss7_asp_rcgd = {
 };
 static unsigned int g_ss7_asp_rcg_idx;
 
+int ss7_asp_apply_tcp_keepalive(const struct osmo_ss7_asp *asp)
+{
+	uint8_t byte = 1;
+	int val;
+	int rc;
+
+	if (!asp->cfg.tcp.keepalive_enable)
+		return 0;
+
+	LOGPASP(asp, DLSS7, LOGL_DEBUG, "Enabling TCP keep-alive time=%d intvl=%d probes=%d\n",
+		asp->cfg.tcp.keepalive_time_present ? asp->cfg.tcp.keepalive_time_value : -1,
+		asp->cfg.tcp.keepalive_intvl_present ? asp->cfg.tcp.keepalive_intvl_value : -1,
+		asp->cfg.tcp.keepalive_probes_present ? asp->cfg.tcp.keepalive_probes_value : -1);
+
+	if (asp->server) {
+		rc = osmo_stream_srv_set_param(asp->server, OSMO_STREAM_SRV_PAR_TCP_SOCKOPT_KEEPALIVE,
+					  &byte, sizeof(byte));
+		if (rc < 0)
+			return rc;
+
+		if (asp->cfg.tcp.keepalive_time_present) {
+			val = asp->cfg.tcp.keepalive_time_value;
+			rc = osmo_stream_srv_set_param(asp->server, OSMO_STREAM_SRV_PAR_TCP_SOCKOPT_KEEPIDLE,
+						       &val, sizeof(val));
+			if (rc < 0)
+				return rc;
+		}
+		if (asp->cfg.tcp.keepalive_intvl_present) {
+			val = asp->cfg.tcp.keepalive_intvl_value;
+			rc = osmo_stream_srv_set_param(asp->server, OSMO_STREAM_SRV_PAR_TCP_SOCKOPT_KEEPINTVL,
+						       &val, sizeof(val));
+			if (rc < 0)
+				return rc;
+		}
+		if (asp->cfg.tcp.keepalive_probes_present) {
+			val = asp->cfg.tcp.keepalive_probes_value;
+			rc = osmo_stream_srv_set_param(asp->server, OSMO_STREAM_SRV_PAR_TCP_SOCKOPT_KEEPCNT,
+						       &val, sizeof(val));
+			if (rc < 0)
+				return rc;
+		}
+
+	} else if (asp->client) {
+		rc = osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_TCP_SOCKOPT_KEEPALIVE,
+					  &byte, sizeof(byte));
+		if (rc < 0)
+			return rc;
+
+		if (asp->cfg.tcp.keepalive_time_present) {
+			val = asp->cfg.tcp.keepalive_time_value;
+			rc = osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_TCP_SOCKOPT_KEEPIDLE,
+						       &val, sizeof(val));
+			if (rc < 0)
+				return rc;
+		}
+		if (asp->cfg.tcp.keepalive_intvl_present) {
+			val = asp->cfg.tcp.keepalive_intvl_value;
+			rc = osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_TCP_SOCKOPT_KEEPINTVL,
+						       &val, sizeof(val));
+			if (rc < 0)
+				return rc;
+		}
+		if (asp->cfg.tcp.keepalive_probes_present) {
+			val = asp->cfg.tcp.keepalive_probes_value;
+			rc = osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_TCP_SOCKOPT_KEEPCNT,
+						       &val, sizeof(val));
+			if (rc < 0)
+				return rc;
+		}
+	}
+
+	return 0;
+}
+
 int ss7_asp_apply_new_local_address(const struct osmo_ss7_asp *asp, unsigned int loc_idx)
 {
 	const char *new_loc_addr;
@@ -721,8 +795,16 @@ static int ss7_asp_start_client(struct osmo_ss7_asp *asp)
 	}
 	osmo_stream_cli_set_data(asp->client, asp);
 
-	if (asp->cfg.trans_proto == IPPROTO_SCTP)
-		asp_client_apply_sctp_init_pars(asp);
+	switch (asp->cfg.trans_proto) {
+	case IPPROTO_TCP:
+		(void)ss7_asp_apply_tcp_keepalive(asp);
+		break;
+	case IPPROTO_SCTP:
+		(void)asp_client_apply_sctp_init_pars(asp);
+		break;
+	default:
+		OSMO_ASSERT(0);
+	}
 
 	rc = osmo_stream_cli_open(asp->client);
 	return rc;

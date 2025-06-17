@@ -445,6 +445,81 @@ DEFUN_ATTR(asp_no_sctp_param_init, asp_no_sctp_param_init_cmd,
 	return CMD_SUCCESS;
 }
 
+#define ASP_TCP_PARAM_KEEPALIVE_DESC \
+	"Configure TCP parameters\n" \
+	"Configure TCP keep-alive related parameters\n" \
+
+DEFUN_ATTR(asp_tcp_param_keepalive_enabled, asp_tcp_param_keepalive_enabled_cmd,
+	   "tcp-param keepalive enabled",
+	   ASP_TCP_PARAM_KEEPALIVE_DESC
+	   "Enable TCP keep-alive\n",
+	   CMD_ATTR_NODE_EXIT)
+{
+	struct osmo_ss7_asp *asp = vty->index;
+	asp->cfg.tcp.keepalive_enable = true;
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(asp_no_tcp_param_keepalive, asp_no_tcp_param_keepalive_cmd,
+	   "no tcp-param keepalive",
+	   NO_STR ASP_TCP_PARAM_KEEPALIVE_DESC,
+	   CMD_ATTR_NODE_EXIT)
+{
+	struct osmo_ss7_asp *asp = vty->index;
+	asp->cfg.tcp.keepalive_enable = false;
+	return CMD_SUCCESS;
+}
+
+#define ASP_TCP_PARAM_KEEPALIVE_CFG_DESC \
+	ASP_TCP_PARAM_KEEPALIVE_DESC \
+	"Configure number of seconds a connection needs to be idle before beggining to send probes\n" \
+	"Configure number of seconds between probes\n" \
+	"Configure max number of probes to send before giving up if no response is obtained\n"
+#define ASP_TCP_PARAM_KEEPALIVE_CFG_FIELDS "(time|intvl|probes)"
+
+DEFUN_ATTR(asp_tcp_param_keepalive_cfg, asp_tcp_param_keepalive_cfg_cmd,
+	   "tcp-param keepalive " ASP_TCP_PARAM_KEEPALIVE_CFG_FIELDS " <0-65535>",
+	   ASP_TCP_PARAM_KEEPALIVE_CFG_DESC
+	   "Value of the parameter\n",
+	   CMD_ATTR_NODE_EXIT)
+{
+	struct osmo_ss7_asp *asp = vty->index;
+
+	uint16_t val = atoi(argv[1]);
+
+	if (strcmp(argv[0], "time") == 0) {
+		asp->cfg.tcp.keepalive_time_present = true;
+		asp->cfg.tcp.keepalive_time_value = val;
+	} else if (strcmp(argv[0], "intvl") == 0) {
+		asp->cfg.tcp.keepalive_intvl_present = true;
+		asp->cfg.tcp.keepalive_intvl_value = val;
+	} else if (strcmp(argv[0], "probes") == 0) {
+		asp->cfg.tcp.keepalive_probes_present = true;
+		asp->cfg.tcp.keepalive_probes_value = val;
+	} else {
+		OSMO_ASSERT(0);
+	}
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(asp_no_tcp_param_keepalive_cfg, asp_no_tcp_param_keepalive_cfg_cmd,
+	   "no tcp-param keepalive " ASP_TCP_PARAM_KEEPALIVE_CFG_FIELDS,
+	   NO_STR ASP_TCP_PARAM_KEEPALIVE_CFG_DESC,
+	   CMD_ATTR_NODE_EXIT)
+{
+	struct osmo_ss7_asp *asp = vty->index;
+
+	if (strcmp(argv[0], "time") == 0)
+		asp->cfg.tcp.keepalive_time_present = false;
+	else if (strcmp(argv[0], "intvl") == 0)
+		asp->cfg.tcp.keepalive_intvl_present = false;
+	else if (strcmp(argv[0], "probes") == 0)
+		asp->cfg.tcp.keepalive_probes_present = false;
+	else
+		OSMO_ASSERT(0);
+	return CMD_SUCCESS;
+}
+
 DEFUN_ATTR(asp_block, asp_block_cmd,
 	   "block",
 	   "Allows a SCTP Association with ASP, but doesn't let it become active\n",
@@ -1141,6 +1216,19 @@ void ss7_vty_write_one_asp(struct vty *vty, struct osmo_ss7_asp *asp, bool show_
 		vty_out(vty, "  sctp-param init max-attempts %u%s", asp->cfg.sctp_init.max_attempts_value, VTY_NEWLINE);
 	if (asp->cfg.sctp_init.max_init_timeo_present)
 		vty_out(vty, "  sctp-param init timeout %u%s", asp->cfg.sctp_init.max_init_timeo_value, VTY_NEWLINE);
+
+	if (asp->cfg.tcp.keepalive_enable) {
+		vty_out(vty, "  tcp-param keepalive enabled%s", VTY_NEWLINE);
+		if (asp->cfg.tcp.keepalive_time_present)
+			vty_out(vty, "  tcp-param keepalive time %d%s", asp->cfg.tcp.keepalive_time_value, VTY_NEWLINE);
+		if (asp->cfg.tcp.keepalive_intvl_present)
+			vty_out(vty, "  tcp-param keepalive intvl %d%s", asp->cfg.tcp.keepalive_intvl_value, VTY_NEWLINE);
+		if (asp->cfg.tcp.keepalive_probes_present)
+			vty_out(vty, "  tcp-param keepalive probes %d%s", asp->cfg.tcp.keepalive_probes_value, VTY_NEWLINE);
+	} else if (asp->cfg.trans_proto == IPPROTO_TCP) {
+		vty_out(vty, "  no tcp-param keepalive%s", VTY_NEWLINE);
+	}
+
 	for (i = 0; i < sizeof(uint32_t) * 8; i++) {
 		if (!(asp->cfg.quirks & ((uint32_t) 1 << i)))
 			continue;
@@ -1226,6 +1314,10 @@ void ss7_vty_init_node_asp(void)
 	install_lib_element(L_CS7_ASP_NODE, &asp_sctp_role_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_sctp_param_init_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_sctp_param_init_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_tcp_param_keepalive_enabled_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_tcp_param_keepalive_cfg_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_no_tcp_param_keepalive_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_no_tcp_param_keepalive_cfg_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_quirk_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_quirk_cmd);
 	gen_asp_timer_xua_cmd_strs(&asp_timer_xua_cmd);

@@ -283,6 +283,10 @@ OsmoSTP(config-cs7-asp)# list
   transport-role (client|server)
   sctp-param init (num-ostreams|max-instreams|max-attempts|timeout) <0-65535>
   no sctp-param init (num-ostreams|max-instreams|max-attempts|timeout)
+  tcp-param keepalive enabled
+  tcp-param keepalive (time|intvl|probes) <0-65535>
+  no tcp-param keepalive
+  no tcp-param keepalive (time|intvl|probes)
   quirk (no_notify|daud_in_asp|snm_inactive)
   no quirk (no_notify|daud_in_asp|snm_inactive)
   timer xua (ack|beat) <1-999999>
@@ -302,6 +306,7 @@ OsmoSTP(config-cs7-asp)# ?
   role            Specify the xUA role for this ASP
   transport-role  Specify the transport layer role for this ASP
   sctp-param      Configure SCTP parameters
+  tcp-param       Configure TCP parameters
   quirk           Enable quirk to work around interop issues
   timer           Configure ASP default timer values
   block           Allows a SCTP Association with ASP, but doesn't let it become active
@@ -311,6 +316,7 @@ OsmoSTP(config-cs7-asp)# ?
 OsmoSTP(config-cs7-asp)# no ?
 ...
   sctp-param  Configure SCTP parameters
+  tcp-param   Configure TCP parameters
   quirk       Disable quirk to work around interop issues
   shutdown    Terminates SCTP association; New associations will be rejected
 ...

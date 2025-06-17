@@ -130,6 +130,16 @@ struct osmo_ss7_asp {
 			uint16_t max_init_timeo_value; /* ms */
 		} sctp_init;
 
+		struct {
+			bool keepalive_enable;
+			bool keepalive_time_present;
+			bool keepalive_intvl_present;
+			bool keepalive_probes_present;
+			int keepalive_time_value; /* seconds */
+			int keepalive_intvl_value; /* seconds */
+			int keepalive_probes_value;
+		} tcp;
+
 		/*! The underlaying transport protocol (one of IPPROTO_*) */
 		int trans_proto;
 	} cfg;
@@ -143,6 +153,7 @@ bool ss7_asp_is_started(const struct osmo_ss7_asp *asp);
 int ss7_asp_get_fd(const struct osmo_ss7_asp *asp);
 int ss7_asp_disconnect_stream(struct osmo_ss7_asp *asp);
 
+int ss7_asp_apply_tcp_keepalive(const struct osmo_ss7_asp *asp);
 int ss7_asp_apply_peer_primary_address(const struct osmo_ss7_asp *asp);
 int ss7_asp_apply_primary_address(const struct osmo_ss7_asp *asp);
 int ss7_asp_apply_new_local_address(const struct osmo_ss7_asp *asp, unsigned int loc_idx);

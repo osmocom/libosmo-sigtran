@@ -191,9 +191,14 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
 	 * data */
 	osmo_stream_srv_set_data(srv, asp);
 
-	if (asp->cfg.trans_proto == IPPROTO_SCTP) {
+	switch (asp->cfg.trans_proto) {
+	case IPPROTO_TCP:
+		rc = ss7_asp_apply_tcp_keepalive(asp);
+		break;
+	case IPPROTO_SCTP:
 		rc = ss7_asp_apply_peer_primary_address(asp);
 		rc = ss7_asp_apply_primary_address(asp);
+		break;
 	}
 
 	/* send M-SCTP_ESTABLISH.ind to Layer Manager */
