@@ -22,9 +22,11 @@
 #include "xua_msg.h"
 #include <osmocom/sigtran/protocol/sua.h>
 #include <osmocom/sigtran/protocol/m3ua.h>
+#include <sys/types.h>
 
 #include "ss7_as.h"
 #include "ss7_asp.h"
+#include "ss7_combined_linkset.h"
 #include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "xua_asp_fsm.h"
@@ -417,12 +419,79 @@ static void xua_as_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	}
 }
 
+/* AS became inactive, trigger SNM PC unavailability for PCs it served: */
+static void as_snm_pc_unavailable(struct osmo_ss7_as *as)
+{
+	struct osmo_ss7_instance *s7i = as->inst;
+	struct osmo_ss7_route_table *rtbl = s7i->rtable_system;
+	struct osmo_ss7_combined_linkset *clset;
+	struct osmo_ss7_route *rt;
+	uint32_t aff_pc;
+
+	LOGPAS(as, DLSS7, LOGL_INFO, "AS became inactive, some routes to remote PCs may have become unavailable\n");
+	/* we assume the combined_links are sorted by mask length, i.e. more
+	 * specific combined links first, and less specific combined links with shorter
+	 * mask later */
+	llist_for_each_entry(clset, &rtbl->combined_linksets, list) {
+		llist_for_each_entry(rt, &clset->routes, list) {
+			if (rt->dest.as != as)
+				continue;
+			if (rt->status == OSMO_SS7_ROUTE_STATUS_UNAVAILABLE)
+				continue; /* Route was not available before regardless of AS state... */
+			if (ss7_route_is_summary(rt))
+				continue; /* Only announce changes for fully qualified routes */
+			/* We found a PC served by the AS which went down. If no
+			 * alternative route is still in place now towards that PC, announce unavailability
+			 * to upper layers. */
+			if (ss7_route_table_dpc_is_accessible(rtbl, rt->cfg.pc))
+				continue;
+			LOGPAS(as, DLSS7, LOGL_INFO, "AS became inactive => remote pc=%u=%s is now unavailable\n",
+			       rt->cfg.pc, osmo_ss7_pointcode_print(s7i, rt->cfg.pc));
+			aff_pc = htonl(rt->cfg.pc);
+			xua_snm_pc_available(as, &aff_pc, 1, NULL, false);
+		}
+	}
+}
+
+/* AS became active, trigger SNM PC availability for PCs it served: */
+static void as_snm_pc_available(struct osmo_ss7_as *as)
+{
+	struct osmo_ss7_instance *s7i = as->inst;
+	struct osmo_ss7_route_table *rtbl = s7i->rtable_system;
+	struct osmo_ss7_combined_linkset *clset;
+	struct osmo_ss7_route *rt;
+	uint32_t aff_pc;
+
+	LOGPAS(as, DLSS7, LOGL_INFO, "AS became active, some routes to remote PCs may have become available\n");
+	/* we assume the combined_links are sorted by mask length, i.e. more
+	 * specific combined links first, and less specific combined links with shorter
+	 * mask later */
+	llist_for_each_entry(clset, &rtbl->combined_linksets, list) {
+		llist_for_each_entry(rt, &clset->routes, list) {
+			if (rt->dest.as != as)
+				continue;
+			if (ss7_route_is_summary(rt))
+				continue; /* Only announce changes for fully qualified routes */
+			/* We found a PC served by the AS which went up. If there's
+			 * a route now in place towards that PC, announce availability
+			 * to upper layers. */
+			if (!ss7_route_table_dpc_is_accessible(rtbl, rt->cfg.pc))
+				continue;
+			LOGPAS(as, DLSS7, LOGL_INFO, "AS became active => remote pc=%u=%s is now available\n",
+			       rt->cfg.pc, osmo_ss7_pointcode_print(s7i, rt->cfg.pc));
+			aff_pc = htonl(rt->cfg.pc);
+			xua_snm_pc_available(as, &aff_pc, 1, NULL, true);
+		}
+	}
+}
+
 /* onenter call-back responsible of transmitting NTFY to all ASPs in
  * case of AS state changes */
 static void xua_as_fsm_onenter(struct osmo_fsm_inst *fi, uint32_t old_state)
 {
 	struct xua_as_fsm_priv *xafp = (struct xua_as_fsm_priv *) fi->priv;
 	struct osmo_ss7_as *as = xafp->as;
+	struct osmo_ss7_instance *s7i = as->inst;
 	struct osmo_xlm_prim_notify npar;
 
 	switch (fi->state) {
@@ -460,15 +529,31 @@ static void xua_as_fsm_onenter(struct osmo_fsm_inst *fi, uint32_t old_state)
 
 	as_notify_all_asp(xafp->as, &npar);
 
-	/* only if we are the SG, we must start broadcasting availability information
-	 * to everyone else */
-	if (get_local_role(xafp->as) == OSMO_SS7_ASP_ROLE_SG) {
+	bool became_available = (old_state != XUA_AS_S_ACTIVE && fi->state == XUA_AS_S_ACTIVE);
+	bool became_unavailable = (old_state == XUA_AS_S_ACTIVE && fi->state != XUA_AS_S_ACTIVE);
+	int role = get_local_role(xafp->as);
+
+	switch (role) {
+	case OSMO_SS7_ASP_ROLE_ASP:
+		if (s7i->sccp) {
+			if (became_available)
+				as_snm_pc_available(as);
+			else if (became_unavailable)
+				as_snm_pc_unavailable(as);
+		}
+		break;
+	case OSMO_SS7_ASP_ROLE_SG:
+		/* only if we are the SG, we must start broadcasting availability information
+		 * to everyone else */
 		/* advertise availability of the routing key to others */
-		uint32_t aff_pc = htonl(as->cfg.routing_key.pc);
-		if (old_state != XUA_AS_S_ACTIVE && fi->state == XUA_AS_S_ACTIVE)
-			xua_snm_pc_available(as, &aff_pc, 1, NULL, true);
-		else if (old_state == XUA_AS_S_ACTIVE && fi->state != XUA_AS_S_ACTIVE)
-			xua_snm_pc_available(as, &aff_pc, 1, NULL, false);
+		if (became_available || became_unavailable) {
+			uint32_t aff_pc = htonl(as->cfg.routing_key.pc);
+			xua_snm_pc_available(as, &aff_pc, 1, NULL, became_available);
+		}
+		break;
+	case OSMO_SS7_ASP_ROLE_IPSP:
+		/* TODO */
+		break;
 	}
 };
 
