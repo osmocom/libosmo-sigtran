@@ -123,6 +123,8 @@ static void xua_snm_pc_available_to_sccp(struct osmo_sccp_instance *sccp,
 {
 	int i;
 	for (i = 0; i < num_aff_pc; i++) {
+		/* 32bit "Affected Point Code" consists of a 7-bit mask followed by 14/16/24-bit SS7 PC,
+		 * see RFC 4666 3.4.1 */
 		uint32_t _aff_pc = ntohl(aff_pc[i]);
 		uint32_t pc = _aff_pc & 0xffffff;
 		uint8_t mask = _aff_pc >> 24;
@@ -139,9 +141,9 @@ static void xua_snm_pc_available_to_sccp(struct osmo_sccp_instance *sccp,
 			uint32_t fullpc;
 			for (fullpc = (pc & ~maskbits); fullpc <= (pc | maskbits); fullpc++) {
 				if (available)
-					sccp_scmg_rx_mtp_resume(sccp, pc);
+					sccp_scmg_rx_mtp_resume(sccp, fullpc);
 				else
-					sccp_scmg_rx_mtp_pause(sccp, pc);
+					sccp_scmg_rx_mtp_pause(sccp, fullpc);
 			}
 		}
 	}
