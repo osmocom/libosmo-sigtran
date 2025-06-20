@@ -316,26 +316,61 @@ void xua_snm_rx_daud(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		uint32_t _aff_pc = ntohl(aff_pc[i]);
 		uint32_t pc = _aff_pc & 0xffffff;
 		uint8_t mask = _aff_pc >> 24;
-		bool is_available = false;
+		bool is_available;
+
+		struct osmo_ss7_route_label rtlabel = {
+			.opc = xua->mtp.opc, /* Use OPC of received DAUD. */
+			.dpc = pc,
+			.sls = 0,
+		};
 
 		if (mask == 0) {
 			/* one single point code */
-
-			struct osmo_ss7_route_label rtlabel = {
-				.opc = xua->mtp.opc, /* Use OPC of received DAUD. FIXME: is this correct? */
-				.dpc = pc,
-				.sls = 0,
-			};
-
 			/* Check if there's an "active" route available: */
-			if (ss7_instance_lookup_route(s7i, &rtlabel))
-				is_available = true;
+			is_available = !!ss7_instance_lookup_route(s7i, &rtlabel);
 
 			xua_tx_snm_available(asp, rctx, num_rctx, &aff_pc[i], 1, "Response to DAUD",
 					     is_available);
 		} else {
-			/* TODO: wildcard match */
-			LOGPASP(asp, log_ss, LOGL_NOTICE, "DAUD with wildcard match not supported yet\n");
+			/* Multiple single point codes with mask indicating number of wildcarded bits. */
+			uint32_t maskbits = (1 << mask) - 1;
+			uint32_t fullpc;
+			unsigned int num_aff_pc_avail = 0;
+			unsigned int num_aff_pc_unavail = 0;
+			uint32_t *aff_pc_avail = talloc_size(asp, sizeof(uint32_t)*(1 << mask));
+			uint32_t *aff_pc_unavail = talloc_size(asp, sizeof(uint32_t)*(1 << mask));
+			for (fullpc = (pc & ~maskbits); fullpc <= (pc | maskbits); fullpc++) {
+				rtlabel.dpc = fullpc;
+				is_available = !!ss7_instance_lookup_route(s7i, &rtlabel);
+				if (is_available)
+					aff_pc_avail[num_aff_pc_avail++] = htonl(fullpc); /* mask = 0 */
+				else
+					aff_pc_unavail[num_aff_pc_unavail++] = htonl(fullpc); /* mask = 0 */
+			}
+			/* TODO: Ideally an extra step would be needed here to pack again all
+			 * concurrent PCs on each array sharing a suffix mask, in order to
+			 * shrink the transmitted list of Affected PCs. */
+			const unsigned int MAX_PC_PER_MSG = 32;
+			for (unsigned int i = 0; i < num_aff_pc_avail; i += MAX_PC_PER_MSG) {
+				unsigned int num_transmit;
+				if (i + MAX_PC_PER_MSG < num_aff_pc_avail)
+					num_transmit = MAX_PC_PER_MSG;
+				else
+					num_transmit = (num_aff_pc_avail - i);
+				xua_tx_snm_available(asp, rctx, num_rctx, &aff_pc_avail[i],
+					 num_transmit, "Response to DAUD", true);
+			}
+			for (unsigned int i = 0; i < num_aff_pc_unavail; i += MAX_PC_PER_MSG) {
+				unsigned int num_transmit;
+				if (i + MAX_PC_PER_MSG < num_aff_pc_unavail)
+					num_transmit = MAX_PC_PER_MSG;
+				else
+					num_transmit = (num_aff_pc_unavail - i);
+				xua_tx_snm_available(asp, rctx, num_rctx, &aff_pc_unavail[i],
+					 num_transmit, "Response to DAUD", false);
+			}
+			talloc_free(aff_pc_avail);
+			talloc_free(aff_pc_unavail);
 		}
 	}
 }
