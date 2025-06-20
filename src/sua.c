@@ -863,7 +863,7 @@ static struct xua_msg *sua_encode_dupu(const uint32_t *rctx, unsigned int num_rc
 }
 
 /*! Transmit SSNM DUNA/DAVA message indicating [un]availability of certain point code[s]
- *  \param[in] asp ASP through whihc to transmit message. Must be ACTIVE.
+ *  \param[in] asp ASP through which to transmit message. Must be ACTIVE.
  *  \param[in] rctx array of Routing Contexts in network byte order.
  *  \param[in] num_rctx number of rctx
  *  \param[in] aff_pc array of 'Affected Point Code' in network byte order.
