@@ -39,6 +39,7 @@
 #include "ss7_instance.h"
 #include "ss7_linkset.h"
 #include "ss7_route_table.h"
+#include "sccp_internal.h"
 
 static int32_t next_rctx = 1;
 static int32_t next_l_rk_id = 1;
@@ -608,4 +609,103 @@ int osmo_ss7_pointcode_parse_mask_or_len(const struct osmo_ss7_instance *inst, c
 	}
 	/* parse mask as point code */
 	return osmo_ss7_pointcode_parse(inst, in);
+}
+
+/***********************************************************************
+ * SCCP addressbook handling
+ ***********************************************************************/
+
+/* A global list that holds all addressbook entries at once
+ * (see also .cfg in struct osmo_ss7_instance) */
+LLIST_HEAD(sccp_address_book_global);
+
+/* Pick an SCCP address entry from the addressbook list by its name */
+struct osmo_sccp_addr_entry
+*addr_entry_by_name_local(const char *name,
+			  const struct osmo_ss7_instance *inst)
+{
+	struct osmo_sccp_addr_entry *entry;
+
+	llist_for_each_entry(entry, &inst->cfg.sccp_address_book, list) {
+		if (strcmp(entry->name, name) == 0) {
+			OSMO_ASSERT(entry->inst == inst);
+			return entry;
+		}
+	}
+
+	return NULL;
+}
+
+/* Pick an SCCP address entry from the global addressbook
+ * list by its name */
+struct osmo_sccp_addr_entry
+*addr_entry_by_name_global(const char *name)
+{
+	struct osmo_sccp_addr_entry *entry;
+
+	llist_for_each_entry(entry, &sccp_address_book_global,
+			     list_global) {
+		if (strcmp(entry->name, name) == 0)
+			return entry;
+	}
+
+	return NULL;
+}
+
+/*! \brief Lookup an SCCP address from the addressbook by its name.
+ *  \param[out] dest_addr pointer to output the resulting sccp-address;
+ *		(set to NULL if not interested)
+ *  \param[in] name of the address to lookup
+ *  \returns SS7 instance; NULL on error */
+struct osmo_ss7_instance *
+osmo_sccp_addr_by_name(struct osmo_sccp_addr *dest_addr,
+		       const char *name)
+{
+	struct osmo_sccp_addr_entry *entry;
+
+	entry = addr_entry_by_name_global(name);
+	if (!entry)
+		return NULL;
+
+	if (dest_addr)
+		*dest_addr = entry->addr;
+
+	return entry->inst;
+}
+
+/*! \brief Lookup an SCCP address from the addressbook of a specific instance
+ *	   by its name.
+ *  \param[out] dest_addr pointer to output the resulting sccp-address;
+ *		(set to NULL if not interested)
+ *  \param[in] name of the address to lookup
+ *  \param[in] inst ss7 instance of which the address book will be searched
+ *  \returns 0 on success; <0 on error */
+int osmo_sccp_addr_by_name_local(struct osmo_sccp_addr *dest_addr, const char *name,
+				 const struct osmo_ss7_instance *inst)
+{
+	struct osmo_sccp_addr_entry *entry;
+
+	entry = addr_entry_by_name_local(name, inst);
+	if (!entry)
+		return -ENOENT;
+
+	if (dest_addr)
+		*dest_addr = entry->addr;
+
+	return 0;
+}
+
+/*! \brief Reverse lookup the lookup-name of a specified SCCP address.
+ *  \param[in] name of the address to lookup
+ *  \returns char pointer to the lookup-name; NULL on error */
+const char *osmo_sccp_name_by_addr(const struct osmo_sccp_addr *addr)
+{
+	struct osmo_sccp_addr_entry *entry;
+
+	llist_for_each_entry(entry, &sccp_address_book_global, list_global) {
+		if (memcmp(&entry->addr, addr, sizeof(*addr)) == 0)
+			return entry->name;
+	}
+
+	return NULL;
 }

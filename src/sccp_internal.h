@@ -15,6 +15,19 @@
 
 #include "ss7_user.h"
 
+/* SCCP addressbook */
+extern struct llist_head sccp_address_book_global;
+struct osmo_sccp_addr_entry {
+	struct llist_head list;
+	struct llist_head list_global;
+	struct osmo_ss7_instance *inst;
+	char name[32];
+	struct osmo_sccp_addr addr;
+};
+struct osmo_sccp_addr_entry *addr_entry_by_name_local(const char *name,
+						      const struct osmo_ss7_instance *inst);
+struct osmo_sccp_addr_entry *addr_entry_by_name_global(const char *name);
+
 /* Appendix C.4 of Q.714 */
 enum osmo_sccp_timer {
 	/* 0 kept unused on purpose since it's handled specially by osmo_fsm */
