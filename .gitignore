@@ -87,3 +87,4 @@ doc/libosmo-sigtran.tag
 doc/sigtran
 
 contrib/libosmo-sccp.spec
+include/osmocom/sigtran/version.h
