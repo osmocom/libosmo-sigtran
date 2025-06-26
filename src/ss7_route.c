@@ -263,16 +263,19 @@ static int u32_masklen(uint32_t mask, unsigned int nbits)
 
 const char *osmo_ss7_route_print(const struct osmo_ss7_route *rt)
 {
+	static char buf[64];
+	struct osmo_strbuf sb = { .buf = buf, .len = sizeof(buf) };
+	char buf_pc[MAX_PC_STR_LEN];
 	const struct osmo_ss7_instance *inst = rt->rtable->inst;
 	unsigned int pc_width = osmo_ss7_pc_width(&inst->cfg.pc_fmt);
-	static char buf[64];
 	int rc = u32_masklen(rt->cfg.mask, pc_width);
 
+	OSMO_STRBUF_PRINTF(sb, "%s/", osmo_ss7_pointcode_print_buf(buf_pc, sizeof(buf_pc), inst, rt->cfg.pc));
+
 	if (rc < 0)
-		snprintf(buf, sizeof(buf), "%s/%s", osmo_ss7_pointcode_print(inst, rt->cfg.pc),
-			 osmo_ss7_pointcode_print2(inst, rt->cfg.mask));
+		OSMO_STRBUF_PRINTF(sb, "%s", osmo_ss7_pointcode_print_buf(buf_pc, sizeof(buf_pc), inst, rt->cfg.mask));
 	else
-		snprintf(buf, sizeof(buf), "%s/%u", osmo_ss7_pointcode_print(inst, rt->cfg.pc), rc);
+		OSMO_STRBUF_PRINTF(sb, "%u", rc);
 	return buf;
 }
 
