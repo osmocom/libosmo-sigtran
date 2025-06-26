@@ -435,15 +435,15 @@ void ss7_vty_write_one_as(struct vty *vty, struct osmo_ss7_as *as, bool show_dyn
 		vty_out(vty, "  asp %s%s", asp->cfg.name, VTY_NEWLINE);
 	}
 	if (as->cfg.mode_set_by_vty) {
-		vty_out(vty, "  traffic-mode %s%s", osmo_ss7_as_traffic_mode_name(as->cfg.mode), VTY_NEWLINE);
+		vty_out(vty, "  traffic-mode %s", osmo_ss7_as_traffic_mode_name(as->cfg.mode));
 		if (as->cfg.mode == OSMO_SS7_AS_TMOD_LOADSHARE) {
 			if (as->cfg.loadshare.opc_sls) {
 				vty_out(vty, " bindings sls opc-sls");
 				if (as->cfg.loadshare.opc_shift != 0)
 					vty_out(vty, " opc-shift %u", as->cfg.loadshare.opc_shift);
 			}
-			vty_out(vty, "%s", VTY_NEWLINE);
 		}
+		vty_out(vty, "%s", VTY_NEWLINE);
 
 		if (as->cfg.loadshare.sls_shift != 0)
 			vty_out(vty, "  sls-shift %u%s", as->cfg.loadshare.sls_shift, VTY_NEWLINE);
