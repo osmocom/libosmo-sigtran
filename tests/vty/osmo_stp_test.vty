@@ -287,6 +287,8 @@ OsmoSTP(config-cs7-asp)# list
   tcp-param keepalive (time|intvl|probes) <0-65535>
   no tcp-param keepalive
   no tcp-param keepalive (time|intvl|probes)
+  tcp-param user-timeout <0-65535>
+  no tcp-param user-timeout
   quirk (no_notify|daud_in_asp|snm_inactive)
   no quirk (no_notify|daud_in_asp|snm_inactive)
   timer xua (ack|beat) <1-999999>

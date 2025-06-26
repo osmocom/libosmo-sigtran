@@ -227,7 +227,7 @@ static const struct rate_ctr_group_desc ss7_asp_rcgd = {
 };
 static unsigned int g_ss7_asp_rcg_idx;
 
-int ss7_asp_apply_tcp_keepalive(const struct osmo_ss7_asp *asp)
+static int ss7_asp_apply_tcp_keepalive(const struct osmo_ss7_asp *asp)
 {
 	uint8_t byte = 1;
 	int val;
@@ -299,6 +299,38 @@ int ss7_asp_apply_tcp_keepalive(const struct osmo_ss7_asp *asp)
 	}
 
 	return 0;
+}
+
+static int ss7_asp_apply_tcp_user_timeout(const struct osmo_ss7_asp *asp)
+{
+	int rc = 0;
+	unsigned int val;
+
+	if (!asp->cfg.tcp.user_timeout_present)
+		return 0;
+
+	LOGPASP(asp, DLSS7, LOGL_DEBUG, "Setting TCP user-timeout %u ms\n",
+		asp->cfg.tcp.user_timeout_value);
+
+	val = asp->cfg.tcp.user_timeout_value;
+	if (asp->server) {
+		rc = osmo_stream_srv_set_param(asp->server, OSMO_STREAM_SRV_PAR_TCP_SOCKOPT_USER_TIMEOUT,
+					       &val, sizeof(val));
+	} else if (asp->client) {
+		rc = osmo_stream_cli_set_param(asp->client, OSMO_STREAM_CLI_PAR_TCP_SOCKOPT_USER_TIMEOUT,
+					       &val, sizeof(val));
+	}
+
+	return rc;
+}
+
+int ss7_asp_apply_tcp_pars(const struct osmo_ss7_asp *asp)
+{
+	int rc;
+	rc = ss7_asp_apply_tcp_keepalive(asp);
+	if (rc < 0)
+		return rc;
+	return ss7_asp_apply_tcp_user_timeout(asp);
 }
 
 int ss7_asp_apply_new_local_address(const struct osmo_ss7_asp *asp, unsigned int loc_idx)
@@ -797,7 +829,7 @@ static int ss7_asp_start_client(struct osmo_ss7_asp *asp)
 
 	switch (asp->cfg.trans_proto) {
 	case IPPROTO_TCP:
-		(void)ss7_asp_apply_tcp_keepalive(asp);
+		(void)ss7_asp_apply_tcp_pars(asp);
 		break;
 	case IPPROTO_SCTP:
 		(void)asp_client_apply_sctp_init_pars(asp);

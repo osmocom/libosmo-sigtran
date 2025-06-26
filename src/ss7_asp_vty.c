@@ -445,9 +445,10 @@ DEFUN_ATTR(asp_no_sctp_param_init, asp_no_sctp_param_init_cmd,
 	return CMD_SUCCESS;
 }
 
+#define ASP_TCP_PARAM_DESC "Configure TCP parameters\n"
 #define ASP_TCP_PARAM_KEEPALIVE_DESC \
-	"Configure TCP parameters\n" \
-	"Configure TCP keep-alive related parameters\n" \
+	ASP_TCP_PARAM_DESC \
+	"Configure TCP keep-alive related parameters\n"
 
 DEFUN_ATTR(asp_tcp_param_keepalive_enabled, asp_tcp_param_keepalive_enabled_cmd,
 	   "tcp-param keepalive enabled",
@@ -517,6 +518,33 @@ DEFUN_ATTR(asp_no_tcp_param_keepalive_cfg, asp_no_tcp_param_keepalive_cfg_cmd,
 		asp->cfg.tcp.keepalive_probes_present = false;
 	else
 		OSMO_ASSERT(0);
+	return CMD_SUCCESS;
+}
+
+#define ASP_TCP_PARAM_USER_TIMEOUT_DESC \
+	ASP_TCP_PARAM_DESC \
+	"Configure TCP User Timeout socket option (TCP_USER_TIMEOUT)\n"
+DEFUN_ATTR(asp_tcp_param_user_timeout, asp_tcp_param_user_timeout_cmd,
+	   "tcp-param user-timeout <0-65535>",
+	   ASP_TCP_PARAM_USER_TIMEOUT_DESC
+	   "Value of the parameter\n",
+	   CMD_ATTR_NODE_EXIT)
+{
+	struct osmo_ss7_asp *asp = vty->index;
+
+	asp->cfg.tcp.user_timeout_present = true;
+	asp->cfg.tcp.user_timeout_value = atoi(argv[0]);
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(asp_no_tcp_param_user_timeout, asp_no_tcp_param_user_timeout_cmd,
+	   "no tcp-param user-timeout",
+	   NO_STR ASP_TCP_PARAM_USER_TIMEOUT_DESC,
+	   CMD_ATTR_NODE_EXIT)
+{
+	struct osmo_ss7_asp *asp = vty->index;
+	asp->cfg.tcp.user_timeout_present = false;
+	asp->cfg.tcp.user_timeout_value = 0;
 	return CMD_SUCCESS;
 }
 
@@ -1228,6 +1256,8 @@ void ss7_vty_write_one_asp(struct vty *vty, struct osmo_ss7_asp *asp, bool show_
 	} else if (asp->cfg.trans_proto == IPPROTO_TCP) {
 		vty_out(vty, "  no tcp-param keepalive%s", VTY_NEWLINE);
 	}
+	if (asp->cfg.tcp.user_timeout_present)
+		vty_out(vty, "  tcp-param user-timeout %u%s", asp->cfg.tcp.user_timeout_value, VTY_NEWLINE);
 
 	for (i = 0; i < sizeof(uint32_t) * 8; i++) {
 		if (!(asp->cfg.quirks & ((uint32_t) 1 << i)))
@@ -1318,6 +1348,8 @@ void ss7_vty_init_node_asp(void)
 	install_lib_element(L_CS7_ASP_NODE, &asp_tcp_param_keepalive_cfg_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_tcp_param_keepalive_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_tcp_param_keepalive_cfg_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_tcp_param_user_timeout_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_no_tcp_param_user_timeout_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_quirk_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_quirk_cmd);
 	gen_asp_timer_xua_cmd_strs(&asp_timer_xua_cmd);

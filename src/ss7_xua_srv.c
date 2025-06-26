@@ -193,7 +193,7 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
 
 	switch (asp->cfg.trans_proto) {
 	case IPPROTO_TCP:
-		rc = ss7_asp_apply_tcp_keepalive(asp);
+		rc = ss7_asp_apply_tcp_pars(asp);
 		break;
 	case IPPROTO_SCTP:
 		rc = ss7_asp_apply_peer_primary_address(asp);
