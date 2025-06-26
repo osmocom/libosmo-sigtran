@@ -103,7 +103,6 @@ DEFUN_ATTR(no_cs7_as, no_cs7_as_cmd,
 	return CMD_SUCCESS;
 }
 
-/* TODO: routing-key */
 DEFUN_ATTR(as_asp, as_asp_cmd,
 	   "asp NAME",
 	   "Specify that a given ASP is part of this AS\n"
