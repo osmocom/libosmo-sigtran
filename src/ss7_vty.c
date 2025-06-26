@@ -398,7 +398,7 @@ DEFUN_ATTR(cs7_rt_upd, cs7_rt_upd_cmd,
 		return CMD_WARNING;
 	}
 
-	rt = ss7_route_alloc(rtable, dpc, mask);
+	rt = ss7_route_alloc(rtable, dpc, mask, false);
 	if (!rt) {
 		vty_out(vty, "%% Cannot allocate new route%s", VTY_NEWLINE);
 		return CMD_WARNING;
@@ -464,7 +464,7 @@ DEFUN_ATTR(cs7_rt_rem, cs7_rt_rem_cmd,
 		return CMD_WARNING;
 	}
 
-	rt = ss7_route_table_find_route_by_dpc_mask(rtable, dpc, mask);
+	rt = ss7_route_table_find_route_by_dpc_mask(rtable, dpc, mask, false);
 	if (!rt) {
 		vty_out(vty, "cannot find route to be deleted%s", VTY_NEWLINE);
 		return CMD_WARNING;
@@ -484,6 +484,8 @@ static void write_one_rtable(struct vty *vty, struct osmo_ss7_route_table *rtabl
 		vty_out(vty, "  description %s%s", rtable->cfg.description, VTY_NEWLINE);
 	llist_for_each_entry(clset, &rtable->combined_linksets, list) {
 		llist_for_each_entry(rt, &clset->routes, list) {
+			if (rt->cfg.dyn_allocated)
+				continue;
 			vty_out(vty, "  update route %s %s linkset %s",
 				osmo_ss7_pointcode_print(rtable->inst, rt->cfg.pc),
 				osmo_ss7_pointcode_print2(rtable->inst, rt->cfg.mask),
@@ -516,7 +518,7 @@ static void vty_dump_rtable(struct vty *vty, struct osmo_ss7_route_table *rtbl, 
 		llist_for_each_entry(rt, &clset->routes, list) {
 			bool rt_avail = ss7_route_is_available(rt);
 
-			vty_out(vty, "%-16s %-5s %c %c %u %-19s %-7s %-7s %-7s%s",
+			vty_out(vty, "%-16s %-5s %c %c %u %-19s %-7s %-7s %-7s %-3s%s",
 				osmo_ss7_route_print(rt),
 				rt_avail ? "acces" : "INACC",
 				' ',
@@ -526,6 +528,7 @@ static void vty_dump_rtable(struct vty *vty, struct osmo_ss7_route_table *rtbl, 
 				rt_avail ? "avail" : "UNAVAIL",
 				"?",
 				rt_avail ? "avail" : "UNAVAIL",
+				rt->cfg.dyn_allocated ? "dyn" : "",
 				VTY_NEWLINE);
 		}
 	}

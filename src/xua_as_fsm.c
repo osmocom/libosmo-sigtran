@@ -277,12 +277,14 @@ static void ipa_add_route(struct osmo_fsm_inst *fi)
 	struct osmo_ss7_as *as = xafp->as;
 	struct osmo_ss7_instance *inst = as->inst;
 
-	if (ss7_route_table_find_route_by_dpc_mask(inst->rtable_system, as->cfg.routing_key.pc, 0xffffff))
+	if (ss7_route_table_find_route_by_dpc_mask(inst->rtable_system,
+						   as->cfg.routing_key.pc, 0xffffff,
+						   true))
 		return;
 
 	/* As opposed to M3UA, there is no RKM and we have to implicitly
-	 * automatically add a route once an IPA connection has come up */
-	if (ss7_route_create(inst->rtable_system, as->cfg.routing_key.pc, 0xffffff, as->cfg.name))
+	 * automatically add a dynamic route once an IPA connection has come up */
+	if (ss7_route_create(inst->rtable_system, as->cfg.routing_key.pc, 0xffffff, true, as->cfg.name))
 		xafp->ipa_route_created = true;
 }
 
@@ -298,7 +300,9 @@ static void ipa_del_route(struct osmo_fsm_inst *fi)
 		return;
 
 	/* find the route which we have created if we ever reached ipa_asp_fsm_wait_id_ack2 */
-	rt = ss7_route_table_find_route_by_dpc_mask(inst->rtable_system, as->cfg.routing_key.pc, 0xffffff);
+	rt = ss7_route_table_find_route_by_dpc_mask(inst->rtable_system,
+						    as->cfg.routing_key.pc, 0xffffff,
+						    true);
 	/* no route found, bail out */
 	if (!rt) {
 		LOGPFSML(fi, LOGL_NOTICE, "Attempting to delete route for this IPA AS, but cannot "

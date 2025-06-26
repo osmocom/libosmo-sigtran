@@ -618,12 +618,12 @@ osmo_sccp_simple_client_on_ss7_id(void *ctx, uint32_t ss7_id, const char *name,
 	LOGP(DLSCCP, LOGL_NOTICE, "%s: Using AS instance %s\n", name,
 	     as->cfg.name);
 
-	/* Create a default route if necessary */
-	rt = ss7_route_table_find_route_by_dpc_mask(ss7->rtable_system, 0, 0);
+	/* Create a default dynamic route if necessary */
+	rt = ss7_route_table_find_route_by_dpc_mask(ss7->rtable_system, 0, 0, true);
 	if (!rt) {
 		LOGP(DLSCCP, LOGL_NOTICE, "%s: Creating default route\n", name);
 		rt = ss7_route_create(ss7->rtable_system, 0, 0,
-					   as->cfg.name);
+				      true, as->cfg.name);
 		if (!rt)
 			goto out_as;
 		rt_created = true;
@@ -867,7 +867,7 @@ osmo_sccp_simple_server_add_clnt(struct osmo_sccp_instance *inst,
 		goto out_strings;
 
 	/* route only selected PC to the client */
-	rt = ss7_route_create(ss7->rtable_system, pc, 0xffff, as_name);
+	rt = ss7_route_create(ss7->rtable_system, pc, 0xffff, true, as_name);
 	if (!rt)
 		goto out_as;
 

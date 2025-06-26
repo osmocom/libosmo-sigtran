@@ -42,6 +42,7 @@
  *  \param[in] rtbl Routing Table where the route belongs
  *  \param[in] pc Point Code of the destination of the route
  *  \param[in] mask Mask of the destination Point Code \ref pc
+ *  \param[in] dynamic Whether the route is dynamic
  *  \returns Allocated route (not yet inserted into its rtbl), NULL on error
  *
  * The returned route has no linkset associated yet, user *must* associate it
@@ -58,9 +59,14 @@
  * The route entry allocated with this API can be destroyed/freed at any point using API
  * ss7_route_destroy(), regardless of it being already inserted or not in
  * its routing table.
+ *
+ * Dynamic routes are not configured by the user (VTY), and hence cannot be
+ * removed by the user. Dynamic routes are not stored in the config and hence
+ * they don't show up in eg "show running-config"; they can be listed using
+ * specific VTY commands like "show cs7 instance 0 route".
  */
 struct osmo_ss7_route *
-ss7_route_alloc(struct osmo_ss7_route_table *rtbl, uint32_t pc, uint32_t mask)
+ss7_route_alloc(struct osmo_ss7_route_table *rtbl, uint32_t pc, uint32_t mask, bool dynamic)
 {
 	struct osmo_ss7_route *rt;
 
@@ -78,6 +84,7 @@ ss7_route_alloc(struct osmo_ss7_route_table *rtbl, uint32_t pc, uint32_t mask)
 	rt->cfg.mask = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, mask);
 	rt->cfg.pc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, pc);
 	rt->cfg.priority = OSMO_SS7_ROUTE_PRIO_DEFAULT;
+	rt->cfg.dyn_allocated = dynamic;
 	return rt;
 }
 
@@ -160,7 +167,8 @@ ss7_route_insert(struct osmo_ss7_route *rt)
 	if (clset) { /* check for duplicates */
 		struct osmo_ss7_route *prev_rt;
 		llist_for_each_entry(prev_rt, &clset->routes, list) {
-			if (!strcmp(prev_rt->cfg.linkset_name, rt->cfg.linkset_name)) {
+			if (strcmp(prev_rt->cfg.linkset_name, rt->cfg.linkset_name) == 0 &&
+			    prev_rt->cfg.dyn_allocated == rt->cfg.dyn_allocated) {
 				LOGSS7(rtbl->inst, LOGL_ERROR,
 				       "Refusing to create route with existing linkset name: pc=%u=%s mask=0x%x via linkset/AS '%s'\n",
 				       rt->cfg.pc, osmo_ss7_pointcode_print(rtbl->inst, rt->cfg.pc),
@@ -181,6 +189,7 @@ ss7_route_insert(struct osmo_ss7_route *rt)
  *  \param[in] rtbl Routing Table in which the route is to be created
  *  \param[in] pc Point Code of the destination of the route
  *  \param[in] mask Mask of the destination Point Code \ref pc
+ *  \param[in] dynamic Whether the route is dynamic
  *  \param[in] linkset_name string name of the linkset to be used
  *  \returns callee-allocated + initialized route, NULL on error
  *
@@ -192,12 +201,12 @@ ss7_route_insert(struct osmo_ss7_route *rt)
  */
 struct osmo_ss7_route *
 ss7_route_create(struct osmo_ss7_route_table *rtbl, uint32_t pc,
-		      uint32_t mask, const char *linkset_name)
+		 uint32_t mask, bool dynamic, const char *linkset_name)
 {
 	struct osmo_ss7_route *rt;
 	int rc;
 
-	rt = ss7_route_alloc(rtbl, pc, mask);
+	rt = ss7_route_alloc(rtbl, pc, mask, dynamic);
 	if (!rt)
 		return NULL;
 
@@ -210,7 +219,7 @@ ss7_route_create(struct osmo_ss7_route_table *rtbl, uint32_t pc,
 	/* Keep old behavior, return already existing route: */
 	if (rc == -EADDRINUSE) {
 		talloc_free(rt);
-		return ss7_route_table_find_route_by_dpc_mask(rtbl, pc, mask);
+		return ss7_route_table_find_route_by_dpc_mask(rtbl, pc, mask, dynamic);
 	}
 
 	return rt;
@@ -309,8 +318,11 @@ const char *osmo_ss7_route_name(struct osmo_ss7_route *rt, bool list_asps)
 	} while (0)
 
 	APPEND("pc=%u=%s mask=0x%x=%s",
-	rt->cfg.pc, osmo_ss7_pointcode_print_buf(pc_str, sizeof(pc_str), inst, rt->cfg.pc),
-	rt->cfg.mask, osmo_ss7_pointcode_print_buf(mask_str, sizeof(mask_str), inst, rt->cfg.mask));
+	       rt->cfg.pc, osmo_ss7_pointcode_print_buf(pc_str, sizeof(pc_str), inst, rt->cfg.pc),
+	       rt->cfg.mask, osmo_ss7_pointcode_print_buf(mask_str, sizeof(mask_str), inst, rt->cfg.mask));
+
+	if (rt->cfg.dyn_allocated)
+		APPEND(" dyn");
 
 	if (rt->dest.as) {
 		struct osmo_ss7_as *as = rt->dest.as;

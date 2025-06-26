@@ -299,12 +299,14 @@ static int _rout_key(struct vty *vty,
 
 	/* When libosmo-sigtran is used in ASP role, the VTY routing table node
 	 * (config-cs7-rt) is not available. However, when we add a routing key
-	 * to an AS we still have to put a matching route into the routing
-	 * table. This is done automatically by first removing the old route
+	 * to an AS we still have to put a matching dynamic route into the routing
+	 * table. This is done automatically by first removing the old dynamic route
 	 * (users may change the routing key via VTY during runtime) and then
-	 * putting a new route (see below). */
+	 * putting a new dynamic route (see below). */
 	if (cs7_role == CS7_ROLE_ASP) {
-		rt = ss7_route_table_find_route_by_dpc_mask(as->inst->rtable_system, rkey->pc, 0xffffff);
+		rt = ss7_route_table_find_route_by_dpc_mask(as->inst->rtable_system,
+							    rkey->pc, 0xffffff,
+							    true);
 		if (rt)
 			ss7_route_destroy(rt);
 	}
@@ -315,9 +317,9 @@ static int _rout_key(struct vty *vty,
 	rkey->si = si ? get_string_value(mtp_si_vals, si) : 0;	/* FIXME: input validation */
 	rkey->ssn = ssn ? atoi(ssn) : 0;			/* FIXME: input validation */
 
-	/* automatically add new route (see also comment above) */
+	/* automatically add new dynamic route (see also comment above) */
 	if (cs7_role == CS7_ROLE_ASP) {
-		if (!ss7_route_create(as->inst->rtable_system, rkey->pc, 0xffffff, as->cfg.name)) {
+		if (!ss7_route_create(as->inst->rtable_system, rkey->pc, 0xffffff, true, as->cfg.name)) {
 			vty_out(vty, "Cannot create route (pc=%s, linkset=%s) to AS %s", dpc, as->cfg.name, VTY_NEWLINE);
 			return CMD_WARNING;
 		}

@@ -39,7 +39,7 @@ void ss7_route_table_destroy(struct osmo_ss7_route_table *rtbl);
 
 struct osmo_ss7_route *
 ss7_route_table_find_route_by_dpc_mask(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
-			uint32_t mask);
+				       uint32_t mask, bool dynamic);
 struct osmo_ss7_route *
 ss7_route_table_lookup_route(struct osmo_ss7_route_table *rtbl, const struct osmo_ss7_route_label *rtlabel);
 

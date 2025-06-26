@@ -279,8 +279,8 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 		as->cfg.routing_key.pc = dpc;
 		as->cfg.routing_key.context = rctx;
 
-		/* add route for that routing key */
-		rt = ss7_route_create(as->inst->rtable_system, dpc, 0xFFFFFF, namebuf);
+		/* add dynamic route for that routing key */
+		rt = ss7_route_create(as->inst->rtable_system, dpc, 0xFFFFFF, true, namebuf);
 		if (!rt) {
 			LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: Cannot insert route for DPC %s / as %s\n",
 				osmo_ss7_pointcode_print(asp->inst, dpc), namebuf);
@@ -393,7 +393,9 @@ static int handle_rkey_dereg(struct osmo_ss7_asp *asp, uint32_t rctx,
 		return -1;
 	}
 
-	rt = ss7_route_table_find_route_by_dpc_mask(inst->rtable_system, as->cfg.routing_key.pc, 0xffffff);
+	rt = ss7_route_table_find_route_by_dpc_mask(inst->rtable_system,
+						    as->cfg.routing_key.pc, 0xffffff,
+						    true);
 	if (!rt) {
 		msgb_append_dereg_res(resp, M3UA_RKM_DEREG_ERR_UNKNOWN, 0);
 		return -1;

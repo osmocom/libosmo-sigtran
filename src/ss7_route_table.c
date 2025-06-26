@@ -110,7 +110,7 @@ ss7_route_table_destroy(struct osmo_ss7_route_table *rtbl)
  */
 struct osmo_ss7_route *
 ss7_route_table_find_route_by_dpc_mask(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
-				uint32_t mask)
+				       uint32_t mask, bool dynamic)
 {
 	struct osmo_ss7_combined_linkset *clset;
 	struct osmo_ss7_route *rt;
@@ -120,11 +120,21 @@ ss7_route_table_find_route_by_dpc_mask(struct osmo_ss7_route_table *rtbl, uint32
 	dpc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, dpc);
 	mask = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, mask);
 
-	clset = ss7_route_table_find_combined_linkset_by_dpc_mask(rtbl, dpc, mask);
-	if (!clset)
-		return NULL;
-	rt = llist_first_entry_or_null(&clset->routes, struct osmo_ss7_route, list);
-	return rt;
+	/* we assume the combined_links are sorted by mask length, i.e. more
+	 * specific combined links first, and less specific combined links with shorter
+	 * mask later */
+	llist_for_each_entry(clset, &rtbl->combined_linksets, list) {
+		if ((dpc & clset->cfg.mask) != clset->cfg.pc)
+			continue;
+		if (mask != clset->cfg.mask)
+			continue;
+		llist_for_each_entry(rt, &clset->routes, list) {
+			if (rt->cfg.dyn_allocated != dynamic)
+				continue;
+			return rt;
+		}
+	}
+	return NULL;
 }
 
 struct osmo_ss7_combined_linkset *

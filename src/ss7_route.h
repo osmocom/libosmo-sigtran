@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <osmocom/core/linuxlist.h>
 
 /***********************************************************************
@@ -38,14 +39,15 @@ struct osmo_ss7_route {
 		/*! lower priority is higher */
 		uint32_t priority;
 		uint8_t qos_class;
+		bool dyn_allocated;
 	} cfg;
 };
 
 struct osmo_ss7_route *
-ss7_route_alloc(struct osmo_ss7_route_table *rtbl, uint32_t pc, uint32_t mask);
+ss7_route_alloc(struct osmo_ss7_route_table *rtbl, uint32_t pc, uint32_t mask, bool dynamic);
 struct osmo_ss7_route *
 ss7_route_create(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
-			uint32_t mask, const char *linkset_name);
+		 uint32_t mask, bool dynamic, const char *linkset_name);
 void ss7_route_destroy(struct osmo_ss7_route *rt);
 
 struct osmo_ss7_route *

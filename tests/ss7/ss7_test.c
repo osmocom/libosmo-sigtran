@@ -188,7 +188,7 @@ static void test_route(void)
 	/* route with full mask */
 	route_label = RT_LABEL(0, 12, 0);
 	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == NULL);
-	rt = ss7_route_create(rtbl, 12, 0xffff, "a");
+	rt = ss7_route_create(rtbl, 12, 0xffff, false, "a");
 	printf("route with full mask: %s\n", osmo_ss7_route_print(rt));
 	OSMO_ASSERT(rt);
 	route_label = RT_LABEL(0, 12, 0);
@@ -196,7 +196,7 @@ static void test_route(void)
 	ss7_route_destroy(rt);
 
 	/* route with partial mask */
-	rt = ss7_route_create(rtbl, 8, 0xfff8, "a");
+	rt = ss7_route_create(rtbl, 8, 0xfff8, false, "a");
 	printf("route with partial mask: %s\n", osmo_ss7_route_print(rt));
 	route_label = RT_LABEL(0, 8, 0);
 	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == rt);
@@ -210,7 +210,7 @@ static void test_route(void)
 	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == NULL);
 	/* insert more specific route for 12, must have higher priority
 	 * than existing one */
-	rt12 = ss7_route_create(rtbl, 12, 0xffff, "b");
+	rt12 = ss7_route_create(rtbl, 12, 0xffff, false, "b");
 	route_label = RT_LABEL(0, 12, 0);
 	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == rt12);
 	route_label = RT_LABEL(0, 15, 0);
@@ -218,7 +218,7 @@ static void test_route(void)
 	route_label = RT_LABEL(0, 16, 0);
 	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == NULL);
 	/* add a default route, which should have lowest precedence */
-	rtdef = ss7_route_create(rtbl, 0, 0, "a");
+	rtdef = ss7_route_create(rtbl, 0, 0, false, "a");
 	route_label = RT_LABEL(0, 12, 0);
 	OSMO_ASSERT(ss7_route_table_lookup_route(rtbl, &route_label) == rt12);
 	route_label = RT_LABEL(0, 15, 0);
@@ -230,7 +230,7 @@ static void test_route(void)
 	ss7_route_destroy(rt12);
 	ss7_route_destroy(rt);
 
-	rt = ss7_route_create(rtbl, 8, 0xfff9, "a");
+	rt = ss7_route_create(rtbl, 8, 0xfff9, false, "a");
 	printf("route with non-consecutive mask: %s\n", osmo_ss7_route_print(rt));
 	ss7_route_destroy(rt);
 
