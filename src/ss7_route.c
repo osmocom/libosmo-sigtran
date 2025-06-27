@@ -38,6 +38,14 @@
  * SS7 Routes
  ***********************************************************************/
 
+ /* ITU Q.704 3.4 Status of signalling routes */
+const struct value_string ss7_route_status_names[] = {
+	{ OSMO_SS7_ROUTE_STATUS_UNAVAILABLE, "unavailable" },
+	{ OSMO_SS7_ROUTE_STATUS_AVAILABLE, "available" },
+	{ OSMO_SS7_ROUTE_STATUS_RESTRICTED, "restricted" },
+	{}
+};
+
 /*! \brief Allocate a route entry
  *  \param[in] rtbl Routing Table where the route belongs
  *  \param[in] pc Point Code of the destination of the route
@@ -79,6 +87,7 @@ ss7_route_alloc(struct osmo_ss7_route_table *rtbl, uint32_t pc, uint32_t mask, b
 	/* Mark it as not being inserted yet in rtbl */
 	INIT_LLIST_HEAD(&rt->list);
 	rt->rtable = rtbl;
+	rt->status = OSMO_SS7_ROUTE_STATUS_AVAILABLE;
 	/* truncate mask to maximum. Let's avoid callers specifying arbitrary large
 	 * masks to ensure we don't fail duplicate detection with longer mask lengths */
 	rt->cfg.mask = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, mask);
@@ -374,9 +383,29 @@ osmo_ss7_route_get_dest_as(struct osmo_ss7_route *rt)
 bool ss7_route_is_available(const struct osmo_ss7_route *rt)
 {
 	OSMO_ASSERT(rt);
+	if (!ss7_route_dest_is_available(rt))
+		return false;
+	return rt->status == OSMO_SS7_ROUTE_STATUS_AVAILABLE;
+}
+
+bool ss7_route_dest_is_available(const struct osmo_ss7_route *rt)
+{
+	OSMO_ASSERT(rt);
 	if (rt->dest.as)
 		return osmo_ss7_as_active(rt->dest.as);
 	if (rt->dest.linkset)
 		return ss7_linkset_is_available(rt->dest.linkset);
 	return false;
+}
+
+/* Whether route mask identifies a single DPC. */
+bool ss7_route_is_fully_qualified(const struct osmo_ss7_route *rt)
+{
+	return rt->cfg.mask == ss7_pc_full_mask(&rt->rtable->inst->cfg.pc_fmt);
+}
+
+void ss7_route_update_route_status(struct osmo_ss7_route *rt, enum osmo_ss7_route_status status)
+{
+	LOGPRT(rt, DLSS7, LOGL_NOTICE, "changed to status '%s'\n", ss7_route_status_name(status));
+	rt->status = status;
 }

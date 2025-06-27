@@ -515,23 +515,48 @@ static void vty_dump_rtable(struct vty *vty, struct osmo_ss7_route_table *rtbl, 
 		if ((filter_pc != OSMO_SS7_PC_INVALID) && ((filter_pc & clset->cfg.mask) != clset->cfg.pc))
 			continue; /* Skip combined linksets not matching destination */
 
+		bool clset_avail = ss7_combined_linkset_is_available(clset);
 		llist_for_each_entry(rt, &clset->routes, list) {
-			bool rt_avail = ss7_route_is_available(rt);
+			bool dst_avail = ss7_route_dest_is_available(rt);
 			bool first_rt_in_clset = (rt == llist_first_entry(&clset->routes, struct osmo_ss7_route, list));
+			const char *nonadj_str, *rtavail_str;
 			/* Print route str only in first rt in combined linkset.
 			 * This allows users to easily determine visually combined
 			 * linksets: */
-			const char *rt_str = first_rt_in_clset ? osmo_ss7_route_print(rt) : "";
+			const char *rt_str, *clsetavail_str;
+			if (first_rt_in_clset) {
+				rt_str = osmo_ss7_route_print(rt);
+				clsetavail_str = clset_avail ? "acces" : "INACC";
+			} else {
+				rt_str = "";
+				clsetavail_str = "";
+			}
+			switch (rt->status) {
+			case OSMO_SS7_ROUTE_STATUS_UNAVAILABLE:
+				nonadj_str = "PROHIB";
+				rtavail_str = "UNAVAIL";
+				break;
+			case OSMO_SS7_ROUTE_STATUS_AVAILABLE:
+				nonadj_str = "allowed";
+				rtavail_str = dst_avail ? "avail" : "UNAVAIL";
+				break;
+			case OSMO_SS7_ROUTE_STATUS_RESTRICTED:
+				nonadj_str = "RESTRIC";
+				rtavail_str = dst_avail ? "RESTRIC" : "UNAVAIL";
+				break;
+			default:
+				OSMO_ASSERT(0);
+			}
 			vty_out(vty, "%-16s %-5s %c %c %u %-19s %-7s %-7s %-7s %-3s%s",
 				rt_str,
-				rt_avail ? "acces" : "INACC",
+				clsetavail_str,
 				' ',
 				'0' + rt->cfg.qos_class,
 				rt->cfg.priority,
 				rt->cfg.linkset_name,
-				rt_avail ? "avail" : "UNAVAIL",
-				"?",
-				rt_avail ? "avail" : "UNAVAIL",
+				dst_avail ? "avail" : "UNAVAIL",
+				nonadj_str,
+				rtavail_str,
 				rt->cfg.dyn_allocated ? "dyn" : "",
 				VTY_NEWLINE);
 		}

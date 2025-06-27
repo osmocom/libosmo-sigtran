@@ -33,6 +33,7 @@
 
 #include "ss7_as.h"
 #include "ss7_asp.h"
+#include "ss7_route.h"
 #include "ss7_internal.h"
 #include "ss7_route_table.h"
 #include "xua_internal.h"
@@ -149,6 +150,39 @@ static void xua_snm_pc_available_to_sccp(struct osmo_sccp_instance *sccp,
 	}
 }
 
+/* Figure 43/Q.704, Figure 44/Q.704 */
+/* RFC4666 1.4.2.5: "maintain a dynamic table of available SGP routes
+ * for the SS7 destinations, taking into account the SS7 destination
+ * availability/restricted/congestion status received from the SGP "*/
+static void xua_snm_srm_pc_available(struct osmo_ss7_as *as,
+				     const uint32_t *aff_pc, unsigned int num_aff_pc,
+				     bool available)
+{
+	struct osmo_ss7_instance *s7i = as->inst;
+	enum osmo_ss7_route_status new_status;
+
+	new_status = available ? OSMO_SS7_ROUTE_STATUS_AVAILABLE :
+				 OSMO_SS7_ROUTE_STATUS_UNAVAILABLE;
+
+	for (unsigned int i = 0; i < num_aff_pc; i++) {
+		/* 32bit "Affected Point Code" consists of a 7-bit mask followed by 14/16/24-bit SS7 PC,
+		 * see RFC 4666 3.4.1 */
+		uint32_t _aff_pc = ntohl(aff_pc[i]);
+		uint32_t pc = _aff_pc & 0xffffff;
+		uint8_t mask = _aff_pc >> 24;
+
+		if (!mask) {
+			ss7_route_table_update_route_status_by_as(s7i->rtable_system, new_status, as, pc);
+		} else {
+			/* Update only full DPC routes. */
+			uint32_t maskbits = (1 << mask) - 1;
+			uint32_t fullpc;
+			for (fullpc = (pc & ~maskbits); fullpc <= (pc | maskbits); fullpc++)
+				ss7_route_table_update_route_status_by_as(s7i->rtable_system, new_status, as, fullpc);
+		}
+	}
+}
+
 /* advertise availability of point codes (with masks) */
 void xua_snm_pc_available(struct osmo_ss7_as *as, const uint32_t *aff_pc,
 			  unsigned int num_aff_pc, const char *info_str, bool available)
@@ -157,6 +191,9 @@ void xua_snm_pc_available(struct osmo_ss7_as *as, const uint32_t *aff_pc,
 	struct osmo_ss7_asp *asp;
 	uint32_t rctx[OSMO_SS7_MAX_RCTX_COUNT];
 	unsigned int num_rctx;
+
+	xua_snm_srm_pc_available(as, aff_pc, num_aff_pc, available);
+
 
 	/* inform local users via a MTP-{PAUSE, RESUME} primitive */
 	if (s7i->sccp)

@@ -57,6 +57,7 @@ void
 ss7_combined_linkset_del_route(struct osmo_ss7_route *rt);
 struct osmo_ss7_route *
 ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const struct osmo_ss7_route_label *rtlabel);
+bool ss7_combined_linkset_is_available(const struct osmo_ss7_combined_linkset *clset);
 
 #define LOGPCLSET(clset, subsys, level, fmt, args ...) do { \
 	char _pc_str[MAX_PC_STR_LEN]; \

@@ -89,13 +89,18 @@ uint8_t osmo_ss7_pc_width(const struct osmo_ss7_pc_fmt *pc_fmt)
 	return pc_fmt->component_len[0] + pc_fmt->component_len[1] + pc_fmt->component_len[2];
 }
 
+/* Obtain a full-width mask matching a single DPC in this ss7_instance. */
+uint32_t ss7_pc_full_mask(const struct osmo_ss7_pc_fmt *pc_fmt)
+{
+	return (1 << osmo_ss7_pc_width(pc_fmt)) - 1;
+}
+
 /* truncate pc or mask to maximum permitted length. This solves
  * callers specifying arbitrary large masks which then evade duplicate
  * detection with longer mask lengths */
 uint32_t osmo_ss7_pc_normalize(const struct osmo_ss7_pc_fmt *pc_fmt, uint32_t pc)
 {
-	uint32_t mask = (1 << osmo_ss7_pc_width(pc_fmt))-1;
-	return pc & mask;
+	return pc & ss7_pc_full_mask(pc_fmt);
 }
 
 /***********************************************************************

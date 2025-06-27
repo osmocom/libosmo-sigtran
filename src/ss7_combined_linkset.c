@@ -172,6 +172,20 @@ void ss7_combined_linkset_del_route(struct osmo_ss7_route *rt)
 		ss7_combined_linkset_free(clset);
 }
 
+/* Whether any route in the combined linkset is available: */
+bool ss7_combined_linkset_is_available(const struct osmo_ss7_combined_linkset *clset)
+{
+	bool avail = false;
+	struct osmo_ss7_route *rt;
+	llist_for_each_entry(rt, &clset->routes, list) {
+		if (ss7_route_is_available(rt)) {
+			avail = true;
+			break;
+		}
+	}
+	return avail;
+}
+
 static ext_sls_t osmo_ss7_instance_calc_itu_ext_sls(const struct osmo_ss7_instance *inst, const struct osmo_ss7_route_label *rtlabel)
 {
 	/* Take 6 bits from OPC and DPC according to config: */

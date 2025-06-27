@@ -92,9 +92,9 @@ C=Cong Q=QoS P=Prio
 
 Destination            C Q P Linkset Name        Linkset Non-adj Route
 ---------------------- - - - ------------------- ------- ------- -------
-3.2.1/14         INACC   0 2 as3                 UNAVAIL ?       UNAVAIL    
-3.2.1/14         INACC   0 5 as2                 UNAVAIL ?       UNAVAIL    
-3.2.1/14         INACC   7 6 as1                 UNAVAIL ?       UNAVAIL    
+3.2.1/14         INACC   0 2 as3                 UNAVAIL allowed UNAVAIL    
+3.2.1/14         INACC   0 5 as2                 UNAVAIL allowed UNAVAIL    
+3.2.1/14         INACC   7 6 as1                 UNAVAIL allowed UNAVAIL    
 
 OsmoSTP(config-cs7-rt)# ! NOW ADD MORE GENERIC ROUTES (SMALLER BITMASK LENGTH)
 OsmoSTP(config-cs7-rt)# update route 3.2.0 7.255.0 linkset as3 priority 3
@@ -122,14 +122,14 @@ C=Cong Q=QoS P=Prio
 
 Destination            C Q P Linkset Name        Linkset Non-adj Route
 ---------------------- - - - ------------------- ------- ------- -------
-3.2.1/14         INACC   0 2 as3                 UNAVAIL ?       UNAVAIL    
-3.2.1/14         INACC   0 5 as2                 UNAVAIL ?       UNAVAIL    
-3.2.1/14         INACC   7 6 as1                 UNAVAIL ?       UNAVAIL    
-3.2.0/11         INACC   0 1 as1                 UNAVAIL ?       UNAVAIL    
-                 INACC   0 1 as2                 UNAVAIL ?       UNAVAIL    
-                 INACC   0 1 as3                 UNAVAIL ?       UNAVAIL    
-3.2.0/11         INACC   0 2 as3                 UNAVAIL ?       UNAVAIL    
-3.2.0/11         INACC   0 3 as3                 UNAVAIL ?       UNAVAIL    
+3.2.1/14         INACC   0 2 as3                 UNAVAIL allowed UNAVAIL    
+3.2.1/14         INACC   0 5 as2                 UNAVAIL allowed UNAVAIL    
+3.2.1/14         INACC   7 6 as1                 UNAVAIL allowed UNAVAIL    
+3.2.0/11         INACC   0 1 as1                 UNAVAIL allowed UNAVAIL    
+                         0 1 as2                 UNAVAIL allowed UNAVAIL    
+                         0 1 as3                 UNAVAIL allowed UNAVAIL    
+3.2.0/11         INACC   0 2 as3                 UNAVAIL allowed UNAVAIL    
+3.2.0/11         INACC   0 3 as3                 UNAVAIL allowed UNAVAIL    
 
 OsmoSTP(config-cs7-rt)# do show cs7 instance 0 route binding-table 3.2.1
 

@@ -209,6 +209,25 @@ ss7_route_table_find_or_create_combined_linkset(struct osmo_ss7_route_table *rta
 	return clset;
 }
 
+void ss7_route_table_update_route_status_by_as(struct osmo_ss7_route_table *rtbl, enum osmo_ss7_route_status status,
+					       const struct osmo_ss7_as *as, uint32_t dpc)
+{
+	struct osmo_ss7_combined_linkset *clset;
+
+	llist_for_each_entry(clset, &rtbl->combined_linksets, list) {
+		struct osmo_ss7_route *rt;
+		llist_for_each_entry(rt, &clset->routes, list) {
+			if (rt->dest.as != as)
+				continue;
+			if (rt->cfg.pc != dpc)
+				continue;
+			if (ss7_route_is_summary(rt))
+				continue; /* Only interested in fully qualified routes */
+			ss7_route_update_route_status(rt, status);
+		}
+	}
+}
+
 /* find any routes pointing to this AS and remove them */
 void ss7_route_table_del_routes_by_as(struct osmo_ss7_route_table *rtbl, struct osmo_ss7_as *as)
 {

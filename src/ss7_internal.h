@@ -15,6 +15,8 @@ extern bool ss7_initialized;
 
 bool ss7_ipv6_sctp_supported(const char *host, bool bind);
 
+uint32_t ss7_pc_full_mask(const struct osmo_ss7_pc_fmt *pc_fmt);
+
 struct osmo_ss7_asp *ss7_asp_find_by_socket_addr(int fd, int trans_proto);
 
 bool ss7_asp_protocol_check_trans_proto(enum osmo_ss7_asp_protocol proto, int trans_proto);
