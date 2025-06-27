@@ -73,7 +73,8 @@ static inline struct llist_head *_ss7_llist_round_robin(struct llist_head *list,
  * insert the route in the ordered list of routes. The list is sorted by
  * mask length, so that the more specific (longer mask) routes are
  * first, while the less specific routes with shorter masks are last.
- * Within the same mask length, the routes are ordered by priority.
+ * Within the same mask length, the routes are ordered by priority
+ * (where lower value means higher prio).
  * Hence, the first matching route in a linear iteration is the most
  * specific match.
  */
