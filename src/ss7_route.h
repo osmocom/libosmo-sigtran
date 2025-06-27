@@ -60,3 +60,14 @@ int ss7_route_set_linkset(struct osmo_ss7_route *rt, const char *linkset_name);
 int ss7_route_insert(struct osmo_ss7_route *rt);
 
 bool ss7_route_is_available(const struct osmo_ss7_route *rt);
+#define LOGPRT(rt, subsys, level, fmt, args ...) do { \
+	char _pc_str[MAX_PC_STR_LEN]; \
+	char _mask_str[MAX_PC_STR_LEN]; \
+	_LOGSS7((rt)->rtable->inst, subsys, level, \
+		"RT(dpc=%u=%s,mask=0x%x=%s,prio=%u,via=%s) " fmt, \
+		(rt)->cfg.pc, osmo_ss7_pointcode_print_buf(_pc_str, MAX_PC_STR_LEN, (rt)->rtable->inst, (rt)->cfg.pc), \
+		(rt)->cfg.mask, osmo_ss7_pointcode_print_buf(_mask_str, MAX_PC_STR_LEN, (rt)->rtable->inst, (rt)->cfg.mask), \
+		(rt)->cfg.priority, \
+		(rt)->cfg.linkset_name ? (rt)->cfg.linkset_name : "", \
+		## args); \
+	} while (0)

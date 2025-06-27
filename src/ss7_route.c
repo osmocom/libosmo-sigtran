@@ -109,12 +109,12 @@ ss7_route_set_linkset(struct osmo_ss7_route *rt, const char *linkset_name)
 	struct osmo_ss7_route_table *rtbl = rt->rtable;
 
 	if (rt->cfg.linkset_name) {
-		LOGSS7(rtbl->inst, LOGL_ERROR, "Attempt setting linkset on route already configured!\n");
+		LOGPRT(rt, DLSS7, LOGL_ERROR, "Attempt setting linkset on route already configured!\n");
 		return -EBUSY;
 	}
 
 	if (ss7_route_inserted(rt)) {
-		LOGSS7(rtbl->inst, LOGL_ERROR, "Attempt setting linkset on route already in the routing table!\n");
+		LOGPRT(rt, DLSS7, LOGL_ERROR, "Attempt setting linkset on route already in the routing table!\n");
 		return -EALREADY;
 	}
 
@@ -128,15 +128,10 @@ ss7_route_set_linkset(struct osmo_ss7_route *rt, const char *linkset_name)
 	rt->cfg.linkset_name = talloc_strdup(rt, linkset_name);
 	if (lset) {
 		rt->dest.linkset = lset;
-		LOGSS7(rtbl->inst, LOGL_INFO, "Creating route: pc=%u=%s mask=0x%x via linkset '%s'\n",
-		       rt->cfg.pc, osmo_ss7_pointcode_print(rtbl->inst, rt->cfg.pc),
-		       rt->cfg.mask, lset->cfg.name);
 	} else {
 		rt->dest.as = as;
-		LOGSS7(rtbl->inst, LOGL_INFO, "Creating route: pc=%u=%s mask=0x%x via AS '%s'\n",
-		       rt->cfg.pc, osmo_ss7_pointcode_print(rtbl->inst, rt->cfg.pc),
-		       rt->cfg.mask, as->cfg.name);
 	}
+	LOGPRT(rt, DLSS7, LOGL_INFO, "Creating route: %s\n", osmo_ss7_route_name(rt, false));
 	return 0;
 }
 
@@ -154,12 +149,12 @@ ss7_route_insert(struct osmo_ss7_route *rt)
 	struct osmo_ss7_route_table *rtbl = rt->rtable;
 
 	if (ss7_route_inserted(rt)) {
-		LOGSS7(rtbl->inst, LOGL_ERROR, "Attempt insert of route already in the routing table!\n");
+		LOGPRT(rt, DLSS7, LOGL_ERROR, "Attempt insert of route already in the routing table!\n");
 		return -EALREADY;
 	}
 
 	if (!rt->cfg.linkset_name) {
-		LOGSS7(rtbl->inst, LOGL_ERROR, "Attempt insert of route with unset linkset!\n");
+		LOGPRT(rt, DLSS7, LOGL_ERROR, "Attempt insert of route with unset linkset!\n");
 		return -EINVAL;
 	}
 
@@ -169,10 +164,8 @@ ss7_route_insert(struct osmo_ss7_route *rt)
 		llist_for_each_entry(prev_rt, &clset->routes, list) {
 			if (strcmp(prev_rt->cfg.linkset_name, rt->cfg.linkset_name) == 0 &&
 			    prev_rt->cfg.dyn_allocated == rt->cfg.dyn_allocated) {
-				LOGSS7(rtbl->inst, LOGL_ERROR,
-				       "Refusing to create route with existing linkset name: pc=%u=%s mask=0x%x via linkset/AS '%s'\n",
-				       rt->cfg.pc, osmo_ss7_pointcode_print(rtbl->inst, rt->cfg.pc),
-				       rt->cfg.mask, rt->cfg.linkset_name);
+				LOGPRT(rt, DLSS7, LOGL_ERROR,
+				       "Refusing to create route with existing linkset/AS name '%s'\n", rt->cfg.linkset_name);
 				return -EADDRINUSE;
 			}
 		}
@@ -234,11 +227,8 @@ void ss7_route_destroy(struct osmo_ss7_route *rt)
 		return;
 
 	if (ss7_route_inserted(rt)) {
-		struct osmo_ss7_instance *inst = rt->rtable->inst;
-		LOGSS7(inst, LOGL_INFO,
-			"Destroying route: pc=%u=%s mask=0x%x via linkset/ASP '%s'\n",
-			rt->cfg.pc, osmo_ss7_pointcode_print(inst, rt->cfg.pc),
-			rt->cfg.mask, rt->cfg.linkset_name);
+		LOGPRT(rt, DLSS7, LOGL_INFO,
+			"Destroying route: %s\n", osmo_ss7_route_name(rt, false));
 		ss7_combined_linkset_del_route(rt);
 	}
 	talloc_free(rt);
