@@ -184,12 +184,13 @@ ss7_route_table_find_combined_linkset(struct osmo_ss7_route_table *rtbl, uint32_
 
 	/* we assume the combined_links are sorted by mask length, i.e. more
 	 * specific routes first, and less specific routes with shorter
-	 * mask later */
+	 * mask later. Finally, ordered based on priority (lower prio value means higher prio).
+	 */
 	llist_for_each_entry(clset, &rtbl->combined_linksets, list) {
-		if (mask < clset->cfg.mask)
+		if (mask > clset->cfg.mask)
 			break;
 		if (dpc == clset->cfg.pc && mask == clset->cfg.mask) {
-			if (prio > clset->cfg.priority)
+			if (prio < clset->cfg.priority)
 				break;
 			if (prio == clset->cfg.priority)
 				return clset;
