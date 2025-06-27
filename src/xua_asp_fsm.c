@@ -695,12 +695,6 @@ static void xua_asp_fsm_active_onenter(struct osmo_fsm_inst *fi, uint32_t prev_s
 {
 	struct xua_asp_fsm_priv *xafp = fi->priv;
 	struct osmo_ss7_asp *asp = xafp->asp;
-	bool went_up = (prev_state == XUA_ASP_S_DOWN);
-
-	if (went_up) {
-		/* Now we are done with IPA handshake, Start Hearbeat Procedure, T(beat): */
-		xua_t_beat_send(fi);
-	}
 
 	dispatch_to_all_as(fi, XUA_ASPAS_ASP_ACTIVE_IND, asp);
 }
