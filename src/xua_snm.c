@@ -154,16 +154,36 @@ static void xua_snm_pc_available_to_sccp(struct osmo_sccp_instance *sccp,
 /* RFC4666 1.4.2.5: "maintain a dynamic table of available SGP routes
  * for the SS7 destinations, taking into account the SS7 destination
  * availability/restricted/congestion status received from the SGP "*/
-static void xua_snm_srm_pc_available(struct osmo_ss7_as *as,
-				     const uint32_t *aff_pc, unsigned int num_aff_pc,
-				     bool available)
+static void xua_snm_srm_pc_available_single(struct osmo_ss7_as *as, uint32_t pc, bool available)
 {
 	struct osmo_ss7_instance *s7i = as->inst;
 	enum osmo_ss7_route_status new_status;
+	struct osmo_ss7_route *rt;
 
 	new_status = available ? OSMO_SS7_ROUTE_STATUS_AVAILABLE :
 				 OSMO_SS7_ROUTE_STATUS_UNAVAILABLE;
 
+	/* Check if we already have a dynamic fully qualified route towards that AS: */
+	rt = ss7_route_table_find_route_by_dpc_mask_as(s7i->rtable_system, pc, 0xffffff, as, true);
+	if (!rt) {
+		/* No dynamic fully qualified route found. Add dynamic fully
+		 * squalified route and mark it as (un)available: */
+		rt = ss7_route_create(s7i->rtable_system, pc, 0xffffff, true, as->cfg.name);
+		if (!rt) {
+			LOGPAS(as, DLSS7, LOGL_ERROR, "Unable to create dynamic route for pc=%u=%s status=%s\n",
+			       pc, osmo_ss7_pointcode_print(s7i, pc), ss7_route_status_name(new_status));
+			return;
+		}
+		ss7_route_update_route_status(rt, new_status);
+		/* No need to iterate over rtable below, since we know there was no route: */
+		return;
+	}
+	ss7_route_table_update_route_status_by_as(s7i->rtable_system, new_status, as, pc);
+}
+static void xua_snm_srm_pc_available(struct osmo_ss7_as *as,
+				     const uint32_t *aff_pc, unsigned int num_aff_pc,
+				     bool available)
+{
 	for (unsigned int i = 0; i < num_aff_pc; i++) {
 		/* 32bit "Affected Point Code" consists of a 7-bit mask followed by 14/16/24-bit SS7 PC,
 		 * see RFC 4666 3.4.1 */
@@ -172,13 +192,13 @@ static void xua_snm_srm_pc_available(struct osmo_ss7_as *as,
 		uint8_t mask = _aff_pc >> 24;
 
 		if (!mask) {
-			ss7_route_table_update_route_status_by_as(s7i->rtable_system, new_status, as, pc);
+			xua_snm_srm_pc_available_single(as, pc, available);
 		} else {
 			/* Update only full DPC routes. */
 			uint32_t maskbits = (1 << mask) - 1;
 			uint32_t fullpc;
 			for (fullpc = (pc & ~maskbits); fullpc <= (pc | maskbits); fullpc++)
-				ss7_route_table_update_route_status_by_as(s7i->rtable_system, new_status, as, fullpc);
+				xua_snm_srm_pc_available_single(as, fullpc, available);
 		}
 	}
 }

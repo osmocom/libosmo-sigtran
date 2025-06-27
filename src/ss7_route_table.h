@@ -42,6 +42,9 @@ struct osmo_ss7_route *
 ss7_route_table_find_route_by_dpc_mask(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
 				       uint32_t mask, bool dynamic);
 struct osmo_ss7_route *
+ss7_route_table_find_route_by_dpc_mask_as(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
+				       uint32_t mask, const struct osmo_ss7_as *as, bool dynamic);
+struct osmo_ss7_route *
 ss7_route_table_lookup_route(struct osmo_ss7_route_table *rtbl, const struct osmo_ss7_route_label *rtlabel);
 
 struct osmo_ss7_combined_linkset *
