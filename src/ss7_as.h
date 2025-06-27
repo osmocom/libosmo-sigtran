@@ -127,7 +127,8 @@ struct osmo_ss7_as {
 		} loadshare;
 	} cfg;
 };
-
+struct osmo_ss7_as *ss7_as_alloc(struct osmo_ss7_instance *inst, const char *name,
+				 enum osmo_ss7_asp_protocol proto);
 struct osmo_ss7_asp *ss7_as_select_asp(struct osmo_ss7_as *as, const struct osmo_mtp_transfer_param *mtp);
 
 unsigned int osmo_ss7_as_count_asp(const struct osmo_ss7_as *as);
