@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 
 #include <osmocom/core/fsm.h>
+#include <osmocom/core/linuxlist.h>
 #include <osmocom/core/utils.h>
 #include <osmocom/core/timer.h>
 #include <osmocom/core/prim.h>
@@ -62,6 +63,41 @@ static void tx_notify(struct osmo_ss7_asp *asp, struct osmo_xlm_prim_notify *npa
 	fill_notify_route_ctx(asp, npar);
 	struct msgb *msg = encode_notify(npar);
 	osmo_ss7_asp_send(asp, msg);
+}
+
+/* RFC 4666 4.5.1: "For the particular case that an ASP becomes active for an AS and
+ * destinations normally accessible to the AS are inaccessible, restricted, or congested,
+ * the SG MAY send DUNA, DRST, or SCON messages for the inaccessible, restricted, or
+ * congested destinations to the ASP newly active for the AS to prevent the ASP from
+ * sending traffic for destinations that it might not otherwise know that are inaccessible,
+ * restricted, or congested" */
+static void as_tx_duna_during_asp_act(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp)
+{
+	struct osmo_ss7_instance *inst = as->inst;
+	struct osmo_ss7_route_table *rtbl = inst->rtable_system;
+	struct osmo_ss7_as *as_it;
+	uint32_t aff_pc[32];
+	unsigned int num_aff_pc = 0;
+	uint32_t rctx_be = htonl(as->cfg.routing_key.context);
+
+	/* Send up to 32 PC per DUNA: */
+	llist_for_each_entry(as_it, &inst->as_list, list) {
+		if (as == as_it)
+			continue;
+		if (ss7_route_table_dpc_is_accessible_skip_as(rtbl, as_it->cfg.routing_key.pc, as))
+			continue;
+		aff_pc[num_aff_pc++] = htonl(as_it->cfg.routing_key.pc); /* mask = 0 */
+		if (num_aff_pc == ARRAY_SIZE(aff_pc)) {
+			xua_tx_snm_available(asp, &rctx_be, 1,
+					     aff_pc, num_aff_pc,
+					     "RFC4666 4.5.1", false);
+			num_aff_pc = 0;
+		}
+	}
+	if (num_aff_pc > 0)
+		xua_tx_snm_available(asp, &rctx_be, 1,
+				     aff_pc, num_aff_pc,
+				     "RFC4666 4.5.1", false);
 }
 
 static int as_notify_all_asp(struct osmo_ss7_as *as, struct osmo_xlm_prim_notify *npar)
@@ -622,8 +658,11 @@ static void xua_as_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void *
 			osmo_fsm_inst_state_chg(fi, XUA_AS_S_DOWN, 0, 0);
 		break;
 	case XUA_ASPAS_ASP_ACTIVE_IND:
+		asp = data;
 		/* one ASP transitions into ASP-ACTIVE */
 		osmo_fsm_inst_state_chg(fi, XUA_AS_S_ACTIVE, 0, 0);
+		if (asp->cfg.role == OSMO_SS7_ASP_ROLE_SG)
+			as_tx_duna_during_asp_act(xafp->as, asp);
 		break;
 	case XUA_ASPAS_ASP_INACTIVE_IND:
 		inact_ind_pars = data;
@@ -666,6 +705,9 @@ static void xua_as_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *da
 		/* RFC466 sec 4.3.4.3 ASP Active Procedures*/
 		if (xafp->as->cfg.mode == OSMO_SS7_AS_TMOD_OVERRIDE)
 			notify_any_other_active_asp_as_inactive(xafp->as, asp);
+		/* SG role: No need to send DUNA for unknown destinations here
+		 * (see as_tx_duna_during_asp_act()), since the AS was already
+		 * active so the peer should know current status. */
 		break;
 	case XUA_AS_E_TRANSFER_REQ:
 		/* message for transmission */
@@ -678,15 +720,19 @@ static void xua_as_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *da
 static void xua_as_fsm_pending(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct xua_as_fsm_priv *xafp = (struct xua_as_fsm_priv *) fi->priv;
+	struct osmo_ss7_asp *asp;
 	struct xua_as_event_asp_inactive_ind_pars *inact_ind_pars;
 	struct xua_msg *xua;
 	struct osmo_xlm_prim_notify npar;
 
 	switch (event) {
 	case XUA_ASPAS_ASP_ACTIVE_IND:
+		asp = data;
 		/* one ASP transitions into ASP-ACTIVE */
 		osmo_timer_del(&xafp->recovery.t_r);
 		osmo_fsm_inst_state_chg(fi, XUA_AS_S_ACTIVE, 0, 0);
+		if (asp->cfg.role == OSMO_SS7_ASP_ROLE_SG)
+			as_tx_duna_during_asp_act(xafp->as, asp);
 		/* push out any pending queued messages */
 		while (!llist_empty(&xafp->recovery.queued_xua_msgs)) {
 			struct xua_msg *xua;

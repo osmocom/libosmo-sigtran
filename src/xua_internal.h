@@ -45,6 +45,10 @@ void m3ua_tx_snm_congestion(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsi
 void m3ua_tx_dupu(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int num_rctx,
 		  uint32_t dpc, uint16_t user, uint16_t cause, const char *info_str);
 
+void xua_tx_snm_available(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int num_rctx,
+			  const uint32_t *aff_pc, unsigned int num_aff_pc,
+			  const char *info_str, bool available);
+
 void xua_snm_rx_daud(struct osmo_ss7_asp *asp, struct xua_msg *xua);
 void xua_snm_rx_duna(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xua_msg *xua);
 void xua_snm_rx_dava(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xua_msg *xua);

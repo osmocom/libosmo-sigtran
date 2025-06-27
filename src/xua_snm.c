@@ -67,9 +67,9 @@ static const char *format_affected_pcs_c(void *ctx, const struct osmo_ss7_instan
 	return out;
 }
 
-static void xua_tx_snm_available(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int num_rctx,
-				 const uint32_t *aff_pc, unsigned int num_aff_pc,
-				 const char *info_str, bool available)
+void xua_tx_snm_available(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int num_rctx,
+			  const uint32_t *aff_pc, unsigned int num_aff_pc,
+			  const char *info_str, bool available)
 {
 	switch (asp->cfg.proto) {
 	case OSMO_SS7_ASP_PROT_M3UA:
