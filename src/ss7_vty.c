@@ -517,9 +517,13 @@ static void vty_dump_rtable(struct vty *vty, struct osmo_ss7_route_table *rtbl, 
 
 		llist_for_each_entry(rt, &clset->routes, list) {
 			bool rt_avail = ss7_route_is_available(rt);
-
+			bool first_rt_in_clset = (rt == llist_first_entry(&clset->routes, struct osmo_ss7_route, list));
+			/* Print route str only in first rt in combined linkset.
+			 * This allows users to easily determine visually combined
+			 * linksets: */
+			const char *rt_str = first_rt_in_clset ? osmo_ss7_route_print(rt) : "";
 			vty_out(vty, "%-16s %-5s %c %c %u %-19s %-7s %-7s %-7s %-3s%s",
-				osmo_ss7_route_print(rt),
+				rt_str,
 				rt_avail ? "acces" : "INACC",
 				' ',
 				'0' + rt->cfg.qos_class,
