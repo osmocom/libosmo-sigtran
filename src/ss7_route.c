@@ -317,9 +317,10 @@ const char *osmo_ss7_route_name(struct osmo_ss7_route *rt, bool list_asps)
 			goto out; \
 	} while (0)
 
-	APPEND("pc=%u=%s mask=0x%x=%s",
+	APPEND("pc=%u=%s mask=0x%x=%s prio=%u",
 	       rt->cfg.pc, osmo_ss7_pointcode_print_buf(pc_str, sizeof(pc_str), inst, rt->cfg.pc),
-	       rt->cfg.mask, osmo_ss7_pointcode_print_buf(mask_str, sizeof(mask_str), inst, rt->cfg.mask));
+	       rt->cfg.mask, osmo_ss7_pointcode_print_buf(mask_str, sizeof(mask_str), inst, rt->cfg.mask),
+	       rt->cfg.priority);
 
 	if (rt->cfg.dyn_allocated)
 		APPEND(" dyn");
