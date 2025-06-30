@@ -70,9 +70,8 @@ static bool sua_is_cr(struct xua_msg *xua)
 static bool dpc_accessible(struct osmo_sccp_instance *inst, uint32_t dpc)
 {
 	struct osmo_ss7_instance *ss7 = inst->ss7;
-	struct osmo_ss7_route *rt;
-	struct osmo_ss7_route_label rtlabel;
 	char buf_dpc[MAX_PC_STR_LEN];
+	bool found;
 
 	if (osmo_ss7_pc_is_local(ss7, dpc)) {
 		LOGPSCI(inst, LOGL_DEBUG, "dpc_accessible(DPC=%u=%s): true (local)\n",
@@ -80,22 +79,14 @@ static bool dpc_accessible(struct osmo_sccp_instance *inst, uint32_t dpc)
 		return true;
 	}
 
-	rtlabel = (struct osmo_ss7_route_label){
-		.opc = 0,
-		.dpc = dpc,
-		.sls = 0,
-	};
+	found = ss7_route_table_dpc_is_accessible(ss7->rtable_system, dpc);
 
-	rt = ss7_instance_lookup_route(ss7, &rtlabel);
-	if (!rt) {
-		LOGPSCI(inst, LOGL_INFO, "dpc_accessible(DPC=%u=%s): false\n",
-			dpc, osmo_ss7_pointcode_print_buf(buf_dpc, sizeof(buf_dpc), ss7, dpc));
-		return false;
-	}
+	LOGPSCI(inst, found ? LOGL_DEBUG : LOGL_INFO,
+		"dpc_accessible(DPC=%u=%s): %s\n",
+		dpc, osmo_ss7_pointcode_print_buf(buf_dpc, sizeof(buf_dpc), ss7, dpc),
+		found ? "true" : "false");
+	return found;
 
-	LOGPSCI(inst, LOGL_DEBUG, "dpc_accessible(DPC=%u=%s): true\n",
-		dpc, osmo_ss7_pointcode_print_buf(buf_dpc, sizeof(buf_dpc), ss7, dpc));
-	return true;
 }
 
 static bool sccp_available(struct osmo_sccp_instance *inst,

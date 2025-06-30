@@ -299,6 +299,8 @@ void ss7_route_table_del_routes_by_linkset(struct osmo_ss7_route_table *rtbl, st
 	}
 }
 
+/* Choose a specific route to transmit a packet.
+ * Note: This function potentially modifies loadsharing state context of chosen combined linkset. */
 struct osmo_ss7_route *
 ss7_route_table_lookup_route(const struct osmo_ss7_route_table *rtbl, const struct osmo_ss7_route_label *rtlabel)
 {
@@ -321,4 +323,21 @@ ss7_route_table_lookup_route(const struct osmo_ss7_route_table *rtbl, const stru
 		return rt;
 	}
 	return NULL;
+}
+
+/* Figure out whether a remote PC is accessible over any route in the routing table.
+ * Note: Unlike ss7_route_table_lookup_route(), this function is read-only and doesn't modify any state. */
+bool ss7_route_table_dpc_is_accessible(const struct osmo_ss7_route_table *rtbl, uint32_t dpc)
+{
+	struct osmo_ss7_combined_linkset *clset;
+	/* we assume the combined_links are sorted by mask length, i.e. more
+	 * specific combined links first, and less specific combined links with shorter
+	 * mask later */
+	llist_for_each_entry(clset, &rtbl->combined_linksets, list) {
+		if ((dpc & clset->cfg.mask) != clset->cfg.pc)
+			continue;
+		if (ss7_combined_linkset_is_available(clset))
+			return true;
+	}
+	return false;
 }

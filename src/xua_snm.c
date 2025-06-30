@@ -375,16 +375,10 @@ void xua_snm_rx_daud(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		uint8_t mask = _aff_pc >> 24;
 		bool is_available;
 
-		struct osmo_ss7_route_label rtlabel = {
-			.opc = xua->mtp.opc, /* Use OPC of received DAUD. */
-			.dpc = pc,
-			.sls = 0,
-		};
-
 		if (mask == 0) {
 			/* one single point code */
 			/* Check if there's an "active" route available: */
-			is_available = !!ss7_instance_lookup_route(s7i, &rtlabel);
+			is_available = ss7_route_table_dpc_is_accessible(s7i->rtable_system, pc);
 
 			xua_tx_snm_available(asp, rctx, num_rctx, &aff_pc[i], 1, "Response to DAUD",
 					     is_available);
@@ -397,8 +391,7 @@ void xua_snm_rx_daud(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 			uint32_t *aff_pc_avail = talloc_size(asp, sizeof(uint32_t)*(1 << mask));
 			uint32_t *aff_pc_unavail = talloc_size(asp, sizeof(uint32_t)*(1 << mask));
 			for (fullpc = (pc & ~maskbits); fullpc <= (pc | maskbits); fullpc++) {
-				rtlabel.dpc = fullpc;
-				is_available = !!ss7_instance_lookup_route(s7i, &rtlabel);
+				is_available = ss7_route_table_dpc_is_accessible(s7i->rtable_system, fullpc);
 				if (is_available)
 					aff_pc_avail[num_aff_pc_avail++] = htonl(fullpc); /* mask = 0 */
 				else
