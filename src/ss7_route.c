@@ -271,7 +271,7 @@ static int u32_masklen(uint32_t mask, unsigned int nbits)
 
 const char *osmo_ss7_route_print(const struct osmo_ss7_route *rt)
 {
-	static char buf[64];
+	static char buf[MAX_PC_STR_LEN * 2 + 1];
 	struct osmo_strbuf sb = { .buf = buf, .len = sizeof(buf) };
 	char buf_pc[MAX_PC_STR_LEN];
 	const struct osmo_ss7_instance *inst = rt->rtable->inst;
