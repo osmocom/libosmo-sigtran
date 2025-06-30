@@ -39,26 +39,26 @@ ss7_route_table_find_or_create(struct osmo_ss7_instance *inst, const char *name)
 void ss7_route_table_destroy(struct osmo_ss7_route_table *rtbl);
 
 struct osmo_ss7_route *
-ss7_route_table_find_route_by_dpc_mask(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
+ss7_route_table_find_route_by_dpc_mask(const struct osmo_ss7_route_table *rtbl, uint32_t dpc,
 				       uint32_t mask, bool dynamic);
 struct osmo_ss7_route *
-ss7_route_table_find_route_by_dpc_mask_as(struct osmo_ss7_route_table *rtbl, uint32_t dpc,
+ss7_route_table_find_route_by_dpc_mask_as(const struct osmo_ss7_route_table *rtbl, uint32_t dpc,
 				       uint32_t mask, const struct osmo_ss7_as *as, bool dynamic);
 struct osmo_ss7_route *
-ss7_route_table_lookup_route(struct osmo_ss7_route_table *rtbl, const struct osmo_ss7_route_label *rtlabel);
+ss7_route_table_lookup_route(const struct osmo_ss7_route_table *rtbl, const struct osmo_ss7_route_label *rtlabel);
 
 struct osmo_ss7_combined_linkset *
-ss7_route_table_find_combined_linkset(struct osmo_ss7_route_table *rtbl, uint32_t dpc, uint32_t mask, uint32_t prio);
+ss7_route_table_find_combined_linkset(const struct osmo_ss7_route_table *rtbl, uint32_t dpc, uint32_t mask, uint32_t prio);
 struct osmo_ss7_combined_linkset *
 ss7_route_table_find_or_create_combined_linkset(struct osmo_ss7_route_table *rtbl, uint32_t pc, uint32_t mask, uint32_t prio);
 struct osmo_ss7_combined_linkset *
-ss7_route_table_find_combined_linkset_by_dpc(struct osmo_ss7_route_table *rtbl, uint32_t dpc);
+ss7_route_table_find_combined_linkset_by_dpc(const struct osmo_ss7_route_table *rtbl, uint32_t dpc);
 struct osmo_ss7_combined_linkset *
-ss7_route_table_find_combined_linkset_by_dpc_mask(struct osmo_ss7_route_table *rtbl, uint32_t dpc, uint32_t mask);
+ss7_route_table_find_combined_linkset_by_dpc_mask(const struct osmo_ss7_route_table *rtbl, uint32_t dpc, uint32_t mask);
 struct osmo_ss7_combined_linkset *
-ss7_route_table_find_combined_linkset(struct osmo_ss7_route_table *rtbl, uint32_t dpc, uint32_t mask, uint32_t prio);
+ss7_route_table_find_combined_linkset(const struct osmo_ss7_route_table *rtbl, uint32_t dpc, uint32_t mask, uint32_t prio);
 
-void ss7_route_table_update_route_status_by_as(struct osmo_ss7_route_table *rtbl, enum osmo_ss7_route_status status,
+void ss7_route_table_update_route_status_by_as(const struct osmo_ss7_route_table *rtbl, enum osmo_ss7_route_status status,
 					       const struct osmo_ss7_as *as, uint32_t dpc);
 void ss7_route_table_del_routes_by_as(struct osmo_ss7_route_table *rtbl, struct osmo_ss7_as *as);
 void ss7_route_table_del_routes_by_linkset(struct osmo_ss7_route_table *rtbl, struct osmo_ss7_linkset *lset);
