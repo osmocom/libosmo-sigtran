@@ -952,36 +952,34 @@ DEFUN_ATTR(cs7_sccpaddr, cs7_sccpaddr_cmd,
 	struct osmo_ss7_instance *inst = (struct osmo_ss7_instance *)vty->index;
 	struct osmo_sccp_addr_entry *entry;
 	const char *name = argv[0];
+	int rc;
 
-	if (strlen(name) >= sizeof(entry->name)) {
-		vty_out(vty, "Error: SCCP address name too long: '%s'%s",
-			name, VTY_NEWLINE);
-		return CMD_ERR_INCOMPLETE;
-	}
-
-	/* Ensure that we do not use address names that
-	 * are already used in other ss7 instances. */
-	entry = addr_entry_by_name_global(name);
-	if (entry != NULL) {
-		vty_out(vty,
-			"Error: SCCP address name already used in cs7 instance %u: '%s'%s",
-			entry->inst->cfg.id, entry->name, VTY_NEWLINE);
-		return CMD_ERR_INCOMPLETE;
+	entry = addr_entry_by_name_local(name, inst);
+	if (!entry) {
+		/* Create a new addressbook entry if we can not find an
+		 * already existing entry */
+		struct osmo_sccp_addr sccp_addr = {
+			.ri = OSMO_SCCP_RI_SSN_PC,
+		};
+		rc = osmo_sccp_addr_create(inst, name, &sccp_addr);
+		if (rc < 0) {
+			if (rc == -ENOSPC)
+				vty_out(vty, "Error: SCCP address name too long: '%s'%s",
+					name, VTY_NEWLINE);
+			if (rc == -EALREADY)
+				vty_out(vty, "Error: SCCP address name already used in cs7 instance other than %u: '%s'%s",
+					inst->cfg.id, name, VTY_NEWLINE);
+			return CMD_ERR_INCOMPLETE;
+		}
 	}
 
 	entry = addr_entry_by_name_local(name, inst);
-
-	/* Create a new addressbook entry if we can not find an
-	 * already existing entry */
 	if (!entry) {
-		entry = talloc_zero(inst, struct osmo_sccp_addr_entry);
-		osmo_strlcpy(entry->name, name, sizeof(entry->name));
-		llist_add_tail(&entry->list, &inst->cfg.sccp_address_book);
-		llist_add_tail(&entry->list_global, &sccp_address_book_global);
-		entry->addr.ri = OSMO_SCCP_RI_SSN_PC;
+		vty_out(vty, "%% Error: Unable to find SCCP address '%s' just created in instance %u%s",
+			name, inst->cfg.id, VTY_NEWLINE);
+		return CMD_WARNING;
 	}
 
-	entry->inst = (struct osmo_ss7_instance *)vty->index;
 	vty->node = L_CS7_SCCPADDR_NODE;
 	vty->index = entry;
 

@@ -238,7 +238,7 @@ Error: SCCP address name too long: 'foobarfoobarfoobarfoobarfoobarfoobar'
 ss7_asp_vty_test(config-cs7)# exit
 ss7_asp_vty_test(config)# cs7 instance 1
 ss7_asp_vty_test(config-cs7)# sccp-address foo
-Error: SCCP address name already used in cs7 instance 0: 'foo'
+Error: SCCP address name already used in cs7 instance other than 1: 'foo'
 % Command incomplete.
 ss7_asp_vty_test(config-cs7)# sccp-address bar
 ss7_asp_vty_test(config-cs7-sccpaddr)# point-code 1.2.3

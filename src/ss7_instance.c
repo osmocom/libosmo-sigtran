@@ -619,6 +619,74 @@ int osmo_ss7_pointcode_parse_mask_or_len(const struct osmo_ss7_instance *inst, c
  * (see also .cfg in struct osmo_ss7_instance) */
 LLIST_HEAD(sccp_address_book_global);
 
+static struct osmo_sccp_addr_entry *addr_entry_alloc(struct osmo_ss7_instance *inst, const char *name,
+						     const struct osmo_sccp_addr *addr)
+{
+	struct osmo_sccp_addr_entry *entry;
+
+	entry = talloc_zero(inst, struct osmo_sccp_addr_entry);
+	OSMO_STRLCPY_ARRAY(entry->name, name);
+	entry->inst = inst;
+	memcpy(&entry->addr, addr, sizeof(entry->addr));
+	llist_add_tail(&entry->list, &inst->cfg.sccp_address_book);
+	llist_add_tail(&entry->list_global, &sccp_address_book_global);
+	return entry;
+}
+
+/*! \brief Add an SCCP address entry to the addressbook.
+ *  \param[int] inst cs7 instance where this address belongs
+ *  \param[in] name of the address to create
+ *  \param[in] dest_addr address value to add to the addressbook.
+ *  \returns 0 on success, negative error code on error.
+ *
+ * Validates that the name is unique among all cs7 instances of the process, and
+ * that no such entry already exists. */
+int osmo_sccp_addr_create(struct osmo_ss7_instance *inst, const char *name,
+			  const struct osmo_sccp_addr *dest_addr)
+{
+	struct osmo_sccp_addr_entry *entry;
+	if (strlen(name) >= sizeof(entry->name)) {
+		LOGSS7(inst, LOGL_ERROR, "%s: SCCP address name too long: '%s'\n",
+		       __func__, name);
+		return -ENOSPC;
+	}
+
+	/* Ensure that we do not use address names that
+	 * are already used in other ss7 instances. */
+	entry = addr_entry_by_name_global(name);
+	if (entry) {
+		LOGSS7(inst, LOGL_ERROR, "%s: SCCP address name already used in cs7 instance %u: '%s'\n",
+		       __func__, entry->inst->cfg.id, entry->name);
+		return -EALREADY;
+	}
+
+	entry = addr_entry_alloc(inst, name, dest_addr);
+	OSMO_ASSERT(entry);
+	return 0;
+}
+
+/*! \brief Update the value of an SCCP address entry already present in the addressbook.
+ *  \param[int] inst cs7 instance where this address belongs
+ *  \param[in] name of the address to update
+ *  \param[in] dest_addr address value to store in the addressbook.
+ *  \returns 0 on success, negative error code on error.
+ */
+int osmo_sccp_addr_update(struct osmo_ss7_instance *inst, const char *name, const struct osmo_sccp_addr *dest_addr)
+{
+	struct osmo_sccp_addr_entry *entry;
+
+	/* Ensure that we do not use address names that
+	 * are already used in other ss7 instances. */
+	entry = addr_entry_by_name_local(name, inst);
+	if (!entry) {
+		LOGSS7(inst, LOGL_ERROR, "%s: SCCP address '%s' not found in cs7 instance %u\n",
+		       __func__, name, inst->cfg.id);
+		return -ENOKEY;
+	}
+	memcpy(&entry->addr, dest_addr, sizeof(entry->addr));
+	return 0;
+}
+
 /* Pick an SCCP address entry from the addressbook list by its name */
 struct osmo_sccp_addr_entry
 *addr_entry_by_name_local(const char *name,

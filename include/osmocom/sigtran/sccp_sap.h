@@ -330,12 +330,12 @@ struct osmo_sccp_user *osmo_sccp_user_find(struct osmo_sccp_instance *inst, uint
 int osmo_sccp_user_sap_down(struct osmo_sccp_user *scu, struct osmo_prim_hdr *oph);
 int osmo_sccp_user_sap_down_nofree(struct osmo_sccp_user *scu, struct osmo_prim_hdr *oph);
 
+int osmo_sccp_addr_create(struct osmo_ss7_instance *inst, const char *name, const struct osmo_sccp_addr *dest_addr);
+int osmo_sccp_addr_update(struct osmo_ss7_instance *inst, const char *name, const struct osmo_sccp_addr *dest_addr);
 struct osmo_ss7_instance *osmo_sccp_addr_by_name(struct osmo_sccp_addr *dest_addr, const char *name);
 int osmo_sccp_addr_by_name_local(struct osmo_sccp_addr *dest_addr, const char *name,
 				 const struct osmo_ss7_instance *inst);
-
 const char *osmo_sccp_name_by_addr(const struct osmo_sccp_addr *addr);
-
 void osmo_sccp_local_addr_by_instance(struct osmo_sccp_addr *dest_addr,
 				      const struct osmo_sccp_instance *inst,
 				      uint32_t ssn);

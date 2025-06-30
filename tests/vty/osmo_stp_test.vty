@@ -259,7 +259,7 @@ Error: SCCP address name too long: 'foobarfoobarfoobarfoobarfoobarfoobar'
 OsmoSTP(config-cs7)# exit
 OsmoSTP(config)# cs7 instance 1
 OsmoSTP(config-cs7)# sccp-address foo
-Error: SCCP address name already used in cs7 instance 0: 'foo'
+Error: SCCP address name already used in cs7 instance other than 1: 'foo'
 % Command incomplete.
 OsmoSTP(config-cs7)# sccp-address bar
 OsmoSTP(config-cs7-sccpaddr)# point-code 1.2.3
