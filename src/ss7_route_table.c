@@ -341,3 +341,49 @@ bool ss7_route_table_dpc_is_accessible(const struct osmo_ss7_route_table *rtbl, 
 	}
 	return false;
 }
+
+/* Figure out whether a remote PC is accessible over a route via a specific AS
+ * Note: Unlike ss7_route_table_lookup_route(), this function is read-only and doesn't modify any state. */
+bool ss7_route_table_dpc_is_accessible_via_as(const struct osmo_ss7_route_table *rtbl, uint32_t dpc, const struct osmo_ss7_as *as)
+{
+	struct osmo_ss7_combined_linkset *clset;
+	struct osmo_ss7_route *rt;
+	/* we assume the combined_links are sorted by mask length, i.e. more
+	 * specific combined links first, and less specific combined links with shorter
+	 * mask later */
+	llist_for_each_entry(clset, &rtbl->combined_linksets, list) {
+		if ((dpc & clset->cfg.mask) != clset->cfg.pc)
+			continue;
+		llist_for_each_entry(rt, &clset->routes, list) {
+			if (rt->dest.as != as)
+				continue;
+			if (!ss7_route_is_available(rt))
+				continue;
+			return true;
+		}
+	}
+	return false;
+}
+
+/* Figure out whether a remote PC is accessible over any route not going via a specific excluded AS
+ * Note: Unlike ss7_route_table_lookup_route(), this function is read-only and doesn't modify any state. */
+bool ss7_route_table_dpc_is_accessible_skip_as(const struct osmo_ss7_route_table *rtbl, uint32_t dpc, const struct osmo_ss7_as *as)
+{
+	struct osmo_ss7_combined_linkset *clset;
+	struct osmo_ss7_route *rt;
+	/* we assume the combined_links are sorted by mask length, i.e. more
+	 * specific combined links first, and less specific combined links with shorter
+	 * mask later */
+	llist_for_each_entry(clset, &rtbl->combined_linksets, list) {
+		if ((dpc & clset->cfg.mask) != clset->cfg.pc)
+			continue;
+		llist_for_each_entry(rt, &clset->routes, list) {
+			if (rt->dest.as == as)
+				continue;
+			if (!ss7_route_is_available(rt))
+				continue;
+			return true;
+		}
+	}
+	return false;
+}

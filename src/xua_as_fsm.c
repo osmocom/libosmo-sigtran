@@ -24,6 +24,7 @@
 #include <osmocom/sigtran/protocol/m3ua.h>
 #include <sys/types.h>
 
+#include "sccp_internal.h"
 #include "ss7_as.h"
 #include "ss7_asp.h"
 #include "ss7_combined_linkset.h"
@@ -451,6 +452,28 @@ static void as_snm_pc_unavailable(struct osmo_ss7_as *as)
 			xua_snm_pc_available(as, &aff_pc, 1, NULL, false);
 		}
 	}
+
+	/* Generate PC unavailability indications for PCs in the sccp address-book.
+	 * These are generally PCs the user wants to get information about, and
+	 * they may have no fully-qualified route because:
+	 * - user may have not configured such fully qualified route, but a
+	 *   summary route (eg. 0.0.0/0 default route).
+	 * - peer SG may have not announced them (DAVA/DUNA).
+	 */
+	struct osmo_sccp_addr_entry *entry;
+	llist_for_each_entry(entry, &s7i->cfg.sccp_address_book, list) {
+		if (!(entry->addr.presence & OSMO_SCCP_ADDR_T_PC))
+			continue;
+		if (osmo_ss7_pc_is_local(s7i, entry->addr.pc))
+			continue;
+		/* Still available: */
+		if (ss7_route_table_dpc_is_accessible_skip_as(rtbl, entry->addr.pc, as))
+			continue;
+		LOGPAS(as, DLSS7, LOGL_INFO, "AS became inactive => address-book pc=%u=%s is now unavailable\n",
+		       entry->addr.pc, osmo_ss7_pointcode_print(s7i, entry->addr.pc));
+		aff_pc = htonl(entry->addr.pc);
+		xua_snm_pc_available(as, &aff_pc, 1, NULL, false);
+	}
 }
 
 /* AS became active, trigger SNM PC availability for PCs it served: */
@@ -482,6 +505,31 @@ static void as_snm_pc_available(struct osmo_ss7_as *as)
 			aff_pc = htonl(rt->cfg.pc);
 			xua_snm_pc_available(as, &aff_pc, 1, NULL, true);
 		}
+	}
+
+	/* Generate PC availability indications for PCs in the sccp address-book.
+	 * These are generally PCs the user wants to get information about, and
+	 * they may have no fully-qualified route because:
+	 * - user may have not configured such fully qualified route, but a
+	 *   summary route (eg. 0.0.0/0 default route).
+	 * - peer SG may have not announced them (DAVA/DUNA).
+	 */
+	struct osmo_sccp_addr_entry *entry;
+	llist_for_each_entry(entry, &s7i->cfg.sccp_address_book, list) {
+		if (!(entry->addr.presence & OSMO_SCCP_ADDR_T_PC))
+			continue;
+		if (osmo_ss7_pc_is_local(s7i, entry->addr.pc))
+			continue;
+		/* PC was already available: */
+		if (ss7_route_table_dpc_is_accessible_skip_as(rtbl, entry->addr.pc, as))
+			continue;
+		/* Try to find if there's an available route via the AS matching this PC. */
+		if (!ss7_route_table_dpc_is_accessible_via_as(rtbl, entry->addr.pc, as))
+			continue;
+		LOGPAS(as, DLSS7, LOGL_INFO, "AS became active => address-book pc=%u=%s is now available\n",
+			entry->addr.pc, osmo_ss7_pointcode_print(s7i, entry->addr.pc));
+		aff_pc = htonl(entry->addr.pc);
+		xua_snm_pc_available(as, &aff_pc, 1, NULL, true);
 	}
 }
 
