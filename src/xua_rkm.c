@@ -219,6 +219,15 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 
 	/* check if there is already an AS for this routing key */
 	as = osmo_ss7_as_find_by_rctx(asp->inst, rctx);
+
+	if (!as && !asp->inst->cfg.permit_dyn_rkm_alloc) {
+		/* not permitted to create dynamic RKM entries */
+		LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: RCTX %u not found in configuration, and "
+			"dynamic RKM allocation not permitted; permission denied\n", rctx);
+		msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_PERM_DENIED, 0);
+		return -1;
+	}
+
 	if (as) {
 		LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: Found existing AS for RCTX %u\n", rctx);
 		/* Early return before allocating stuff if no space left: */
@@ -251,7 +260,7 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 			}
 			as->cfg.mode_set_by_peer = true;
 		}
-	} else if (asp->inst->cfg.permit_dyn_rkm_alloc) {
+	} else {
 		/* Early return before allocating stuff if no space left: */
 		if (*nas_idx >= max_nas_idx) {
 			LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: not enough room for newly assigned AS (max %u AS)\n",
@@ -288,12 +297,6 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 			msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_CANT_SUPP_UNQ_RT, 0);
 			return -1;
 		}
-	} else {
-		/* not permitted to create dynamic RKM entries */
-		LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: RCTX %u not found in configuration, and "
-			"dynamic RKM allocation not permitted; permission denied\n", rctx);
-		msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_PERM_DENIED, 0);
-		return -1;
 	}
 
 	/* Success: Add just-create AS to connected ASP + report success */
