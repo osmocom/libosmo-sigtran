@@ -110,9 +110,15 @@ DEFUN_ATTR(as_asp, as_asp_cmd,
 	   CMD_ATTR_IMMEDIATE)
 {
 	struct osmo_ss7_as *as = vty->index;
+	int rc = osmo_ss7_as_add_asp(as, argv[0]);
 
-	if (osmo_ss7_as_add_asp(as, argv[0])) {
-		vty_out(vty, "cannot find ASP '%s'%s", argv[0], VTY_NEWLINE);
+	if (rc < 0) {
+		if (rc == -ENODEV)
+			vty_out(vty, "%% Cannot find ASP '%s'%s", argv[0], VTY_NEWLINE);
+		else if (rc == -ENOSPC)
+			vty_out(vty,
+				"%% Cannot associate ASP '%s' to AS '%s': ASP table for the AS is full!%s",
+				argv[0], as->cfg.name, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 

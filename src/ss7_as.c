@@ -169,6 +169,7 @@ int ss7_as_add_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp)
 		}
 	}
 
+	LOGPAS(as, DLSS7, LOGL_ERROR, "Failed adding ASP %s to AS, ASP table is full!\n", asp->cfg.name);
 	return -ENOSPC;
 }
 
