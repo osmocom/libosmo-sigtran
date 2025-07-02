@@ -1124,7 +1124,11 @@ static void ipa_asp_fsm_wait_id_resp(struct osmo_fsm_inst *fi, uint32_t event, v
 				iafp->ipa_unit->unit_name);
 			goto out_err;
 		}
-		ss7_as_add_asp(as, asp);
+		rc = ss7_as_add_asp(as, asp);
+		if (rc < 0) {
+			LOGPFSML(fi, LOGL_ERROR, "Cannot add ASP '%s' to AS '%s'\n", asp->cfg.name, as->cfg.name);
+			goto out_err;
+		}
 		/* TODO: OAP Authentication? */
 		/* Send ID_ACK */
 		if (fd >= 0) {
