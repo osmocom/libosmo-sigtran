@@ -309,7 +309,12 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 	}
 
 	/* Success: Add just-create AS to connected ASP + report success */
-	ss7_as_add_asp(as, asp);
+	if (ss7_as_add_asp(as, asp) < 0) {
+		LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: Cannot associate ASP to AS %s\n", as->cfg.name);
+		msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_INSUFF_RESRC, 0);
+		return -1;
+	}
+
 	msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_SUCCESS, rctx);
 	/* append to list of newly assigned as */
 	if (!as_already_in_array)
