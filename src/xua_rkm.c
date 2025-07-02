@@ -151,6 +151,19 @@ static void xua_rkm_send_dereg_req(struct osmo_ss7_asp *asp, uint32_t route_ctx)
  * RKM REG request */
 #define MAX_NEW_AS 16
 
+/* Lookup "as" pointer in array "newly_assigned_as" with "num_newly_assigned_as" elements. */
+static bool newly_assigned_as_in_array(struct osmo_ss7_as * const *newly_assigned_as,
+				       unsigned int num_newly_assigned_as,
+				       const struct osmo_ss7_as *as)
+{
+	unsigned int i;
+	for (i = 0; i < num_newly_assigned_as; i++) {
+		if (as == newly_assigned_as[i])
+			return true;
+	}
+	return false;
+}
+
 /* SG: handle a single registration request IE (nested IEs in 'innner' */
 static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 			   struct msgb *resp, struct osmo_ss7_as **newly_assigned_as,
@@ -161,6 +174,7 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 	struct osmo_ss7_as *as;
 	struct osmo_ss7_route *rt;
 	char namebuf[32];
+	bool as_already_in_array;
 
 	/* mandatory local routing key ID */
 	rk_id = xua_msg_get_u32(inner, M3UA_IEI_LOC_RKEY_ID);
@@ -228,15 +242,18 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 		return -1;
 	}
 
+	/* Early return before allocating stuff if no space left.
+	 * If AS didn't exist before, it can't be already in the array:*/
+	as_already_in_array = as && newly_assigned_as_in_array(newly_assigned_as, *nas_idx, as);
+	if (!as_already_in_array && *nas_idx >= max_nas_idx) {
+		LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: not enough room for newly assigned AS (max %u AS)\n",
+			max_nas_idx+1);
+		msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_INSUFF_RESRC, 0);
+		return -1;
+	}
+
 	if (as) {
 		LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: Found existing AS for RCTX %u\n", rctx);
-		/* Early return before allocating stuff if no space left: */
-		if (*nas_idx >= max_nas_idx) {
-			LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: not enough room for newly assigned AS (max %u AS)\n",
-				max_nas_idx+1);
-			msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_INSUFF_RESRC, 0);
-			return -1;
-		}
 
 		if (as->cfg.routing_key.pc != dpc) {
 			LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: DPC doesn't match, rejecting AS (%u != %u)\n",
@@ -261,14 +278,6 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 			as->cfg.mode_set_by_peer = true;
 		}
 	} else {
-		/* Early return before allocating stuff if no space left: */
-		if (*nas_idx >= max_nas_idx) {
-			LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: not enough room for newly assigned AS (max %u AS)\n",
-				max_nas_idx+1);
-			msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_INSUFF_RESRC, 0);
-			return -1;
-		}
-
 		/* Create an AS for this routing key */
 		snprintf(namebuf, sizeof(namebuf), "as-rkm-%u", rctx);
 		as = osmo_ss7_as_find_or_create(asp->inst, namebuf, OSMO_SS7_ASP_PROT_M3UA);
@@ -303,7 +312,8 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 	ss7_as_add_asp(as, asp);
 	msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_SUCCESS, rctx);
 	/* append to list of newly assigned as */
-	newly_assigned_as[(*nas_idx)++] = as;
+	if (!as_already_in_array)
+		newly_assigned_as[(*nas_idx)++] = as;
 	return 0;
 }
 
@@ -313,7 +323,7 @@ static int m3ua_rx_rkm_reg_req(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	struct xua_msg_part *part;
 	struct msgb *resp = m3ua_msgb_alloc(__func__);
 	struct osmo_ss7_as *newly_assigned_as[MAX_NEW_AS];
-	unsigned int i, nas_idx = 0;
+	unsigned int i, num_newly_assigned_as = 0;
 
 	memset(newly_assigned_as, 0, sizeof(newly_assigned_as));
 
@@ -333,7 +343,7 @@ static int m3ua_rx_rkm_reg_req(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		/* handle single registration and append result to
 		 * 'resp' */
 		handle_rkey_reg(asp, inner, resp, newly_assigned_as,
-				ARRAY_SIZE(newly_assigned_as), &nas_idx);
+				ARRAY_SIZE(newly_assigned_as), &num_newly_assigned_as);
 
 		xua_msg_free(inner);
 	}
@@ -344,7 +354,7 @@ static int m3ua_rx_rkm_reg_req(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	/* and *after* the RKM REG Response inform the newly assigned
 	 * ASs about the fact that there's an INACTIVE ASP for them,
 	 * which will cause them to send NOTIFY to the client */
-	for (i = 0; i < ARRAY_SIZE(newly_assigned_as); i++) {
+	for (i = 0; i < num_newly_assigned_as; i++) {
 		struct osmo_ss7_as *as = newly_assigned_as[i];
 		if (!as)
 			continue;
