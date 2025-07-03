@@ -32,6 +32,8 @@ struct osmo_sccp_user {
 	struct osmo_fsm_inst *as_fi;
 };
 
+struct osmo_sccp_user *sccp_user_alloc(struct osmo_sccp_instance *inst, const char *name,
+				       osmo_prim_cb prim_cb, uint16_t ssn, uint32_t pc);
 
 int sccp_user_prim_up(struct osmo_sccp_user *scut, struct osmo_scu_prim *prim);
 

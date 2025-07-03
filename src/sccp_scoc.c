@@ -64,6 +64,7 @@
 #include "xua_internal.h"
 #include "sccp_connection.h"
 #include "sccp_scoc_fsm.h"
+#include "sccp_instance.h"
 #include "sccp_internal.h"
 #include "sccp_user.h"
 #include "ss7_internal.h"
@@ -84,53 +85,6 @@ static const struct xua_msg_event_map sua_scoc_event_map[] = {
 	{ SUA_MSGC_CO, SUA_CO_COIT, SCOC_E_RCOC_IT_IND },
 	{ SUA_MSGC_CO, SUA_CO_COERR, SCOC_E_RCOC_ERROR_IND },
 };
-
-/***********************************************************************
- * Timer Handling
- ***********************************************************************/
-
-/* Mostly pasted from Appendix C.4 of ITU-T Q.714 (05/2001) -- some of their descriptions are quite
- * unintelligible out of context, for which we have our own description here. */
-const struct osmo_tdef osmo_sccp_timer_defaults[OSMO_SCCP_TIMERS_LEN] = {
-	{ .T = OSMO_SCCP_TIMER_CONN_EST,	.default_val = 1*60,	.unit = OSMO_TDEF_S,
-	  .desc = "Waiting for connection confirm message, 1 to 2 minutes" },
-	{ .T = OSMO_SCCP_TIMER_IAS,		.default_val = 7*60,	.unit = OSMO_TDEF_S,
-	  .desc = "Send keep-alive: on an idle connection, delay before sending an Idle Timer message, 5 to 10 minutes" }, /* RFC 3868 Ch. 8. */
-	{ .T = OSMO_SCCP_TIMER_IAR,		.default_val = 15*60,	.unit = OSMO_TDEF_S,
-	  .desc = "Receive keep-alive: on an idle connection, delay until considering a connection as stale, 11 to 21 minutes" }, /* RFC 3868 Ch. 8. */
-	{ .T = OSMO_SCCP_TIMER_REL,		.default_val = 10,	.unit = OSMO_TDEF_S,
-	  .desc = "Waiting for release complete message, 10 to 20 seconds" },
-	{ .T = OSMO_SCCP_TIMER_REPEAT_REL,	.default_val = 10,	.unit = OSMO_TDEF_S,
-	  .desc = "Waiting for release complete message; or to repeat sending released message after the initial expiry, 10 to 20 seconds" },
-	{ .T = OSMO_SCCP_TIMER_INT,		.default_val = 1*60,	.unit = OSMO_TDEF_S,
-	  .desc = "Waiting for release complete message; or to release connection resources, freeze the LRN and "
-		  "alert a maintenance function after the initial expiry, extending to 1 minute" },
-	{ .T = OSMO_SCCP_TIMER_GUARD,		.default_val = 23*60,	.unit = OSMO_TDEF_S,
-	  .desc = "Waiting to resume normal procedure for temporary connection sections during the restart procedure, 23 to 25 minutes" },
-	{ .T = OSMO_SCCP_TIMER_RESET,		.default_val = 10,	.unit = OSMO_TDEF_S,
-	  .desc = "Waiting to release temporary connection section or alert maintenance function after reset request message is sent, 10 to 20 seconds" },
-	{ .T = OSMO_SCCP_TIMER_REASSEMBLY,	.default_val = 10,	.unit = OSMO_TDEF_S,
-	  .desc = "Waiting to receive all the segments of the remaining segments, single segmented message after receiving the first segment, 10 to 20 seconds" },
-	{}
-};
-
-/* Appendix C.4 of ITU-T Q.714 */
-const struct value_string osmo_sccp_timer_names[] = {
-	{ OSMO_SCCP_TIMER_CONN_EST, "conn_est" },
-	{ OSMO_SCCP_TIMER_IAS, "ias" },
-	{ OSMO_SCCP_TIMER_IAR, "iar" },
-	{ OSMO_SCCP_TIMER_REL, "rel" },
-	{ OSMO_SCCP_TIMER_REPEAT_REL, "repeat_rel" },
-	{ OSMO_SCCP_TIMER_INT, "int" },
-	{ OSMO_SCCP_TIMER_GUARD, "guard" },
-	{ OSMO_SCCP_TIMER_RESET, "reset" },
-	{ OSMO_SCCP_TIMER_REASSEMBLY, "reassembly" },
-	{}
-};
-
-osmo_static_assert(ARRAY_SIZE(osmo_sccp_timer_defaults) == (OSMO_SCCP_TIMERS_LEN) &&
-		   ARRAY_SIZE(osmo_sccp_timer_names) == (OSMO_SCCP_TIMERS_LEN),
-		   assert_osmo_sccp_timers_count);
 
 /***********************************************************************
  * SUA Instance and Connection handling
@@ -865,14 +819,3 @@ void sccp_scoc_rx_from_scrc(struct osmo_sccp_instance *inst,
 	/* Dispatch event to existing connection */
 	osmo_fsm_inst_dispatch(conn->fi, event, xua);
 }
-
-void sccp_scoc_flush_connections(struct osmo_sccp_instance *inst)
-{
-	struct rb_node *node;
-	while ((node = rb_first(&inst->connections))) {
-		struct sccp_connection *conn = container_of(node, struct sccp_connection, node);
-		sccp_conn_free(conn);
-	}
-
-}
-

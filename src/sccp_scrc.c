@@ -33,6 +33,7 @@
 #include <osmocom/sigtran/protocol/sua.h>
 #include <osmocom/sigtran/protocol/mtp.h>
 
+#include "sccp_instance.h"
 #include "sccp_internal.h"
 #include "ss7_as.h"
 #include "ss7_instance.h"

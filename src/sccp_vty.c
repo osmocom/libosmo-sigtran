@@ -41,6 +41,7 @@
 
 #include "xua_internal.h"
 #include "sccp_connection.h"
+#include "sccp_instance.h"
 #include "sccp_internal.h"
 #include "sccp_user.h"
 #include "ss7_instance.h"

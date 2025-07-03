@@ -11,11 +11,10 @@
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <osmocom/sigtran/protocol/mtp.h>
 
-#include "ss7_user.h"
-
 #define SCCP_STR "Signalling Connection Control Part\n"
 
-struct xua_msg;
+struct osmo_sccp_instance;
+struct osmo_sccp_user;
 
 /* SCCP addressbook */
 extern struct llist_head sccp_address_book_global;
@@ -30,62 +29,11 @@ struct osmo_sccp_addr_entry *addr_entry_by_name_local(const char *name,
 						      const struct osmo_ss7_instance *inst);
 struct osmo_sccp_addr_entry *addr_entry_by_name_global(const char *name);
 
-/* Appendix C.4 of Q.714 */
-enum osmo_sccp_timer {
-	/* 0 kept unused on purpose since it's handled specially by osmo_fsm */
-	OSMO_SCCP_TIMER_CONN_EST = 1,
-	OSMO_SCCP_TIMER_IAS,
-	OSMO_SCCP_TIMER_IAR,
-	OSMO_SCCP_TIMER_REL,
-	OSMO_SCCP_TIMER_REPEAT_REL,
-	OSMO_SCCP_TIMER_INT,
-	OSMO_SCCP_TIMER_GUARD,
-	OSMO_SCCP_TIMER_RESET,
-	OSMO_SCCP_TIMER_REASSEMBLY,
-	/* This must remain the last item: */
-	OSMO_SCCP_TIMERS_LEN
-};
-
-extern const struct osmo_tdef osmo_sccp_timer_defaults[OSMO_SCCP_TIMERS_LEN];
-
-extern const struct value_string osmo_sccp_timer_names[];
-static inline const char *osmo_sccp_timer_name(enum osmo_sccp_timer val)
-{ return get_value_string(osmo_sccp_timer_names, val); }
-
-/* an instance of the SCCP stack */
-struct osmo_sccp_instance {
-	/* entry in global list of ss7 instances */
-	struct llist_head list;
-	/* rbtree root of 'struct sccp_connection' in this instance */
-	struct rb_root connections;
-	/* list of SCCP users in this instance */
-	struct llist_head users;
-	/* routing context to be used in all outbound messages */
-	uint32_t route_ctx;
-	/* next connection ID to allocate */
-	uint32_t next_id;
-	struct osmo_ss7_instance *ss7;
-	void *priv;
-
-	struct osmo_ss7_user *ss7_user;
-
-	struct osmo_tdef *tdefs;
-
-	uint32_t max_optional_data;
-};
-struct sccp_connection *sccp_find_conn_by_id(const struct osmo_sccp_instance *inst, uint32_t id);
-#define _LOGPSCI(sci, subsys, level, fmt, args ...) \
-	_LOGSS7((sci)->ss7, subsys, level, "SCCP(rctx=%" PRIu32 ") " fmt, (sci)->route_ctx, ## args)
-#define LOGPSCI(sci, level, fmt, args ...) \
-	_LOGPSCI(sci, DLSCCP, level, fmt, ## args)
-
-
 extern int DSCCP;
 
 struct xua_msg;
 
-struct osmo_sccp_user *
-sccp_user_find(struct osmo_sccp_instance *inst, uint16_t ssn, uint32_t pc);
+struct sccp_connection *sccp_find_conn_by_id(const struct osmo_sccp_instance *inst, uint32_t id);
 
 /* Message from SCOC -> SCRC */
 int sccp_scrc_rx_scoc_conn_msg(struct osmo_sccp_instance *inst,
@@ -103,8 +51,6 @@ void sccp_scoc_rx_from_scrc(struct osmo_sccp_instance *inst,
 			    struct xua_msg *xua);
 void sccp_scoc_rx_scrc_rout_fail(struct osmo_sccp_instance *inst,
 				 struct xua_msg *xua, uint32_t cause);
-
-void sccp_scoc_flush_connections(struct osmo_sccp_instance *inst);
 
 /* Message from SCRC -> SCLC */
 int sccp_sclc_rx_from_scrc(struct osmo_sccp_instance *inst,

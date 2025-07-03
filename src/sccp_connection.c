@@ -40,6 +40,7 @@
 #include <osmocom/sigtran/sccp_helpers.h>
 #include <osmocom/sccp/sccp_types.h>
 
+#include "sccp_instance.h"
 #include "sccp_internal.h"
 #include "sccp_connection.h"
 #include "sccp_scoc_fsm.h"

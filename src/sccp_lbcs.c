@@ -33,6 +33,7 @@
 #include <osmocom/sccp/sccp_types.h>
 
 #include "xua_internal.h"
+#include "sccp_instance.h"
 #include "sccp_internal.h"
 #include "sccp_user.h"
 

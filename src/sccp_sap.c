@@ -29,6 +29,7 @@
 #include "sccp_connection.h"
 #include "sccp_scoc_fsm.h"
 #include "sccp_internal.h"
+#include "sccp_instance.h"
 #include "sccp_user.h"
 
 const struct value_string osmo_scu_prim_type_names[] = {

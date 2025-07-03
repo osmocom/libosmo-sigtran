@@ -34,6 +34,7 @@
 #include <osmocom/sigtran/sccp_helpers.h>
 
 #include "ss7_internal.h"
+#include "sccp_instance.h"
 #include "sccp_internal.h"
 #include "sccp_user.h"
 
