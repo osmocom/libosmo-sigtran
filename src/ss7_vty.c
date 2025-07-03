@@ -1334,7 +1334,7 @@ static void write_one_cs7(struct vty *vty, struct osmo_ss7_instance *inst, bool 
 	llist_for_each_entry(as, &inst->as_list, list)
 		ss7_vty_write_one_as(vty, as, show_dyn_config);
 
-	/* now dump everything that is relevent for the SG role */
+	/* now dump everything that is relevant for the SG role */
 	if (cs7_role == CS7_ROLE_SG) {
 
 		/* dump routes, as their target ASs exist */

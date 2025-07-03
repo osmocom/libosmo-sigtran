@@ -167,7 +167,7 @@ static void xua_snm_srm_pc_available_single(struct osmo_ss7_as *as, uint32_t pc,
 	rt = ss7_route_table_find_route_by_dpc_mask_as(s7i->rtable_system, pc, 0xffffff, as, true);
 	if (!rt) {
 		/* No dynamic fully qualified route found. Add dynamic fully
-		 * squalified route and mark it as (un)available: */
+		 * qualified route and mark it as (un)available: */
 		rt = ss7_route_create(s7i->rtable_system, pc, 0xffffff, true, as->cfg.name);
 		if (!rt) {
 			LOGPAS(as, DLSS7, LOGL_ERROR, "Unable to create dynamic route for pc=%u=%s status=%s\n",
