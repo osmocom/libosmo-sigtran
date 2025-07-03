@@ -38,6 +38,7 @@
 #include <osmocom/sccp/sccp_types.h>
 
 #include "sccp_internal.h"
+#include "sccp_user.h"
 #include "xua_internal.h"
 #include "ss7_as.h"
 #include "ss7_asp.h"

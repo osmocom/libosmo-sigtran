@@ -25,6 +25,12 @@
 
 #include <osmocom/sigtran/sccp_sap.h>
 
+#include "ss7_instance.h"
+#include "sccp_connection.h"
+#include "sccp_scoc_fsm.h"
+#include "sccp_internal.h"
+#include "sccp_user.h"
+
 const struct value_string osmo_scu_prim_type_names[] = {
 	{ OSMO_SCU_PRIM_N_CONNECT,		"N-CONNECT" },
 	{ OSMO_SCU_PRIM_N_DATA,			"N-DATA" },
@@ -166,3 +172,106 @@ const struct value_string osmo_sccp_ssn_names[] = {
 	{ OSMO_SCCP_SSN_BSSAP,		"BSSAP" },
 	{ 0, NULL }
 };
+
+/* get the Connection ID of the given SCU primitive */
+static uint32_t scu_prim_conn_id(const struct osmo_scu_prim *prim)
+{
+	switch (prim->oph.primitive) {
+	case OSMO_SCU_PRIM_N_CONNECT:
+		return prim->u.connect.conn_id;
+	case OSMO_SCU_PRIM_N_DATA:
+		return prim->u.data.conn_id;
+	case OSMO_SCU_PRIM_N_DISCONNECT:
+		return prim->u.disconnect.conn_id;
+	case OSMO_SCU_PRIM_N_RESET:
+		return prim->u.reset.conn_id;
+	default:
+		return 0;
+	}
+}
+
+/* map from SCU-primitives to SCOC FSM events */
+static const struct osmo_prim_event_map scu_scoc_event_map[] = {
+	{ SCCP_SAP_USER, OSMO_SCU_PRIM_N_CONNECT, PRIM_OP_REQUEST,
+		SCOC_E_SCU_N_CONN_REQ },
+	{ SCCP_SAP_USER, OSMO_SCU_PRIM_N_CONNECT, PRIM_OP_RESPONSE,
+		SCOC_E_SCU_N_CONN_RESP },
+	{ SCCP_SAP_USER, OSMO_SCU_PRIM_N_DATA, PRIM_OP_REQUEST,
+		SCOC_E_SCU_N_DATA_REQ },
+	{ SCCP_SAP_USER, OSMO_SCU_PRIM_N_DISCONNECT, PRIM_OP_REQUEST,
+		SCOC_E_SCU_N_DISC_REQ },
+	{ SCCP_SAP_USER, OSMO_SCU_PRIM_N_EXPEDITED_DATA, PRIM_OP_REQUEST,
+		SCOC_E_SCU_N_EXP_DATA_REQ },
+	{ 0, 0, 0, OSMO_NO_EVENT }
+};
+
+/*! Main entrance function for primitives from SCCP User.
+ * The caller is required to free oph->msg, otherwise the same as osmo_sccp_user_sap_down().
+ *  \param[in] scu SCCP User sending us the primitive
+ *  \param[in] oph Osmocom primitive sent by the user
+ *  \returns 0 on success; negative on error */
+int osmo_sccp_user_sap_down_nofree(struct osmo_sccp_user *scu, struct osmo_prim_hdr *oph)
+{
+	struct osmo_scu_prim *prim = (struct osmo_scu_prim *) oph;
+	struct osmo_sccp_instance *inst = scu->inst;
+	struct sccp_connection *conn;
+	int rc = 0;
+	int event;
+
+	LOGPSCU(scu, LOGL_DEBUG, "Received SCCP User Primitive (%s)\n",
+		osmo_scu_prim_name(&prim->oph));
+
+	switch (OSMO_PRIM_HDR(&prim->oph)) {
+	case OSMO_PRIM(OSMO_SCU_PRIM_N_UNITDATA, PRIM_OP_REQUEST):
+	/* other CL primitives? */
+		/* Connectionless by-passes this altogether */
+		return sccp_sclc_user_sap_down_nofree(scu, oph);
+	case OSMO_PRIM(OSMO_SCU_PRIM_N_CONNECT, PRIM_OP_REQUEST):
+		/* Allocate new connection structure */
+		conn = sccp_conn_alloc(scu, prim->u.connect.conn_id);
+		if (!conn) {
+			/* FIXME: inform SCCP user with proper reply */
+			LOGPSCU(scu, LOGL_ERROR, "Cannot create conn-id for primitive %s\n",
+				osmo_scu_prim_name(&prim->oph));
+			return rc;
+		}
+		break;
+	case OSMO_PRIM(OSMO_SCU_PRIM_N_CONNECT, PRIM_OP_RESPONSE):
+	case OSMO_PRIM(OSMO_SCU_PRIM_N_DATA, PRIM_OP_REQUEST):
+	case OSMO_PRIM(OSMO_SCU_PRIM_N_DISCONNECT, PRIM_OP_REQUEST):
+	case OSMO_PRIM(OSMO_SCU_PRIM_N_RESET, PRIM_OP_REQUEST):
+		/* Resolve existing connection structure */
+		conn = sccp_find_conn_by_id(inst, scu_prim_conn_id(prim));
+		if (!conn) {
+			/* FIXME: inform SCCP user with proper reply */
+			LOGPSCU(scu, LOGL_ERROR, "Received unknown conn-id %u for primitive %s\n",
+				scu_prim_conn_id(prim), osmo_scu_prim_name(&prim->oph));
+			return rc;
+		}
+		break;
+	default:
+		LOGPSCU(scu, LOGL_ERROR, "Received unknown primitive %s\n",
+			osmo_scu_prim_name(&prim->oph));
+		return -1;
+	}
+
+	/* Map from primitive to event */
+	event = osmo_event_for_prim(oph, scu_scoc_event_map);
+
+	/* Dispatch event into connection */
+	return osmo_fsm_inst_dispatch(conn->fi, event, prim);
+}
+
+/*! Main entrance function for primitives from SCCP User.
+ * Implies a msgb_free(oph->msg), otherwise the same as osmo_sccp_user_sap().
+ *  \param[in] scu SCCP User sending us the primitive
+ *  \param[in] oph Osmocom primitive sent by the user
+ *  \returns 0 on success; negative on error */
+int osmo_sccp_user_sap_down(struct osmo_sccp_user *scu, struct osmo_prim_hdr *oph)
+{
+	struct osmo_scu_prim *prim = (struct osmo_scu_prim *) oph;
+	struct msgb *msg = prim->oph.msg;
+	int rc = osmo_sccp_user_sap_down_nofree(scu, oph);
+	msgb_free(msg);
+	return rc;
+}

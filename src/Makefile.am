@@ -3,7 +3,10 @@ AM_CFLAGS=-Wall $(LIBOSMOCORE_CFLAGS) $(LIBOSMOGSM_CFLAGS) $(LIBOSMOVTY_CFLAGS) 
 		$(LIBOSMONETIF_CFLAGS)
 
 noinst_HEADERS = \
+	sccp_connection.h \
+	sccp_scoc_fsm.h \
 	sccp_internal.h \
+	sccp_user.h \
 	ss7_as.h \
 	ss7_asp.h \
 	ss7_asp_peer.h \
@@ -43,6 +46,7 @@ libosmo_sigtran_la_SOURCES = \
 	ipa.c \
 	m3ua.c \
 	sccp2sua.c \
+	sccp_connection.c \
 	sccp_helpers.c \
 	sccp_lbcs.c \
 	sccp_sap.c \
@@ -50,6 +54,7 @@ libosmo_sigtran_la_SOURCES = \
 	sccp_scmg.c \
 	sccp_scrc.c \
 	sccp_scoc.c \
+	sccp_scoc_fsm.c \
 	sccp_types.c \
 	sccp_user.c \
 	sccp_vty.c \

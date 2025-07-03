@@ -36,6 +36,7 @@
 #include "xua_internal.h"
 #include "ss7_internal.h"
 #include "sccp_internal.h"
+#include "sccp_user.h"
 
 /* ITU-T Q.714 5.3.3 Subsystem allowed */
 void sccp_scmg_rx_ssn_allowed(struct osmo_sccp_instance *inst, uint32_t dpc, uint32_t ssn, uint32_t smi)

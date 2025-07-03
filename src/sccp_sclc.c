@@ -59,6 +59,7 @@
 #include "xua_internal.h"
 #include "ss7_internal.h"
 #include "sccp_internal.h"
+#include "sccp_user.h"
 
 /* generate a 'struct xua_msg' of requested type from primitive data */
 static struct xua_msg *xua_gen_msg_cl(uint32_t event,

@@ -34,6 +34,7 @@
 
 #include "xua_internal.h"
 #include "sccp_internal.h"
+#include "sccp_user.h"
 
 /* perform a "local broadcast" of a N-PCSTATE.ind */
 void sccp_lbcs_local_bcast_pcstate(struct osmo_sccp_instance *inst,

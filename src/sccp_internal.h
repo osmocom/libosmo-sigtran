@@ -11,9 +11,11 @@
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <osmocom/sigtran/protocol/mtp.h>
 
+#include "ss7_user.h"
+
 #define SCCP_STR "Signalling Connection Control Part\n"
 
-#include "ss7_user.h"
+struct xua_msg;
 
 /* SCCP addressbook */
 extern struct llist_head sccp_address_book_global;
@@ -71,38 +73,12 @@ struct osmo_sccp_instance {
 
 	uint32_t max_optional_data;
 };
+struct sccp_connection *sccp_find_conn_by_id(const struct osmo_sccp_instance *inst, uint32_t id);
 #define _LOGPSCI(sci, subsys, level, fmt, args ...) \
 	_LOGSS7((sci)->ss7, subsys, level, "SCCP(rctx=%" PRIu32 ") " fmt, (sci)->route_ctx, ## args)
 #define LOGPSCI(sci, level, fmt, args ...) \
 	_LOGPSCI(sci, DLSCCP, level, fmt, ## args)
 
-
-struct osmo_sccp_user {
-	/*! \brief entry in list of sccp users of \ref osmo_sccp_instance */
-	struct llist_head list;
-	/*! \brief pointer back to SCCP instance */
-	struct osmo_sccp_instance *inst;
-	/*! \brief human-readable name of this user */
-	char *name;
-
-	/*! \brief SSN and/or point code to which we are bound */
-	uint16_t ssn;
-	uint32_t pc;
-
-	/* set if we are a server */
-	struct llist_head links;
-
-	/* user call-back function in case of incoming primitives */
-	osmo_prim_cb prim_cb;
-	void *priv;
-
-	/* Application Server FSM Instance */
-	struct osmo_fsm_inst *as_fi;
-};
-#define _LOGPSCU(scu, subsys, level, fmt, args ...) \
-	_LOGPSCI((scu)->inst, subsys, level, "SCU(%s) " fmt, osmo_sccp_user_name(scu), ## args)
-#define LOGPSCU(scu, level, fmt, args ...) \
-	_LOGPSCU(scu, DLSCCP, level, fmt, ## args)
 
 extern int DSCCP;
 
@@ -136,17 +112,11 @@ int sccp_sclc_rx_from_scrc(struct osmo_sccp_instance *inst,
 void sccp_sclc_rx_scrc_rout_fail(struct osmo_sccp_instance *inst,
 				 struct xua_msg *xua, uint32_t cause);
 
-int sccp_user_prim_up(struct osmo_sccp_user *scut, struct osmo_scu_prim *prim);
-
 /* SCU -> SCLC */
 int sccp_sclc_user_sap_down(struct osmo_sccp_user *scu, struct osmo_prim_hdr *oph);
 int sccp_sclc_user_sap_down_nofree(struct osmo_sccp_user *scu, struct osmo_prim_hdr *oph);
 
 struct msgb *sccp_msgb_alloc(const char *name);
-
-extern struct osmo_fsm sccp_scoc_fsm;
-
-void sccp_scoc_show_connections(struct vty *vty, struct osmo_sccp_instance *inst);
 
 void osmo_sccp_vty_write_cs7_node(struct vty *vty, const char *indent, struct osmo_sccp_instance *inst);
 

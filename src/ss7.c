@@ -48,6 +48,7 @@
 #include <osmocom/netif/ipa.h>
 #include <osmocom/netif/sctp.h>
 
+#include "sccp_scoc_fsm.h"
 #include "sccp_internal.h"
 #include "xua_internal.h"
 #include "ss7_as.h"

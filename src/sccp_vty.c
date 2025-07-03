@@ -40,9 +40,51 @@
 #include <osmocom/sccp/sccp_types.h>
 
 #include "xua_internal.h"
+#include "sccp_connection.h"
 #include "sccp_internal.h"
+#include "sccp_user.h"
 #include "ss7_instance.h"
 #include "ss7_vty.h"
+
+static void vty_show_connection(struct vty *vty, struct sccp_connection *conn)
+{
+	struct osmo_ss7_instance *s7i = conn->inst->ss7;
+	struct osmo_sccp_addr *remote_addr;
+	uint32_t local_pc = OSMO_SS7_PC_INVALID;
+
+	if (osmo_ss7_pc_is_valid(conn->user->pc))
+		local_pc = conn->user->pc;
+	else if (osmo_ss7_pc_is_valid(s7i->cfg.primary_pc))
+		local_pc = s7i->cfg.primary_pc;
+
+	if (conn->incoming)
+		remote_addr = &conn->calling_addr;
+	else
+		remote_addr = &conn->called_addr;
+
+	vty_out(vty, "%c %06x %3u %7s ", conn->incoming ? 'I' : 'O',
+		conn->conn_id, conn->user->ssn,
+		osmo_ss7_pointcode_print(s7i, local_pc));
+	vty_out(vty, "%16s %06x %3u %7s%s",
+		osmo_fsm_inst_state_name(conn->fi), conn->remote_ref, remote_addr->ssn,
+		osmo_ss7_pointcode_print(s7i, conn->remote_pc),
+		VTY_NEWLINE);
+}
+
+void sccp_show_connections(struct vty *vty, struct osmo_sccp_instance *inst)
+{
+	struct sccp_connection *conn;
+	struct rb_node *node;
+
+	vty_out(vty, "I Local              Conn.            Remote            %s", VTY_NEWLINE);
+	vty_out(vty, "O Ref    SSN PC      State            Ref    SSN PC     %s", VTY_NEWLINE);
+	vty_out(vty, "- ------ --- ------- ---------------- ------ --- -------%s", VTY_NEWLINE);
+
+	for (node = rb_first(&inst->connections); node; node = rb_next(node)) {
+		conn = container_of(node, struct sccp_connection, node);
+		vty_show_connection(vty, conn);
+	}
+}
 
 static void show_user(struct vty *vty, struct osmo_sccp_user *user)
 {
@@ -140,7 +182,7 @@ DEFUN(show_sccp_connections, show_sccp_connections_cmd,
 		return CMD_WARNING;
 	};
 
-	sccp_scoc_show_connections(vty, sccp);
+	sccp_show_connections(vty, sccp);
 
 	return CMD_SUCCESS;
 }

@@ -35,6 +35,7 @@
 
 #include "ss7_internal.h"
 #include "sccp_internal.h"
+#include "sccp_user.h"
 
 #define SCU_MSG_SIZE		2048
 #define SCU_MSG_HEADROOM	512
