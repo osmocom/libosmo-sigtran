@@ -75,7 +75,7 @@ enum osmo_ss7_asp_protocol parse_asp_proto(const char *protocol)
  * Core CS7 Configuration
  ***********************************************************************/
 
-enum cs7_role_t cs7_role;
+static enum cs7_role_t cs7_role;
 void *g_ctx;
 
 static struct cmd_node cs7_node = {
