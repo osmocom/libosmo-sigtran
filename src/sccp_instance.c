@@ -284,16 +284,6 @@ osmo_sccp_instance_create(struct osmo_ss7_instance *ss7, void *priv)
 	return inst;
 }
 
-static void sccp_flush_connections(struct osmo_sccp_instance *inst)
-{
-	struct rb_node *node;
-	while ((node = rb_first(&inst->connections))) {
-		struct sccp_connection *conn = container_of(node, struct sccp_connection, node);
-		sccp_conn_free(conn);
-	}
-
-}
-
 void osmo_sccp_instance_destroy(struct osmo_sccp_instance *inst)
 {
 	struct osmo_sccp_user *scu, *scu2;
@@ -306,7 +296,7 @@ void osmo_sccp_instance_destroy(struct osmo_sccp_instance *inst)
 	llist_for_each_entry_safe(scu, scu2, &inst->users, list) {
 		osmo_sccp_user_unbind(scu);
 	}
-	sccp_flush_connections(inst);
+	OSMO_ASSERT(RB_EMPTY_ROOT(&inst->connections)); /* assert is empty */
 	llist_del(&inst->list);
 	talloc_free(inst);
 }

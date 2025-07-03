@@ -37,6 +37,7 @@
 #include <osmocom/sigtran/sccp_helpers.h>
 #include <osmocom/sccp/sccp_types.h>
 
+#include "sccp_connection.h"
 #include "sccp_instance.h"
 #include "sccp_internal.h"
 #include "sccp_user.h"
@@ -64,15 +65,38 @@ struct osmo_sccp_user *sccp_user_alloc(struct osmo_sccp_instance *inst, const ch
 	return scu;
 }
 
+static void sccp_user_flush_connections(struct osmo_sccp_user *scu)
+{
+	struct osmo_sccp_instance *inst = scu->inst;
+	struct rb_node *node;
+
+start:
+	for (node = rb_first(&inst->connections); node; node = rb_next(node)) {
+		struct sccp_connection *conn = container_of(node, struct sccp_connection, node);
+		if (conn->user == scu) {
+			sccp_conn_free(conn);
+			/* node has been freed, rbtree has been changed, start again: */
+			goto start;
+		}
+	}
+}
+
+void sccp_user_free(struct osmo_sccp_user *scu)
+{
+	if (!scu)
+		return;
+	sccp_user_flush_connections(scu);
+	llist_del(&scu->list);
+	talloc_free(scu);
+}
+
 /*! \brief Unbind a given SCCP user
  *  \param[in] scu SCCP User which is to be un-bound. Will be destroyed
  *  		at the time this function returns. */
 void osmo_sccp_user_unbind(struct osmo_sccp_user *scu)
 {
 	LOGPSCU(scu, LOGL_INFO, "Unbinding user\n");
-	/* FIXME: free/release all connections held by this user? */
-	llist_del(&scu->list);
-	talloc_free(scu);
+	sccp_user_free(scu);
 }
 
 void osmo_sccp_user_set_priv(struct osmo_sccp_user *scu, void *priv)
