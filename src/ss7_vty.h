@@ -18,6 +18,7 @@ enum cs7_role_t {
 };
 
 extern void *g_ctx;
+extern enum cs7_role_t cs7_role;
 extern const struct value_string ipproto_vals[];
 
 #define CS7_STR	"ITU-T Signaling System 7\n"

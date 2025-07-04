@@ -581,6 +581,18 @@ int ss7_vty_node_as_go_parent(struct vty *vty)
 	struct osmo_ss7_as *as = vty->index;
 	vty->node = L_CS7_NODE;
 	vty->index = as->inst;
+
+	/* Config sanity checks: */
+
+	/* AS in ASP role should be configured with a local PC which they can
+	 * then announce using RKM.
+	 * Still, allow STPs to have AS(P) configured in an ASP mode to talk to a
+	 * peer STP by announcing remove PCs. */
+	if (cs7_role == CS7_ROLE_ASP &&
+	    ss7_as_get_local_role(as) == OSMO_SS7_ASP_ROLE_ASP &&
+	    !osmo_ss7_pc_is_local(as->inst, as->cfg.routing_key.pc))
+		vty_out(vty, "%% AS with local role ASP should have a local PC configured in its routing-key. Fix your config!%s", VTY_NEWLINE);
+
 	return 0;
 }
 
