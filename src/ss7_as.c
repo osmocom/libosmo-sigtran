@@ -274,6 +274,27 @@ unsigned int osmo_ss7_as_count_asp(const struct osmo_ss7_as *as)
 	return cnt;
 }
 
+/* Determine which role (SG/ASP/IPSP) we operate in.
+ * return enum osmo_ss7_asp_role on success, negative otherwise. */
+int ss7_as_get_local_role(const struct osmo_ss7_as *as)
+{
+	unsigned int i;
+
+	/* this is a bit tricky. "osmo_ss7_as" has no configuration of a role,
+	 * only the ASPs have.  As they all must be of the same role, let's simply
+	 * find the first one and return its role */
+	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
+		struct osmo_ss7_asp *asp = as->cfg.asps[i];
+
+		if (!asp)
+			continue;
+
+		return asp->cfg.role;
+	}
+	/* No ASPs associated to this AS yet? */
+	return -1;
+}
+
 /*! Determine if given AS is in the active state.
  *  \param[in] as Application Server.
  *  \returns true in case as is active; false otherwise. */

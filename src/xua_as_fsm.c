@@ -150,26 +150,6 @@ static int as_notify_all_asp(struct osmo_ss7_as *as, struct osmo_xlm_prim_notify
 	return sent;
 }
 
-/* determine which role (SG/ASP/IPSP) we operate in */
-static int get_local_role(struct osmo_ss7_as *as)
-{
-	unsigned int i;
-
-	/* this is a bit tricky. "osmo_ss7_as" has no configuration of a role,
-	 * only the ASPs have.  As they all must be of the same role, let's simply
-	 * find the first one and return its role */
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		struct osmo_ss7_asp *asp = as->cfg.asps[i];
-
-		if (!asp)
-			continue;
-
-		return asp->cfg.role;
-	}
-	/* we don't have any ASPs in this AS? Strange */
-	return -1;
-}
-
 static struct msgb *xua_as_encode_msg(const struct osmo_ss7_as *as, struct xua_msg *xua)
 {
 	switch (as->cfg.proto) {
@@ -537,7 +517,7 @@ static void xua_as_fsm_onenter(struct osmo_fsm_inst *fi, uint32_t old_state)
 
 	bool became_available = (old_state != XUA_AS_S_ACTIVE && fi->state == XUA_AS_S_ACTIVE);
 	bool became_unavailable = (old_state == XUA_AS_S_ACTIVE && fi->state != XUA_AS_S_ACTIVE);
-	int role = get_local_role(xafp->as);
+	int role = ss7_as_get_local_role(xafp->as);
 
 	switch (role) {
 	case OSMO_SS7_ASP_ROLE_ASP:
