@@ -387,7 +387,8 @@ OsmoSTP(config-cs7-as)# list
   routing-key RCONTEXT DPC si (aal2|bicc|b-isup|h248|isup|sat-isup|sccp|tup)
   routing-key RCONTEXT DPC ssn SSN
   routing-key RCONTEXT DPC si (aal2|bicc|b-isup|h248|isup|sat-isup|sccp|tup) ssn SSN
-  point-code override dpc PC
+  point-code override (opc|dpc) PC
+  no point-code override (opc|dpc)
   point-code override patch-sccp (disabled|both)
 
 OsmoSTP(config-cs7-as)# ?
@@ -406,6 +407,7 @@ OsmoSTP(config-cs7-as)# ?
 OsmoSTP(config-cs7-as)# no ?
   asp           Specify ASP to be removed from this AS
   traffic-mode  Remove explicit traffic mode of operation of this AS
+  point-code    Point Code Specific Features
 
 OsmoSTP(config-cs7-as)# do show cs7 instance 0 as all
                           Routing    Routing Key                          Cic   Cic   Traffic

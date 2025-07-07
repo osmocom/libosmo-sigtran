@@ -104,6 +104,9 @@ struct osmo_ss7_as {
 		uint32_t recovery_timeout_msec;
 		uint8_t qos_class;
 		struct {
+			bool opc_enabled;
+			bool dpc_enabled;
+			uint32_t opc;
 			uint32_t dpc;
 			enum osmo_ss7_as_patch_sccp_mode sccp_mode;
 		} pc_override;

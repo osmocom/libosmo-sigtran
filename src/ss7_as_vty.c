@@ -344,18 +344,19 @@ DEFUN_ATTR(as_rout_key_si_ssn, as_rout_key_si_ssn_cmd,
 }
 
 DEFUN_ATTR(as_pc_override, as_pc_override_cmd,
-	   "point-code override dpc PC",
+	   "point-code override (opc|dpc) PC",
 	   "Point Code Specific Features\n"
-	   "Override (force) a point-code to hard-coded value\n"
-	   "Override Source Point Code\n"
-	   "Override Destination Point Code\n"
+	   "Override (force) a point-code of messages received at the AS\n"
+	   "Override Source Point Code of received messages\n"
+	   "Override Destination Point Code of received messages\n"
 	   "New Point Code\n",
 	   CMD_ATTR_IMMEDIATE)
 {
 	struct osmo_ss7_as *as = vty->index;
-	int pc = osmo_ss7_pointcode_parse(as->inst, argv[0]);
+	bool change_dpc = !strcmp(argv[0], "dpc");
+	int pc = osmo_ss7_pointcode_parse(as->inst, argv[1]);
 	if (pc < 0) {
-		vty_out(vty, "Invalid point code (%s)%s", argv[0], VTY_NEWLINE);
+		vty_out(vty, "Invalid point code (%s)%s", argv[1], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -365,8 +366,45 @@ DEFUN_ATTR(as_pc_override, as_pc_override_cmd,
 		return CMD_WARNING;
 	}
 
-	as->cfg.pc_override.dpc = pc;
+	if (change_dpc) {
+		if (cs7_role == CS7_ROLE_ASP) {
+			vty_out(vty, "%% Overriding the DPC of AS '%s' in role ASP makes no sense. "
+				"Assuming user meant 'point-code override opc %s' to stay backway-comaptible. "
+				"Please update your config!%s",
+				as->cfg.name, argv[1], VTY_NEWLINE);
+			as->cfg.pc_override.opc_enabled = true;
+			as->cfg.pc_override.opc = pc;
+			return CMD_SUCCESS;
+		}
+		as->cfg.pc_override.dpc_enabled = true;
+		as->cfg.pc_override.dpc = pc;
+	} else {
+		as->cfg.pc_override.opc_enabled = true;
+		as->cfg.pc_override.opc = pc;
+	}
 
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(as_no_pc_override, as_no_pc_override_cmd,
+	   "no point-code override (opc|dpc)",
+	   NO_STR
+	   "Point Code Specific Features\n"
+	   "Override (force) a point-code of messages received at the AS\n"
+	   "Override Source Point Code of received messages\n"
+	   "Override Destination Point Code of received messages\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct osmo_ss7_as *as = vty->index;
+	bool change_dpc = !strcmp(argv[0], "dpc");
+
+	if (change_dpc) {
+		as->cfg.pc_override.dpc_enabled = false;
+		as->cfg.pc_override.dpc = 0;
+	} else {
+		as->cfg.pc_override.opc_enabled = false;
+		as->cfg.pc_override.opc = 0;
+	}
 	return CMD_SUCCESS;
 }
 
@@ -450,7 +488,10 @@ void ss7_vty_write_one_as(struct vty *vty, struct osmo_ss7_as *as, bool show_dyn
 		vty_out(vty, " ssn %u", rkey->ssn);
 	vty_out(vty, "%s", VTY_NEWLINE);
 
-	if (as->cfg.pc_override.dpc)
+	if (as->cfg.pc_override.opc_enabled)
+		vty_out(vty, "  point-code override opc %s%s",
+			osmo_ss7_pointcode_print(as->inst, as->cfg.pc_override.opc), VTY_NEWLINE);
+	if (as->cfg.pc_override.dpc_enabled)
 		vty_out(vty, "  point-code override dpc %s%s",
 			osmo_ss7_pointcode_print(as->inst, as->cfg.pc_override.dpc), VTY_NEWLINE);
 
@@ -584,15 +625,30 @@ int ss7_vty_node_as_go_parent(struct vty *vty)
 
 	/* Config sanity checks: */
 
-	/* AS in ASP role should be configured with a local PC which they can
-	 * then announce using RKM.
-	 * Still, allow STPs to have AS(P) configured in an ASP mode to talk to a
-	 * peer STP by announcing remove PCs. */
-	if (cs7_role == CS7_ROLE_ASP &&
-	    ss7_as_get_local_role(as) == OSMO_SS7_ASP_ROLE_ASP &&
-	    !osmo_ss7_pc_is_local(as->inst, as->cfg.routing_key.pc))
-		vty_out(vty, "%% AS with local role ASP should have a local PC configured in its routing-key. Fix your config!%s", VTY_NEWLINE);
+	if (cs7_role == CS7_ROLE_ASP) {
+		int as_role = ss7_as_get_local_role(as);
+		/* AS in ASP role should be configured with a local PC which they can
+		* then announce using RKM.
+		* Still, allow STPs to have AS(P) configured in an ASP mode to talk to a
+		* peer STP by announcing remove PCs. */
+		if (as_role == OSMO_SS7_ASP_ROLE_ASP &&
+		    !osmo_ss7_pc_is_local(as->inst, as->cfg.routing_key.pc))
+			vty_out(vty, "%% AS '%s' with local role ASP should have a local PC configured in its "
+				"routing-key. Fix your config!%s", as->cfg.name, VTY_NEWLINE);
 
+		if (as->cfg.proto == OSMO_SS7_ASP_PROT_IPA) {
+			if (as_role == OSMO_SS7_ASP_ROLE_ASP &&
+			    !as->cfg.pc_override.opc_enabled)
+				vty_out(vty, "%% ipa AS '%s' with local role ASP should have a "
+					"'point-code override opc PC' configured in its routing-key. Fix your config!%s",
+					 as->cfg.name, VTY_NEWLINE);
+			if (as_role == OSMO_SS7_ASP_ROLE_SG &&
+			    !as->cfg.pc_override.dpc_enabled)
+				vty_out(vty, "%% ipa AS '%s' with local role SG should have a "
+					"'point-code override dpc PC' configured in its routing-key. Fix your config!%s",
+					 as->cfg.name, VTY_NEWLINE);
+		}
+	}
 	return 0;
 }
 
@@ -619,5 +675,6 @@ void ss7_vty_init_node_as(void)
 	install_lib_element(L_CS7_AS_NODE, &as_rout_key_ssn_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_rout_key_si_ssn_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_pc_override_cmd);
+	install_lib_element(L_CS7_AS_NODE, &as_no_pc_override_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_pc_patch_sccp_cmd);
 }

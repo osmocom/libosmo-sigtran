@@ -265,25 +265,40 @@ static int ipa_rx_msg_sccp(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t s
 	 * information inside the non-CR/CC connection oriented
 	 * messages.
 	 *
-	 * The only other alternative we have is to simply have a
-	 * STP (server) side configuration that specifies which point
-	 * code those messages are to be routed to, and then use this
-	 * 'override DPC' in the routing decision.  We could do the same
-	 * for the source point code to ensure responses are routed back
-	 * to us.  This is all quite ugly, but then what can we do :/
+	 * The only other alternative we have is to:
+	 *
+	 * ASP role: we assume whatever was received at the ASP/AS was meant to
+	 * reach us and hence set the DPC to the PC configured in the
+	 * 'routing-key'. In this case the 'override OPC' is used so that upper
+	 * layers can find out where it came from, so it can answer back if needed.
+	 *
+	 * SG role (STP): By default, the AS associated with the ASP assumes the
+	 * OPC of the message received was transmitted to us from the PC
+	 * configured in the 'routing-key'. If set, 'override OPC' can be used
+	 * to also tweak the originating PC, which can be useful in setups with
+	 * traffic coming from another STP where want to set eg. the OPC to the
+	 * PC of the originating AS. In this case the 'override DPC'.
+	 * allows to find out where those messages are to be routed to in the
+	 * routing decision.
+	 *
+	 * This is all quite ugly, but then what can we do :/
 	 */
 
 	/* First, determine the DPC and OPC to use */
-	if (asp->cfg.is_server) {
-		/* Source: the PC of the routing key */
-		opc = as->cfg.routing_key.pc;
-		/* Destination: Based on VTY config */
-		dpc = as->cfg.pc_override.dpc;
-	} else {
+	if (asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP) {
 		/* Source: Based on VTY config */
-		opc = as->cfg.pc_override.dpc;
+		opc = as->cfg.pc_override.opc;
 		/* Destination: PC of the routing key */
 		dpc = as->cfg.routing_key.pc;
+	} else {
+		/* Source: if set, based on VTY config,
+		 * otherwise by default the PC of the routing key */
+		if (as->cfg.pc_override.opc_enabled)
+			opc = as->cfg.pc_override.opc;
+		else
+			opc = as->cfg.routing_key.pc;
+		/* Destination: Based on VTY config */
+		dpc = as->cfg.pc_override.dpc;
 	}
 
 	/* Second, patch this into the SCCP message */
