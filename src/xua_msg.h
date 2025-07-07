@@ -74,6 +74,7 @@ void osmo_xua_msg_tall_ctx_init(void *ctx);
 
 struct xua_msg *xua_msg_alloc(void);
 void xua_msg_free(struct xua_msg *msg);
+struct xua_msg *xua_msg_copy(const struct xua_msg *xua_in);
 
 int xua_msg_add_data(struct xua_msg *msg, uint16_t tag, uint16_t len, const uint8_t *dat);
 int xua_msg_add_u32_data(struct xua_msg *msg, uint16_t tag, uint16_t len, const uint8_t *dat);

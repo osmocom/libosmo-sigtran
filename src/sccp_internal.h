@@ -58,6 +58,9 @@ int sccp_sclc_rx_from_scrc(struct osmo_sccp_instance *inst,
 void sccp_sclc_rx_scrc_rout_fail(struct osmo_sccp_instance *inst,
 				 struct xua_msg *xua, uint32_t cause);
 
+/* Route Failure from SCRX -> SCOC or SCLC */
+void sccp_rout_fail_enqueue(struct osmo_sccp_instance *inst, const struct xua_msg *xua, uint32_t cause, bool scoc);
+
 /* SCU -> SCLC */
 int sccp_sclc_user_sap_down(struct osmo_sccp_user *scu, struct osmo_prim_hdr *oph);
 int sccp_sclc_user_sap_down_nofree(struct osmo_sccp_user *scu, struct osmo_prim_hdr *oph);

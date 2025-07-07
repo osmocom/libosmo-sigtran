@@ -262,16 +262,14 @@ static int scrc_node_2(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 	if (!dpc_accessible(inst, called.pc)) {
 		/* Error: MTP Failure */
 		/* Routing Failure SCRC -> SCOC */
-		sccp_scoc_rx_scrc_rout_fail(inst, xua,
-				SCCP_RETURN_CAUSE_MTP_FAILURE);
+		sccp_rout_fail_enqueue(inst, xua, SCCP_RETURN_CAUSE_MTP_FAILURE, true);
 		return 0;
 	}
 	/* Is SCCP available? */
 	if (!sccp_available(inst, &called)) {
 		/* Error: SCCP Failure */
 		/* Routing Failure SCRC -> SCOC */
-		sccp_scoc_rx_scrc_rout_fail(inst, xua,
-				SCCP_RETURN_CAUSE_SCCP_FAILURE);
+		sccp_rout_fail_enqueue(inst, xua, SCCP_RETURN_CAUSE_SCCP_FAILURE, true);
 		return 0;
 	}
 	return scrc_node_12(inst, xua, &called);
@@ -305,10 +303,10 @@ static int scrc_node_4(struct osmo_sccp_instance *inst,
 	/* TODO: Routing Failure SCRC -> OMAP */
 	if (sua_is_connectionless(xua)) {
 		/* Routing Failure SCRC -> SCLC */
-		sccp_sclc_rx_scrc_rout_fail(inst, xua, return_cause);
+		sccp_rout_fail_enqueue(inst, xua, return_cause, false);
 	} else {
 		/* Routing Failure SCRC -> SCOC */
-		sccp_scoc_rx_scrc_rout_fail(inst, xua, return_cause);
+		sccp_rout_fail_enqueue(inst, xua, return_cause, true);
 	}
 	return 0;
 }
@@ -335,8 +333,7 @@ static int scrc_translate_node_9(struct osmo_sccp_instance *inst,
 		LOGPSCI(inst, LOGL_NOTICE, "GT Routing not implemented yet\n");
 #if 1
 		/* Prevent endless recursion, see OS#2666. */
-		sccp_sclc_rx_scrc_rout_fail(inst, xua,
-			SCCP_RETURN_CAUSE_SUBSYSTEM_FAILURE);
+		sccp_rout_fail_enqueue(inst, xua, SCCP_RETURN_CAUSE_SUBSYSTEM_FAILURE, false);
 		return 0;
 #else
 		/* Node 7 (Sheet 5) */
@@ -386,12 +383,10 @@ static int scrc_node_6(struct osmo_sccp_instance *inst,
 		/* TODO: SCRC -> SSPC */
 		if (sua_is_connectionless(xua)) {
 			/* Routing Failure SCRC -> SCLC */
-			sccp_sclc_rx_scrc_rout_fail(inst, xua,
-				SCCP_RETURN_CAUSE_SUBSYSTEM_FAILURE);
+			sccp_rout_fail_enqueue(inst, xua, SCCP_RETURN_CAUSE_SUBSYSTEM_FAILURE, false);
 		} else {
 			/* Routing Failure SCRC -> SCOC */
-			sccp_scoc_rx_scrc_rout_fail(inst, xua,
-				SCCP_RETURN_CAUSE_SUBSYSTEM_FAILURE);
+			sccp_rout_fail_enqueue(inst, xua, SCCP_RETURN_CAUSE_SUBSYSTEM_FAILURE, true);
 		}
 		return 0;
 	}

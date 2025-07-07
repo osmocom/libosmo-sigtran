@@ -207,6 +207,52 @@ osmo_sccp_user_bind(struct osmo_sccp_instance *inst, const char *name,
 	return sccp_user_bind_pc(inst, name, prim_cb, ssn, OSMO_SS7_PC_INVALID);
 }
 
+/* Timer cb used to transmit queued Routing Failures asynchronously up the stack */
+static void rout_fail_pending_cb(void *_inst)
+{
+	struct osmo_sccp_instance *inst = _inst;
+	struct sccp_pending_rout_fail *prf;
+
+	while ((prf = llist_first_entry_or_null(&inst->rout_fail_pending.queue, struct sccp_pending_rout_fail, list))) {
+		struct xua_msg *xua = prf->xua;
+		uint32_t cause = prf->cause;
+		bool scoc = prf->scoc;
+		llist_del(&prf->list);
+		talloc_free(prf);
+		if (scoc) /* Routing Failure SCRC -> SCOC */
+			sccp_scoc_rx_scrc_rout_fail(inst, xua, cause);
+		else /* Routing Failure SCRC -> SCLC */
+			sccp_sclc_rx_scrc_rout_fail(inst, xua, cause);
+		xua_msg_free(xua);
+	}
+}
+
+/* Enqueue Routing Failure to submit it asynchronously to upper layers.
+ * xua_msg is copied.
+ * scoc: true if it's for SCOC, false if it's for SCLC. */
+void sccp_rout_fail_enqueue(struct osmo_sccp_instance *inst, const struct xua_msg *xua, uint32_t cause, bool scoc)
+{
+	bool queue_was_empty = llist_empty(&inst->rout_fail_pending.queue);
+	struct sccp_pending_rout_fail *prf;
+
+	LOGPSCI(inst, LOGL_DEBUG, "Enqueuing SCRC Routing Failure (%s) for %s message %s\n",
+		osmo_sccp_return_cause_name(cause),
+		scoc ? "CO" : "CL",
+		xua_hdr_dump(xua, &xua_dialect_sua));
+
+	prf = talloc(inst, struct sccp_pending_rout_fail);
+	OSMO_ASSERT(prf);
+	*prf = (struct sccp_pending_rout_fail){
+		.xua = xua_msg_copy(xua),
+		.cause = cause,
+		.scoc = scoc,
+	};
+	OSMO_ASSERT(prf->xua);
+	llist_add_tail(&prf->list, &inst->rout_fail_pending.queue);
+
+	if (queue_was_empty)
+		osmo_timer_schedule(&inst->rout_fail_pending.timer, 0, 0);
+}
 
 /* prim_cb handed to MTP code for incoming MTP-TRANSFER.ind */
 static int mtp_user_prim_cb(struct osmo_prim_hdr *oph, void *ctx)
@@ -268,6 +314,9 @@ osmo_sccp_instance_create(struct osmo_ss7_instance *ss7, void *priv)
 				    sizeof(osmo_sccp_timer_defaults));
 	osmo_tdefs_reset(inst->tdefs);
 
+	osmo_timer_setup(&inst->rout_fail_pending.timer, rout_fail_pending_cb, inst);
+	INIT_LLIST_HEAD(&inst->rout_fail_pending.queue);
+
 	rc = sccp_scmg_init(inst);
 	if (rc < 0) {
 		talloc_free(inst);
@@ -297,6 +346,10 @@ void osmo_sccp_instance_destroy(struct osmo_sccp_instance *inst)
 		osmo_sccp_user_unbind(scu);
 	}
 	OSMO_ASSERT(RB_EMPTY_ROOT(&inst->connections)); /* assert is empty */
+
+	osmo_timer_del(&inst->rout_fail_pending.timer);
+	/* Note: All entries in inst->rout_fail_pending.queue are freed by talloc. */
+
 	llist_del(&inst->list);
 	talloc_free(inst);
 }

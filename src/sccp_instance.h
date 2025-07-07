@@ -35,6 +35,14 @@ extern const struct value_string osmo_sccp_timer_names[];
 static inline const char *osmo_sccp_timer_name(enum osmo_sccp_timer val)
 { return get_value_string(osmo_sccp_timer_names, val); }
 
+struct sccp_pending_rout_fail {
+	/* Item in inst->rout_fail_pending.queue: */
+	struct llist_head list;
+	struct xua_msg *xua;
+	uint32_t cause;
+	bool scoc; /* true if it's for SCOC, false if it's for SCLC. */
+};
+
 /* an instance of the SCCP stack */
 struct osmo_sccp_instance {
 	/* entry in global list of ss7 instances */
@@ -55,6 +63,12 @@ struct osmo_sccp_instance {
 	struct osmo_tdef *tdefs;
 
 	uint32_t max_optional_data;
+
+	/* Queued Routing Failures to transmit asynchronously up the stack: */
+	struct {
+		struct osmo_timer_list timer;
+		struct llist_head queue;
+	} rout_fail_pending;
 };
 
 struct osmo_sccp_user *

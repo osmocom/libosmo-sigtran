@@ -58,6 +58,19 @@ void xua_msg_free(struct xua_msg *msg)
 	talloc_free(msg);
 }
 
+struct xua_msg *xua_msg_copy(const struct xua_msg *xua_in)
+{
+	struct xua_msg_part *part;
+	struct xua_msg *xua_cpy = xua_msg_alloc();
+
+	xua_cpy->hdr = xua_in->hdr;
+	xua_cpy->mtp = xua_in->mtp;
+
+	llist_for_each_entry(part, &xua_in->headers, entry)
+		xua_msg_add_data(xua_cpy, part->tag, part->len, part->dat);
+	return xua_cpy;
+}
+
 int xua_msg_add_data(struct xua_msg *msg, uint16_t tag,
 		      uint16_t len, const uint8_t *dat)
 {
