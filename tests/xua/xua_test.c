@@ -601,8 +601,8 @@ static void test_rkm(void)
 	OSMO_ASSERT(xua_msg_get_u32(nested, M3UA_IEI_LOC_RKEY_ID) == 1);
 	OSMO_ASSERT(xua_msg_get_u32(nested, M3UA_IEI_DEST_PC) == 23);
 
-	talloc_free(nested);
-	talloc_free(xua);
+	xua_msg_free(nested);
+	xua_msg_free(xua);
 }
 
 static void test_sccp_addr_cmp(void)

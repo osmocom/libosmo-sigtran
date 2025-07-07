@@ -409,7 +409,7 @@ static void scoc_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data
 		/* Send N-DISCONNECT.ind to local user */
 		sccp_conn_scu_gen_encode_and_send(conn, event, xua,
 						  OSMO_SCU_PRIM_N_DISCONNECT, PRIM_OP_INDICATION);
-		talloc_free(xua);
+		xua_msg_free(xua);
 		/* Send RLSD to peer */
 		sccp_conn_xua_gen_relre_and_send(conn, SCCP_RELEASE_CAUSE_EXPIRATION_INACTIVE, NULL);
 		/* start release timer */
@@ -457,7 +457,7 @@ static void scoc_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data
 			/* send N-DISCONNECT.ind to user */
 			sccp_conn_scu_gen_encode_and_send(conn, event, xua,
 							  OSMO_SCU_PRIM_N_DISCONNECT, PRIM_OP_INDICATION);
-			talloc_free(xua);
+			xua_msg_free(xua);
 			/* Send RLSD to SCRC */
 			sccp_conn_xua_gen_relre_and_send(conn, SCCP_RELEASE_CAUSE_INCONSISTENT_CONN_DATA, NULL);
 			/* Start release timer */
