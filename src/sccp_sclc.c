@@ -396,6 +396,10 @@ void sccp_sclc_rx_scrc_rout_fail(struct osmo_sccp_instance *inst,
 {
 	struct xua_msg *xua_out;
 
+	LOGPSCI(inst, LOGL_NOTICE, "SCRC Routing Failure (%s) for CL message %s\n",
+		osmo_sccp_return_cause_name(cause),
+		xua_hdr_dump(xua_in, &xua_dialect_sua));
+
 	/* Figure C.12/Q.714 (Sheet 8) Node 9 */
 	switch (xua_in->hdr.msg_type) {
 	case SUA_CL_CLDT:
