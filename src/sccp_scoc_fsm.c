@@ -460,7 +460,6 @@ static void scoc_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data
 			talloc_free(xua);
 			/* Send RLSD to SCRC */
 			sccp_conn_xua_gen_relre_and_send(conn, SCCP_RELEASE_CAUSE_INCONSISTENT_CONN_DATA, NULL);
-			talloc_free(xua);
 			/* Start release timer */
 			sccp_conn_start_rel_timer(conn);
 			osmo_fsm_inst_state_chg(fi, S_DISCONN_PEND, 0, 0);
