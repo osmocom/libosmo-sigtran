@@ -232,7 +232,7 @@ void xua_snm_pc_available(struct osmo_ss7_as *as, const uint32_t *aff_pc,
 		num_rctx = ss7_asp_get_all_rctx_be(asp, rctx, ARRAY_SIZE(rctx), as);
 		/* this can happen if the given ASP is only in the AS that reports the change,
 		 * which shall be excluded */
-		if (num_rctx == 0)
+		if (num_rctx == 0 && osmo_ss7_as_has_asp(as, asp))
 			continue;
 		xua_tx_snm_available(asp, rctx, num_rctx, aff_pc, num_aff_pc, info_str, available);
 	}
