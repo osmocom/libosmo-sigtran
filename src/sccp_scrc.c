@@ -142,6 +142,7 @@ static int gen_mtp_transfer_req_xua(struct osmo_sccp_instance *inst,
 				    struct xua_msg *xua,
 				    const struct osmo_sccp_addr *called)
 {
+	struct osmo_sccp_addr calling;
 	struct osmo_ss7_route *rt;
 	struct osmo_ss7_route_label rtlabel;
 
@@ -158,6 +159,11 @@ static int gen_mtp_transfer_req_xua(struct osmo_sccp_instance *inst,
 	 * c) M2UA/M2PA or CS7: encode XUA, create MTP-TRANSFER.req
 	 *    primitive and send it via link
 	 */
+
+	if (sua_addr_parse(&calling, xua, SUA_IEI_SRC_ADDR) == 0 &&
+	    (calling.presence & OSMO_SCCP_ADDR_T_PC))
+		xua->mtp.opc = calling.pc;
+
 
 	if (called->presence & OSMO_SCCP_ADDR_T_PC)
 		xua->mtp.dpc = called->pc;
