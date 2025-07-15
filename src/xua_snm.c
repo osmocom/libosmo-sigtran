@@ -83,6 +83,21 @@ void xua_tx_snm_available(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsign
 	}
 }
 
+void xua_tx_snm_daud(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int num_rctx,
+		     const uint32_t *aff_pc, unsigned int num_aff_pc, const char *info_str)
+{
+	switch (asp->cfg.proto) {
+	case OSMO_SS7_ASP_PROT_M3UA:
+		m3ua_tx_snm_daud(asp, rctx, num_rctx, aff_pc, num_aff_pc, info_str);
+		break;
+	case OSMO_SS7_ASP_PROT_SUA:
+		sua_tx_snm_daud(asp, rctx, num_rctx, aff_pc, num_aff_pc, NULL, NULL, info_str);
+		break;
+	default:
+		break;
+	}
+}
+
 static void xua_tx_upu(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int num_rctx,
 			uint32_t dpc, uint16_t user, uint16_t cause, const char *info_str)
 {

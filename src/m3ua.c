@@ -883,7 +883,6 @@ static struct xua_msg *m3ua_encode_dava(const uint32_t *rctx, unsigned int num_r
 	return xua;
 }
 
-#if 0 /* not used so far */
 /* 3.4.3 Destination Available (DAUD) */
 static struct xua_msg *m3ua_encode_daud(const uint32_t *rctx, unsigned int num_rctx,
 					const uint32_t *aff_pc, unsigned int num_aff_pc,
@@ -895,7 +894,6 @@ static struct xua_msg *m3ua_encode_daud(const uint32_t *rctx, unsigned int num_r
 		xua->hdr.msg_type = M3UA_SNM_DAUD;
 	return xua;
 }
-#endif
 
 /* 3.4.5 Destination User Part Unavailable (DUPU) */
 static struct xua_msg *m3ua_encode_dupu(const uint32_t *rctx, unsigned int num_rctx,
@@ -973,6 +971,21 @@ void m3ua_tx_snm_congestion(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsi
 	if (info_string)
 		xua_msg_add_data(xua, M3UA_IEI_INFO_STRING, strlen(info_string)+1, (const uint8_t *) info_string);
 
+	m3ua_tx_xua_asp(asp, xua);
+}
+
+/*! Transmit SSNM DAUD message requesting [un]availability status of certain point code[s]
+ *  \param[in] asp ASP through which to transmit message. Must be ACTIVE.
+ *  \param[in] rctx array of Routing Contexts in network byte order.
+ *  \param[in] num_rctx number of rctx
+ *  \param[in] aff_pc array of 'Affected Point Code' in network byte order.
+ *  \param[in] num_aff_pc number of aff_pc
+ *  \param[in] info_string optional information string (can be NULL).
+ */
+void m3ua_tx_snm_daud(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int num_rctx,
+		      const uint32_t *aff_pc, unsigned int num_aff_pc, const char *info_string)
+{
+	struct xua_msg *xua = m3ua_encode_daud(rctx, num_rctx, aff_pc, num_aff_pc, info_string);
 	m3ua_tx_xua_asp(asp, xua);
 }
 
