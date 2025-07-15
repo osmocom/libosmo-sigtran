@@ -167,11 +167,6 @@ static int gen_mtp_transfer_req_xua(struct osmo_sccp_instance *inst,
 
 	if (called->presence & OSMO_SCCP_ADDR_T_PC)
 		xua->mtp.dpc = called->pc;
-	if (!xua->mtp.dpc) {
-		LOGPSCI(inst, LOGL_ERROR, "MTP-TRANSFER.req from SCCP without DPC?!? called=%s\n",
-			osmo_sccp_addr_dump(called));
-		return -1;
-	}
 
 	rtlabel = (struct osmo_ss7_route_label){
 		.opc = xua->mtp.opc,
