@@ -245,12 +245,18 @@ static void lm_wait_notify(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	case LM_E_NOTIFY_IND:
 		OSMO_ASSERT(oxp->oph.primitive == OSMO_XLM_PRIM_M_NOTIFY);
 		OSMO_ASSERT(oxp->oph.operation == PRIM_OP_INDICATION);
-		if (oxp->u.notify.status_type == M3UA_NOTIFY_T_STATCHG &&
-		    (oxp->u.notify.status_info == M3UA_NOTIFY_I_AS_INACT ||
-		     oxp->u.notify.status_info == M3UA_NOTIFY_I_AS_PEND)) {
-			lm_fsm_state_chg(fi, S_ACTIVE);
-			osmo_fsm_inst_dispatch(lmp->asp->fi, XUA_ASP_E_M_ASP_ACTIVE_REQ, NULL);
-		}
+
+		/* Not handling/interested in other status changes for now. */
+		if (oxp->u.notify.status_type != M3UA_NOTIFY_T_STATCHG)
+			break;
+
+		/* Don't change active ASP if there's already one active. */
+		if (ss7_asp_determine_traf_mode(lmp->asp) == OSMO_SS7_AS_TMOD_OVERRIDE &&
+		    oxp->u.notify.status_info == M3UA_NOTIFY_I_AS_ACT)
+			break;
+
+		lm_fsm_state_chg(fi, S_ACTIVE);
+		osmo_fsm_inst_dispatch(lmp->asp->fi, XUA_ASP_E_M_ASP_ACTIVE_REQ, NULL);
 		break;
 	case LM_E_AS_INACTIVE_IND:
 		/* we now know that an AS is associated with this ASP at
