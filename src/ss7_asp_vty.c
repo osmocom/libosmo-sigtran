@@ -99,6 +99,62 @@ static const struct value_string asp_quirk_descs[] = {
 	{ 0, NULL }
 };
 
+static void tx_daud_pc(struct osmo_ss7_asp *asp, uint32_t pc)
+{
+	uint32_t rctx[OSMO_SS7_MAX_RCTX_COUNT];
+	unsigned int num_rctx;
+	char buf_pc[MAX_PC_STR_LEN];
+	uint32_t aff_pc;
+
+	LOGPASP(asp, DLSS7, LOGL_NOTICE, "VTY: Tx DAUD pc=%u=%s\n",
+		pc, osmo_ss7_pointcode_print_buf(buf_pc, sizeof(buf_pc), asp->inst, pc));
+
+	aff_pc = htonl(pc); /* mask = 0 */
+	num_rctx = ss7_asp_get_all_rctx_be(asp, rctx, ARRAY_SIZE(rctx), NULL);
+	xua_tx_snm_daud(asp, rctx, num_rctx, &aff_pc, 1, "VTY");
+}
+
+DEFUN_ATTR(cs7_asp_audit, cs7_asp_audit_cmd,
+	   "cs7 instance <0-15> asp NAME audit point-code POINT_CODE",
+	   CS7_STR "Instance related commands\n" "SS7 Instance Number\n"
+	   "ASP related commands\n" "Name of ASP\n"
+	   "Audit destination Point Code (xUA DAUD)\n"
+	   "Destination Point Code to audit\n"
+	   "Destination Point Code value\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct osmo_ss7_instance *inst;
+	struct osmo_ss7_asp *asp;
+	int pc;
+
+	inst = osmo_ss7_instance_find(atoi(argv[0]));
+	if (!inst) {
+		vty_out(vty, "%% Unknown instance '%s'%s", argv[0], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	asp = osmo_ss7_asp_find_by_name(inst, argv[1]);
+	if (!asp) {
+		vty_out(vty, "%% Unknown ASP '%s'%s", argv[1], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	pc = osmo_ss7_pointcode_parse(asp->inst, argv[2]);
+	if (pc < 0) {
+		vty_out(vty, "%% Invalid point code (%s)%s", argv[2], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (asp->cfg.role != OSMO_SS7_ASP_ROLE_ASP) {
+		vty_out(vty, "%% ASP audit (DAUD) can't be sent in role '%s'%s",
+			get_value_string(osmo_ss7_asp_role_names, asp->cfg.role), VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	tx_daud_pc(asp, pc);
+	return CMD_SUCCESS;
+}
+
 DEFUN_ATTR(cs7_asp, cs7_asp_cmd,
 	   "asp NAME <0-65535> <0-65535> " XUA_VAR_STR,
 	   "Configure Application Server Process\n"
@@ -1355,6 +1411,8 @@ void ss7_vty_init_node_asp(void)
 	asp_no_quirk_cmd.doc = vty_cmd_string_from_valstr(g_ctx, asp_quirk_descs,
 							NO_STR "Disable quirk to work around interop issues\n",
 							"\n", "\n", 0);
+
+	install_lib_element(ENABLE_NODE, &cs7_asp_audit_cmd);
 
 	install_node(&asp_node, NULL);
 	install_lib_element_ve(&show_cs7_asp_cmd);

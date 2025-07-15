@@ -31,6 +31,7 @@ OsmoSTP# list
   show cs7 (sua|m3ua|ipa) (sctp|tcp) [<0-65534>]
   show cs7 config
   cs7 instance <0-15> asp NAME disconnect
+  cs7 instance <0-15> asp NAME audit point-code POINT_CODE
   show cs7 instance <0-15> asp
   show cs7 instance <0-15> asp name ASP_NAME
   show cs7 instance <0-15> asp-remaddr
