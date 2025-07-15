@@ -21,7 +21,7 @@ struct xua_as_event_asp_inactive_ind_pars {
 
 enum xua_as_event {
 	XUA_ASPAS_ASP_INACTIVE_IND, /* param: struct xua_as_event_asp_inactive_ind_pars* */
-	XUA_ASPAS_ASP_DOWN_IND,
+	XUA_ASPAS_ASP_DOWN_IND, /* param: struct osmo_ss7_asp* */
 	XUA_ASPAS_ASP_ACTIVE_IND,
 	XUA_AS_E_RECOVERY_EXPD,
 	XUA_AS_E_TRANSFER_REQ, /* param: struct xua_msg*, ownership transferred. */
