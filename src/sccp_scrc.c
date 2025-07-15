@@ -179,6 +179,7 @@ static int gen_mtp_transfer_req_xua(struct osmo_sccp_instance *inst,
 		char buf[256];
 		LOGPSCI(inst, LOGL_ERROR, "MTP-TRANSFER.req from SCCP for %s: no route!\n",
 			ss7_route_label_to_str(buf, sizeof(buf), inst->ss7, &rtlabel));
+		sccp_rout_fail_enqueue(inst, xua, SCCP_RETURN_CAUSE_MTP_FAILURE, xua->hdr.msg_class == SUA_MSGC_CO);
 		return -1;
 	}
 
