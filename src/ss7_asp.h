@@ -172,5 +172,7 @@ unsigned int ss7_asp_get_all_rctx(const struct osmo_ss7_asp *asp, uint32_t *rctx
 unsigned int ss7_asp_get_all_rctx_be(const struct osmo_ss7_asp *asp, uint32_t *rctx, unsigned int rctx_size,
 				  const struct osmo_ss7_as *excl_as);
 
+int ss7_asp_determine_traf_mode(const struct osmo_ss7_asp *asp);
+
 #define LOGPASP(asp, subsys, level, fmt, args ...) \
 	_LOGSS7((asp)->inst, subsys, level, "ASP(%s) " fmt, (asp)->cfg.name, ## args)

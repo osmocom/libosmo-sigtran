@@ -1549,3 +1549,30 @@ unsigned int ss7_asp_get_all_rctx(const struct osmo_ss7_asp *asp, uint32_t *rctx
 {
 	return _ss7_asp_get_all_rctx(asp, rctx, rctx_size, excl_as, false);
 }
+
+/* determine the osmo_ss7_as_traffic_mode to be used by this ASP; will
+ * iterate over all AS configured for this ASP.  If they're compatible,
+ * a single traffic mode is returned as enum osmo_ss7_as_traffic_mode.
+ * If they're incompatible, -EINVAL is returned.  If there is none
+ * configured, -1 is returned */
+int ss7_asp_determine_traf_mode(const struct osmo_ss7_asp *asp)
+{
+	const struct osmo_ss7_as *as;
+	int tmode = -1;
+
+	llist_for_each_entry(as, &asp->inst->as_list, list) {
+		if (!osmo_ss7_as_has_asp(as, asp))
+			continue;
+		/* we only care about traffic modes explicitly set */
+		if (!as->cfg.mode_set_by_vty)
+			continue;
+		if (tmode == -1) {
+			/* this is the first AS; we use this traffic mode */
+			tmode = as->cfg.mode;
+		} else {
+			if (tmode != as->cfg.mode)
+				return -EINVAL;
+		}
+	}
+	return tmode;
+}
