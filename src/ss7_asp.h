@@ -113,6 +113,9 @@ struct osmo_ss7_asp {
 		uint8_t qos_class;
 		uint32_t quirks;
 
+		/* Whether to Tx xUA DAUD during ASP activation when in ASP role. */
+		bool daud_act;
+
 		/* T_defs used by the default_lm: */
 		struct osmo_tdef *T_defs_xua;
 

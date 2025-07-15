@@ -548,6 +548,36 @@ DEFUN_ATTR(asp_no_tcp_param_user_timeout, asp_no_tcp_param_user_timeout_cmd,
 	return CMD_SUCCESS;
 }
 
+/* TODO: "destination-audit periodic <time_inteval(s)>" See M3UA RFC4666 4.5.3 "Periodic". */
+DEFUN_ATTR(asp_destination_audit_asp_active, asp_destination_audit_asp_active_cmd,
+	   "destination-audit asp-active",
+	   "Configure ASP Auditing (xUA DAUD)\n"
+	   "Transmit DAUD after ASP successful activate (for remote PCs in sccp address-book)\n",
+	   CMD_ATTR_NODE_EXIT)
+{
+	struct osmo_ss7_asp *asp = vty->index;
+
+	if (asp->cfg.role != OSMO_SS7_ASP_ROLE_ASP) {
+		vty_out(vty, "%% 'destination-audit' only possible in role ASP!%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	asp->cfg.daud_act = true;
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(asp_no_destination_audit_asp_active, asp_no_destination_audit_asp_active_cmd,
+	   "no destination-audit asp-active",
+	   NO_STR "Configure ASP Auditing (xUA DAUD)\n"
+	   "Transmit xUA DAUD after ASP successful activate (for remote PCs in sccp address-book)\n",
+	   CMD_ATTR_NODE_EXIT)
+{
+	struct osmo_ss7_asp *asp = vty->index;
+
+	asp->cfg.daud_act = false;
+	return CMD_SUCCESS;
+}
+
 DEFUN_ATTR(asp_block, asp_block_cmd,
 	   "block",
 	   "Allows a SCTP Association with ASP, but doesn't let it become active\n",
@@ -1259,6 +1289,9 @@ void ss7_vty_write_one_asp(struct vty *vty, struct osmo_ss7_asp *asp, bool show_
 	if (asp->cfg.tcp.user_timeout_present)
 		vty_out(vty, "  tcp-param user-timeout %u%s", asp->cfg.tcp.user_timeout_value, VTY_NEWLINE);
 
+	if (asp->cfg.daud_act)
+		vty_out(vty, "  destination-audit asp-active%s", VTY_NEWLINE);
+
 	for (i = 0; i < sizeof(uint32_t) * 8; i++) {
 		if (!(asp->cfg.quirks & ((uint32_t) 1 << i)))
 			continue;
@@ -1350,6 +1383,8 @@ void ss7_vty_init_node_asp(void)
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_tcp_param_keepalive_cfg_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_tcp_param_user_timeout_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_tcp_param_user_timeout_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_destination_audit_asp_active_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_no_destination_audit_asp_active_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_quirk_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_quirk_cmd);
 	gen_asp_timer_xua_cmd_strs(&asp_timer_xua_cmd);

@@ -31,6 +31,7 @@
 #include "ss7_asp.h"
 #include "ss7_internal.h"
 #include "ss7_xua_srv.h"
+#include "sccp_internal.h"
 #include "xua_asp_fsm.h"
 #include "xua_as_fsm.h"
 #include "xua_internal.h"
@@ -144,6 +145,54 @@ static void send_xlm_prim_simple(struct osmo_fsm_inst *fi,
 	struct xua_asp_fsm_priv *xafp = fi->priv;
 	struct osmo_ss7_asp *asp = xafp->asp;
 	xua_asp_send_xlm_prim_simple(asp, prim_type, op);
+}
+
+static void xua_asp_tx_snm_daud_address_book(struct osmo_ss7_asp *asp)
+{
+	struct osmo_ss7_instance *inst = asp->inst;
+	uint32_t rctx[OSMO_SS7_MAX_RCTX_COUNT];
+	unsigned int num_rctx;
+	uint32_t *aff_pc = NULL;
+	unsigned int num_aff_pc = 0;
+	struct osmo_sccp_addr_entry *entry;
+
+	num_rctx = ss7_asp_get_all_rctx_be(asp, rctx, ARRAY_SIZE(rctx), NULL);
+
+	/* First count required size of num_aff_pc array: */
+	llist_for_each_entry(entry, &inst->cfg.sccp_address_book, list) {
+		if (!(entry->addr.presence & OSMO_SCCP_ADDR_T_PC))
+			continue;
+		if (osmo_ss7_pc_is_local(inst, entry->addr.pc))
+			continue;
+		num_aff_pc++;
+	}
+	if (num_aff_pc == 0) {
+		LOGPASP(asp, DLSS7, LOGL_NOTICE, "Skip Tx DAUD: No SCCP in address book\n");
+		return;
+	}
+	aff_pc = talloc_array(asp, uint32_t, num_aff_pc);
+	OSMO_ASSERT(aff_pc);
+
+	num_aff_pc = 0;
+	llist_for_each_entry(entry, &inst->cfg.sccp_address_book, list) {
+		uint32_t curr_aff_pc;
+		unsigned int i;
+		if (!(entry->addr.presence & OSMO_SCCP_ADDR_T_PC))
+			continue;
+		if (osmo_ss7_pc_is_local(inst, entry->addr.pc))
+			continue;
+		LOGPASP(asp, DLSS7, LOGL_DEBUG, "Tx DAUD: Requesting status of DPC=%u=%s\n",
+			entry->addr.pc, osmo_ss7_pointcode_print2(inst, entry->addr.pc));
+		curr_aff_pc = htonl(entry->addr.pc); /* mask = 0 */
+		for (i = 0; i < num_aff_pc; i++)
+			if (aff_pc[i] == curr_aff_pc)
+				break;
+		if (i == num_aff_pc) /* not found in array */
+			aff_pc[num_aff_pc++] = curr_aff_pc;
+	}
+
+	xua_tx_snm_daud(asp, rctx, num_rctx, aff_pc, num_aff_pc, "Isolation-ASP-ACTIVE");
+	talloc_free(aff_pc);
 }
 
 /* determine the osmo_ss7_as_traffic_mode to be used by this ASP; will
@@ -698,6 +747,18 @@ static void xua_asp_fsm_active_onenter(struct osmo_fsm_inst *fi, uint32_t prev_s
 {
 	struct xua_asp_fsm_priv *xafp = fi->priv;
 	struct osmo_ss7_asp *asp = xafp->asp;
+
+	if (asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP && asp->cfg.daud_act) {
+		/* RFC4666 4.6, RFC3868 4.6: "The ASP MAY choose to audit the availability
+		 * of unavailable destinations by sending DAUD messages.
+		 * This would be the case when, for example, an AS becomes active at an ASP
+		 * and does not have current destination statuses."
+		 * See also RFC4666 4.5.3, RFC3868 4.5.3 "ASP Auditing".
+		 * See also RFC4666 5.5.1.1.3 "Support for ASP Querying of SS7 Destination States"
+		 */
+		LOGPFSML(fi, LOGL_INFO, "Tx DAUD\n");
+		xua_asp_tx_snm_daud_address_book(asp);
+	}
 
 	dispatch_to_all_as(fi, XUA_ASPAS_ASP_ACTIVE_IND, asp);
 }
