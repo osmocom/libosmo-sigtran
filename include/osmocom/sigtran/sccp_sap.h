@@ -256,8 +256,10 @@ struct osmo_scu_unitdata_param {
 struct osmo_scu_notice_param {
 	struct osmo_sccp_addr called_addr;
 	struct osmo_sccp_addr calling_addr;
+	/* ITU Q.711 6.2.2.2.4 "Reason for return":
+	 * enum sccp_return_cause (ITU Q.713 3.12), as per ITU Q.713 A.5. */
 	uint32_t cause;
-	uint32_t importance;
+	uint32_t importance; /* ITU Q.711 6.2.2.2.6, Q.713 3.19 */
 	/* user data */
 };
 
