@@ -337,6 +337,9 @@ void osmo_sccp_instance_destroy(struct osmo_sccp_instance *inst)
 {
 	struct osmo_sccp_user *scu, *scu2;
 
+	if (!inst)
+		return;
+
 	inst->ss7->sccp = NULL;
 	osmo_ss7_user_unregister(inst->ss7, MTP_SI_SCCP, inst->ss7_user);
 	osmo_ss7_user_destroy(inst->ss7_user);
