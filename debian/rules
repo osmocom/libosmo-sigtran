@@ -23,9 +23,7 @@ override_dh_install:
 # library to access symbols not starting with osmo_*
 override_dh_auto_configure:
 	dh_auto_configure -- \
-		--enable-manuals \
 		--enable-static \
-		--enable-tcap-loadsharing \
 		--with-systemdsystemunitdir=/lib/systemd/system \
 		$(NULL)
 
