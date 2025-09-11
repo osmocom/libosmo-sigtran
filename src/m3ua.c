@@ -1005,7 +1005,7 @@ void m3ua_tx_dupu(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int n
 }
 
 /* received SNM message on ASP side
- * This function takes ownership of xua msg passed to it. */
+ * xua is owned by parent call m3ua_rx_snm() */
 static int m3ua_rx_snm_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
 	struct osmo_ss7_as *as = NULL;
@@ -1014,7 +1014,7 @@ static int m3ua_rx_snm_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 
 	rc = xua_find_as_for_asp(&as, asp, rctx_ie);
 	if (rc)
-		goto ret_free;
+		return rc;
 
 	/* report those up the stack so both other ASPs and local SCCP users can be notified */
 	switch (xua->hdr.msg_type) {
@@ -1051,12 +1051,11 @@ static int m3ua_rx_snm_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		rc = M3UA_ERR_UNSUPP_MSG_TYPE;
 	}
 
-ret_free:
-	xua_msg_free(xua);
 	return rc;
 }
 
-/* received SNM message on SG side */
+/* received SNM message on SG side
+ * xua is owned by parent call m3ua_rx_snm() */
 static int m3ua_rx_snm_sg(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
 	switch (xua->hdr.msg_type) {
@@ -1070,9 +1069,12 @@ static int m3ua_rx_snm_sg(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	return 0;
 }
 
+/* received SNM message
+ * This function takes ownership of xua msg passed to it. */
 static int m3ua_rx_snm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
 	struct xua_msg_part *na_ie = xua_msg_find_tag(xua, M3UA_IEI_NET_APPEAR);
+	int rc;
 
 	/* SNM only permitted in ACTIVE state */
 	if (asp->fi->state != XUA_ASP_S_ACTIVE) {
@@ -1083,7 +1085,8 @@ static int m3ua_rx_snm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		} else {
 			LOGPASP(asp, DLM3UA, LOGL_ERROR, "Rx M3UA SNM not permitted "
 				"while ASP in state %s\n", osmo_fsm_inst_state_name(asp->fi));
-			return M3UA_ERR_UNEXPECTED_MSG;
+			rc = M3UA_ERR_UNEXPECTED_MSG;
+			goto ret_free;
 		}
 	}
 
@@ -1095,16 +1098,25 @@ static int m3ua_rx_snm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 			"Unsupported 'Network Appearance' IE '0x%08x' in message type '%s', sending 'Error'.\n",
 			na, get_value_string(m3ua_xfer_msgt_names, xua->hdr.msg_type));
 		if (na_ie->len != 4)
-			return M3UA_ERR_PARAM_FIELD_ERR;
-		return M3UA_ERR_INVAL_NET_APPEAR;
+			rc = M3UA_ERR_PARAM_FIELD_ERR;
+		else
+			rc = M3UA_ERR_INVAL_NET_APPEAR;
+		goto ret_free;
 	}
 
 	switch (asp->cfg.role) {
 	case OSMO_SS7_ASP_ROLE_SG:
-		return m3ua_rx_snm_sg(asp, xua);
+		rc = m3ua_rx_snm_sg(asp, xua);
+		break;
 	case OSMO_SS7_ASP_ROLE_ASP:
-		return m3ua_rx_snm_asp(asp, xua);
+		rc = m3ua_rx_snm_asp(asp, xua);
+		break;
 	default:
-		return M3UA_ERR_UNSUPP_MSG_CLASS;
+		rc = M3UA_ERR_UNSUPP_MSG_CLASS;
+		break;
 	}
+
+ret_free:
+	xua_msg_free(xua);
+	return rc;
 }
