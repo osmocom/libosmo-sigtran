@@ -339,9 +339,13 @@ static void xua_snm_scon(struct osmo_ss7_as *as, const uint32_t *aff_pc, unsigne
 	uint32_t rctx[OSMO_SS7_MAX_RCTX_COUNT];
 	unsigned int num_rctx;
 
-	/* TODO: How to translate to MTP and towards SCCP (create N-PCSTATE.ind to SCU) */
+	/* TODO: Translate to MTP-STATUS.ind towards SCCP (will create N-PCSTATE.ind to SCU) */
 
-	/* inform remote ASPs via SCON */
+	/* RFC4666 1.4.6: "When an SG receives a congestion message (SCON) from an ASP and the SG
+	 * determines that an SPMC is now encountering congestion, it MAY trigger SS7 MTP3 Transfer
+	 * Controlled management messages to concerned SS7 destinations according to congestion
+	 * procedures of the relevant MTP3 standard."
+	 * ie. inform remote ASPs via SCON: */
 	llist_for_each_entry(asp, &s7i->asp_list, list) {
 		/* SSNM is only permitted for ASPs in ACTIVE state */
 		if (!osmo_ss7_asp_active(asp))
