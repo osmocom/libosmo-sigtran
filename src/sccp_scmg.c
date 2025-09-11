@@ -125,7 +125,8 @@ void sccp_scmg_rx_mtp_resume(struct osmo_sccp_instance *inst, uint32_t dpc)
 	 * [this would require us to track SSNs at each PC, which we don't] */
 }
 
-void sccp_scmg_rx_mtp_status(struct osmo_sccp_instance *inst, uint32_t dpc, enum mtp_unavail_cause cause)
+/* ITU-T Q.701 8.4, ITU-T Q.711 7.2.4 */
+void sccp_scmg_rx_mtp_status(struct osmo_sccp_instance *inst, uint32_t dpc, enum mtp_unavail_cause cause, uint8_t cong_level)
 {
 	struct osmo_scu_pcstate_param pcstate;
 	/* 1) Informs the translation function to update the translation tables. */
@@ -142,20 +143,35 @@ void sccp_scmg_rx_mtp_status(struct osmo_sccp_instance *inst, uint32_t dpc, enum
 	case MTP_UNAVAIL_C_UNKNOWN:
 	case MTP_UNAVAIL_C_UNEQUIP_REM_USER:
 	case MTP_UNAVAIL_C_INACC_REM_USER:
+		/* 4) local broadcast of "user-out-of-service" for each SSN at that dest
+		* [this would require us to track SSNs at each PC, which we don't] */
+
+		/* 6) local broadcast of "remote SCCP unavailable" */
+		pcstate = (struct osmo_scu_pcstate_param) {
+			.affected_pc = dpc,
+			/* cong_level/RIL doesn't apply here: */
+			.restricted_importance_level = 0,
+			.sp_status = OSMO_SCCP_SP_S_ACCESSIBLE,
+			.remote_sccp_status = OSMO_SCCP_REM_SCCP_S_UNAVAILABLE_UNKNOWN,
+		};
+		sccp_lbcs_local_bcast_pcstate(inst, &pcstate);
+		break;
+	case MTP_UNAVAIL_C_CONGESTED:
+		/* ITU-T Q.714 5.2.4 Signalling point congested
+		 * ITU-T Q.714 5.2.8 Inter- and Intra- SCCP management congestion reports procedure
+		 * ITU-T Q.714 5.3.6.6 Restricted importance level reporting
+		 * ITU-T Q.714 Figure D.4
+		 * ITU-T Q.715 9.5 Coordination of congestion control measures between SCCP and other MTP users */
+		pcstate = (struct osmo_scu_pcstate_param) {
+			.affected_pc = dpc,
+			.restricted_importance_level = cong_level,
+			.sp_status = OSMO_SCCP_SP_S_CONGESTED,
+			.remote_sccp_status = (cong_level == 0) ? OSMO_SCCP_REM_SCCP_S_AVAILABLE :
+								  OSMO_SCCP_REM_SCCP_S_CONGESTED,
+		};
+		sccp_lbcs_local_bcast_pcstate(inst, &pcstate);
 		break;
 	}
-
-	/* 4) local broadcast of "user-out-of-service" for each SSN at that dest
-	 * [this would require us to track SSNs at each PC, which we don't] */
-
-	/* 6) local broadcast of "remote SCCP unavailable" */
-	pcstate = (struct osmo_scu_pcstate_param) {
-		.affected_pc = dpc,
-		.restricted_importance_level = 0,
-		.sp_status = OSMO_SCCP_SP_S_ACCESSIBLE,
-		.remote_sccp_status = OSMO_SCCP_REM_SCCP_S_UNAVAILABLE_UNKNOWN,
-	};
-	sccp_lbcs_local_bcast_pcstate(inst, &pcstate);
 }
 
 const struct value_string sccp_scmg_msgt_names[] = {

@@ -309,7 +309,7 @@ static void xua_snm_upu(struct osmo_ss7_as *as, uint32_t dpc, uint16_t user, uin
 
 	/* Translate to MTP-STATUS.ind towards SCCP (will create N-PCSTATE.ind to SCU) */
 	if (s7i->sccp && user == MTP_SI_SCCP)
-		sccp_scmg_rx_mtp_status(s7i->sccp, dpc, cause);
+		sccp_scmg_rx_mtp_status(s7i->sccp, dpc, cause, 0);
 
 	/* inform remote ASPs via DUPU */
 	llist_for_each_entry(asp, &s7i->asp_list, list) {
@@ -331,6 +331,34 @@ static void xua_snm_upu(struct osmo_ss7_as *as, uint32_t dpc, uint16_t user, uin
 	}
 }
 
+/* ITU Q.701 8.4 "The level value is included if national options with congestion priorities or multiple signalling link states
+without congestion priorities as in Recommendation Q.704 are implemented" */
+static void xua_snm_scon_to_sccp(struct osmo_sccp_instance *sccp,
+				 const uint32_t *aff_pc, unsigned int num_aff_pc,
+				 uint8_t cong_level)
+{
+	int i;
+
+	for (i = 0; i < num_aff_pc; i++) {
+		/* 32bit "Affected Point Code" consists of a 7-bit mask followed by 14/16/24-bit SS7 PC,
+		 * see RFC 4666 3.4.1 */
+		uint32_t _aff_pc = ntohl(aff_pc[i]);
+		uint32_t pc = _aff_pc & 0xffffff;
+		uint8_t mask = _aff_pc >> 24;
+
+		if (!mask) {
+			sccp_scmg_rx_mtp_status(sccp, pc, MTP_UNAVAIL_C_CONGESTED, cong_level);
+		} else {
+			/* we have to send one MTP primitive for each individual point
+			 * code within that mask */
+			uint32_t maskbits = (1 << mask) - 1;
+			uint32_t fullpc;
+			for (fullpc = (pc & ~maskbits); fullpc <= (pc | maskbits); fullpc++)
+				sccp_scmg_rx_mtp_status(sccp, fullpc, MTP_UNAVAIL_C_CONGESTED, cong_level);
+		}
+	}
+}
+
 static void xua_snm_scon(struct osmo_ss7_as *as, const uint32_t *aff_pc, unsigned int num_aff_pc,
 			 const uint32_t *concerned_dpc, const uint8_t *cong_level, const char *info_string)
 {
@@ -339,7 +367,12 @@ static void xua_snm_scon(struct osmo_ss7_as *as, const uint32_t *aff_pc, unsigne
 	uint32_t rctx[OSMO_SS7_MAX_RCTX_COUNT];
 	unsigned int num_rctx;
 
-	/* TODO: Translate to MTP-STATUS.ind towards SCCP (will create N-PCSTATE.ind to SCU) */
+	/* TODO: Change Congested level/state of related routes,
+	 * see ITU Q.704 3.8.4 "Congestion status of signalling route sets" */
+
+	/* Translate to MTP-STATUS.ind towards SCCP (will create N-PCSTATE.ind to SCU) */
+	if (s7i->sccp)
+		xua_snm_scon_to_sccp(s7i->sccp, aff_pc, num_aff_pc, cong_level ? *cong_level : 0);
 
 	/* RFC4666 1.4.6: "When an SG receives a congestion message (SCON) from an ASP and the SG
 	 * determines that an SPMC is now encountering congestion, it MAY trigger SS7 MTP3 Transfer

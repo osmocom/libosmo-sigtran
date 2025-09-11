@@ -24,11 +24,19 @@ enum mtp_si_ni00 {
 extern const struct value_string mtp_si_vals[];
 
 
-/* Chapter 15.17.5 of Q.705 */
+/* Chapter 15.17.5 of Q.704 */
 enum mtp_unavail_cause {
 	MTP_UNAVAIL_C_UNKNOWN		= 0x0,
 	MTP_UNAVAIL_C_UNEQUIP_REM_USER	= 0x1,
 	MTP_UNAVAIL_C_INACC_REM_USER	= 0x2,
+	/* This field is not explicitly listed in Q.704 15.17.5, but it is
+	 * expicitly described as one of four options in:
+	 * Q.701 "TABLE 1" and 8.4
+	 * Q.704 2.4.2
+	 * Q.711 "Table 18" and 7.2.4
+	 * Q.714 "Figure D.4"
+	 */
+	MTP_UNAVAIL_C_CONGESTED		= 0x3,
 	/* reserved */
 };
 
