@@ -1107,6 +1107,34 @@ static int m3ua_rx_snm_sg(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	return rc;
 }
 
+/* received SNM message on IPSP side
+ * xua is owned by parent call m3ua_rx_snm() */
+static int m3ua_rx_snm_ipsp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
+{
+	struct osmo_ss7_as *as = NULL;
+	struct xua_msg_part *rctx_ie;
+	int rc = 0;
+
+	switch (xua->hdr.msg_type) {
+	case M3UA_SNM_SCON:
+		/* RFC4666 1.4.6: "The M3UA layer at an ASP or IPSP MAY indicate local congestion
+		 * to an M3UA peer with an SCON message."
+		 * An IPSP can only be connected against another IPSP, hence if an IPSP can send
+		 * an SCON, it can be derived that it is expected it can receive it: */
+		rctx_ie = xua_msg_find_tag(xua, M3UA_IEI_ROUTE_CTX);
+		rc = xua_find_as_for_asp(&as, asp, rctx_ie);
+		if (rc)
+			return rc;
+		xua_snm_rx_scon(asp, as, xua);
+		break;
+	default:
+		/* RFC 4666 Section 1.5.2: there is no MTP3 network management status information */
+		return M3UA_ERR_UNSUPP_MSG_TYPE;
+	}
+
+	return rc;
+}
+
 /* received SNM message
  * This function takes ownership of xua msg passed to it. */
 static int m3ua_rx_snm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
@@ -1150,7 +1178,7 @@ static int m3ua_rx_snm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		rc = m3ua_rx_snm_asp(asp, xua);
 		break;
 	case OSMO_SS7_ASP_ROLE_IPSP:
-		/* RFC 4666 Section 1.5.2: there is no MTP3 network management status information */
+		rc = m3ua_rx_snm_ipsp(asp, xua);
 	default:
 		rc = M3UA_ERR_UNSUPP_MSG_CLASS;
 		break;
