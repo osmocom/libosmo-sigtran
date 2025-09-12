@@ -414,14 +414,19 @@ DEFUN_ATTR(asp_role, asp_role_cmd,
 {
 	struct osmo_ss7_asp *asp = vty->index;
 
-	if (!strcmp(argv[0], "sg"))
+	if (!strcmp(argv[0], "sg")) {
 		asp->cfg.role = OSMO_SS7_ASP_ROLE_SG;
-	else if (!strcmp(argv[0], "asp"))
+	} else if (!strcmp(argv[0], "asp")) {
 		asp->cfg.role = OSMO_SS7_ASP_ROLE_ASP;
-	else if (!strcmp(argv[0], "ipsp"))
+	} else if (!strcmp(argv[0], "ipsp")) {
+		if (cs7_role == CS7_ROLE_SG) {
+			vty_out(vty, "IPSP role can't be used in an SG node since they are point-to-point%s", VTY_NEWLINE);
+			return CMD_WARNING;
+		}
 		asp->cfg.role = OSMO_SS7_ASP_ROLE_IPSP;
-	else
+	} else {
 		OSMO_ASSERT(0);
+	}
 
 	asp->cfg.role_set_by_vty = true;
 	return CMD_SUCCESS;
