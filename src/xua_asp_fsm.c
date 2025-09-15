@@ -1157,7 +1157,7 @@ static void ipa_asp_fsm_wait_id_resp(struct osmo_fsm_inst *fi, uint32_t event, v
 		}
 		as = osmo_ss7_as_find_by_name(asp->inst, iafp->ipa_unit->unit_name);
 		if (!as) {
-			LOGPFSML(fi, LOGL_NOTICE, "Cannot find any definition for IPA Unit Name '%s'\n",
+			LOGPFSML(fi, LOGL_NOTICE, "Cannot find any AS definition for IPA Unit Name '%s'\n",
 				iafp->ipa_unit->unit_name);
 			goto out_err;
 		}
