@@ -218,10 +218,10 @@ DEFUN_ATTR(sccp_max_optional_data, sccp_max_optional_data_cmd,
 	   "Adjust the upper bound for the optional data length (the payload) for CR, CC, CREF and RLSD messages."
 	   " For any Optional Data part larger than this value in octets, send CR, CC, CREF and RLSD"
 	   " messages without any payload, and send the data payload in a separate Data Form 1 message."
-	   " ITU-T Q.713 sections 4.2 thru 4.5 define a limit of 130 bytes for the 'Data' parameter. This limit can be"
+	   " ITU-T Q.713 sections 4.2 thru 4.5 define a limit of 128 bytes for the 'Data' parameter. This limit can be"
 	   " adjusted here. May be useful for interop with nonstandard SCCP peers.\n"
 	   "Set a non-standard maximum allowed number of bytes\n"
-	   "Use the ITU-T Q.713 4.2 to 4.5 standard value of 130\n",
+	   "Use the ITU-T Q.713 4.2 to 4.5 standard value of 128\n",
 	   CMD_ATTR_IMMEDIATE)
 {
 	struct osmo_ss7_instance *ss7 = vty->index;

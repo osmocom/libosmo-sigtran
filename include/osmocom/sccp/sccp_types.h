@@ -24,7 +24,25 @@
 #include <osmocom/core/endian.h>
 #include <osmocom/core/utils.h>
 
-#define SCCP_MAX_OPTIONAL_DATA 130
+/* ITU Q.713 3.16 Data is a variable-length IE, meaning it has two header
+ * octets:
+ * - one octet of "Parameter name code",
+ * - plus one octet of length.
+ *
+ * In
+ * - 4.2 CR,
+ * - 4.3 CC,
+ * - 4.4 CREF,
+ * - 4.5 RLSD,
+ * there are optional "Data" IEs with length indicated as "3-130" octets: the
+ * minimum of 3 stems from the two header octets plus one data octet. Note that
+ * when there are zero data octets, the entire "Data" IE is omitted.
+ *
+ * Hence, the maximum of 130 includes the two header octets, and the actual
+ * maximum data length is 128.
+ */
+#define SCCP_MAX_OPTIONAL_DATA 128
+
 #define SCCP_MAX_DATA 256
 
 /* Table 1/Q.713 - SCCP message types */
