@@ -62,6 +62,8 @@ struct xua_msg *xua_msg_copy(const struct xua_msg *xua_in)
 {
 	struct xua_msg_part *part;
 	struct xua_msg *xua_cpy = xua_msg_alloc();
+	if (!xua_cpy)
+		return NULL;
 
 	xua_cpy->hdr = xua_in->hdr;
 	xua_cpy->mtp = xua_in->mtp;
