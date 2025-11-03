@@ -26,6 +26,7 @@
 #include <osmocom/core/byteswap.h>
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/logging.h>
+#include <osmocom/core/rate_ctr.h>
 #include <osmocom/core/talloc.h>
 
 #include <osmocom/netif/ipa.h>
@@ -511,10 +512,12 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 	LOGPAS(as, DLSS7, LOGL_DEBUG, "TCAP: decoded rc=%d otid=%u dtid=%u\n", rc, parsed.otid, parsed.dtid);
 
 	if (rc <= 0) {
+		rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_TCAP_FAILED);
 		LOGPAS(as, DLSS7, LOGL_ERROR, "TCAP: failed get otid/dtid.\n");
 		rc = -EINVAL;
 		goto out_free_sua;
 	}
+	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_TCAP_DECODED);
 
 	/* TCAP messages towards the IPA nodes */
 	switch (parsed.present) {
@@ -527,11 +530,16 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 		/* lookup a new ASP */
 		asp = tcap_as_asp_find_by_tcap_id(as, &calling_addr, &called_addr, parsed.otid);
 
-		/* if no ASP found for this TCAP, try to find a non-tcap-range ASP as fallback*/
-		if (!asp) {
+		if (asp) {
+			rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_SELECTED);
+		} else {
+			/* if no ASP found for this TCAP, try to find a non-tcap-range ASP as fallback*/
 			asp = find_asp_no_tcap_range(as);
-			if (!asp) {
+			if (asp)
+				rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_FALLBACK);
+			else {
 				/* couldn't find a suitable canditate for OTID */
+				rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_FAILED);
 				LOGPAS(as, DLSS7, LOGL_DEBUG, "TCAP: couldn't find a suitable canditate for otid %u\n", parsed.otid);
 				rc = -ENOKEY;
 				goto out_free_sua;

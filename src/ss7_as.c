@@ -98,6 +98,13 @@ static const struct rate_ctr_desc ss7_as_rcd[] = {
 	[SS7_AS_CTR_TX_MSU_SLS_13] = {	"tx:msu:sls:13",	SS7_AS_CTR_TX_MSU_SLS_STR "13" },
 	[SS7_AS_CTR_TX_MSU_SLS_14] = {	"tx:msu:sls:14",	SS7_AS_CTR_TX_MSU_SLS_STR "14" },
 	[SS7_AS_CTR_TX_MSU_SLS_15] = {	"tx:msu:sls:15",	SS7_AS_CTR_TX_MSU_SLS_STR "15" },
+#ifdef WITH_TCAP_LOADSHARING
+	[SS7_AS_CTR_RX_TCAP_DECODED] = {	"tcap:decoded",	"Number of TCAP-messages decoded successfully (loadshare-tcap)" },
+	[SS7_AS_CTR_RX_TCAP_FAILED] = {	"tcap:failed",		"Number of TCAP-messages that failed decoding (loadshare-tcap)" },
+	[SS7_AS_CTR_TCAP_ASP_SELECTED] = {	"tcap:asp:selected",	"ASP selection successful for a TCAP-message (loadshare-tcap)" },
+	[SS7_AS_CTR_TCAP_ASP_FALLBACK] = {	"tcap:asp:fallback",	"Fallback ASP selected for a TCAP-message (loadshare-tcap)" },
+	[SS7_AS_CTR_TCAP_ASP_FAILED] = {	"tcap:asp:failed",	"ASP selection failed for a TCAP-message (loadshare-tcap)" },
+#endif /* WITH_TCAP_LOADSHARING */
 };
 
 static const struct rate_ctr_group_desc ss7_as_rcgd = {
