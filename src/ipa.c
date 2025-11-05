@@ -355,6 +355,7 @@ int ipa_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t sls)
 		break;
 	default:
 		rc = ss7_asp_rx_unknown(asp, hh->proto, msg);
+		msgb_free(msg);
 	}
 
 	return rc;
