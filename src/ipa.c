@@ -122,6 +122,7 @@ int ipa_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
 static int ipa_rx_msg_ccm(struct osmo_ss7_asp *asp, struct msgb *msg)
 {
 	uint8_t msg_type = msg->l2h[0];
+	int rc = 0;
 
 	LOGPASP(asp, DLSS7, LOGL_DEBUG, "%s:%s\n", __func__, msgb_hexdump(msg));
 
@@ -145,12 +146,12 @@ static int ipa_rx_msg_ccm(struct osmo_ss7_asp *asp, struct msgb *msg)
 	default:
 		LOGPASP(asp, DLSS7, LOGL_NOTICE, "Unknown CCM Message 0x%02x: %s\n",
 			msg_type, msgb_hexdump(msg));
-		return -1;
+		rc = -1;
 	}
 
 	msgb_free(msg);
 
-	return 0;
+	return rc;
 }
 
 struct osmo_ss7_as *ipa_find_as_for_asp(struct osmo_ss7_asp *asp)
