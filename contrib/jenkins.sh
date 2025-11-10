@@ -38,6 +38,11 @@ if [ "$WITH_MANUALS" = "1" ]; then
 	CONFIG="--enable-manuals"
 fi
 
+if [ "$WITH_TCAP" = "1" ]; then
+	osmo-build-dep.sh libosmo-asn1-tcap
+	CONFIG="$CONFIG --enable-tcap-loadsharing"
+fi
+
 set +x
 echo
 echo

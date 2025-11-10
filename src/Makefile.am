@@ -95,3 +95,13 @@ libosmo_sigtran_la_LIBADD = \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBSCTP_LIBS) \
 	$(NULL)
+
+if BUILD_WITH_TCAP_LOADSHARING
+AM_CFLAGS += \
+	$(LIBOSMOASN1TCAP_CFLAGS)
+	$(NULL)
+
+libosmo_sigtran_la_LIBADD += \
+	$(LIBOSMOASN1TCAP_LIBS) \
+	$(NULL)
+endif

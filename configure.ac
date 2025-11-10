@@ -41,6 +41,18 @@ PKG_CHECK_MODULES(LIBOSMOVTY, libosmovty >= 1.11.0)
 PKG_CHECK_MODULES(LIBOSMOGSM, libosmogsm >= 1.11.0)
 PKG_CHECK_MODULES(LIBOSMONETIF, libosmo-netif >= 1.6.0)
 
+# TCAP loadsharing
+AC_ARG_ENABLE([tcap-loadsharing], [AS_HELP_STRING([--enable-tcap-loadsharing], [Build with TCAP loadsharing. Requires libosmo-asn1-tcap [default=no]])],
+	[osmo_ac_tcap="$enableval"],[osmo_ac_tcap="no"])
+if test "x$osmo_ac_tcap" = "xyes" ; then
+    PKG_CHECK_MODULES(LIBOSMOASN1TCAP, libosmo-asn1-tcap)
+    AC_DEFINE(WITH_TCAP_LOADSHARING, 1, [Define to build with TCAP LOADSHARING])
+	AC_SUBST(TCAP_LIBS_PC, [libosmo-asn1-tcap])
+fi
+AC_MSG_CHECKING([whether to enable tcap loadsharing])
+AC_MSG_RESULT([$osmo_ac_tcap])
+AM_CONDITIONAL(BUILD_WITH_TCAP_LOADSHARING, test "x$osmo_ac_tcap" = "xyes")
+
 old_LIBS=$LIBS
 AC_SEARCH_LIBS([sctp_recvmsg], [sctp], [
 	AC_DEFINE(HAVE_LIBSCTP, 1, [Define 1 to enable SCTP support])
