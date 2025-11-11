@@ -125,6 +125,12 @@ uint32_t osmo_ss7_instance_get_primary_pc(const struct osmo_ss7_instance *inst)
 	return inst->cfg.primary_pc;
 }
 
+/* Q.704 14.2.2 Sub-service field, bits D C (= Network Indicator) */
+uint8_t osmo_ss7_instance_get_network_indicator(const struct osmo_ss7_instance *inst)
+{
+	return inst->cfg.network_indicator;
+}
+
 /*! \brief Set the point code format used in given SS7 instance */
 int osmo_ss7_instance_set_pc_fmt(struct osmo_ss7_instance *inst,
 				uint8_t c0, uint8_t c1, uint8_t c2)

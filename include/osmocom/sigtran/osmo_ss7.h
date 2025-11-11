@@ -59,6 +59,7 @@ const struct osmo_ss7_pc_fmt *
 osmo_ss7_instance_get_pc_fmt(const struct osmo_ss7_instance *inst);
 
 uint32_t osmo_ss7_instance_get_primary_pc(const struct osmo_ss7_instance *inst);
+uint8_t osmo_ss7_instance_get_network_indicator(const struct osmo_ss7_instance *inst);
 
 struct osmo_sccp_instance *osmo_ss7_ensure_sccp(struct osmo_ss7_instance *inst);
 struct osmo_sccp_instance *osmo_ss7_get_sccp(const struct osmo_ss7_instance *inst);
