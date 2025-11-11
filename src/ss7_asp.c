@@ -1057,12 +1057,41 @@ int ss7_asp_ipa_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struct msg
 	return rc;
 }
 
+static int xua_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg)
+{
+	unsigned int ppid = msgb_sctp_ppid(msg);
+	int rc;
+
+	if (ppid == SUA_PPID && asp->cfg.proto == OSMO_SS7_ASP_PROT_SUA)
+		rc = sua_rx_msg(asp, msg);
+	else if (ppid == M3UA_PPID && asp->cfg.proto == OSMO_SS7_ASP_PROT_M3UA)
+		rc = m3ua_rx_msg(asp, msg);
+	else
+		rc = ss7_asp_rx_unknown(asp, ppid, msg);
+	return rc;
+}
+
+static int m3ua_tcp_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg)
+{
+	const struct xua_common_hdr *hdr = (const struct xua_common_hdr *) msg->data;
+
+	/* spoof SCTP PPID */
+	msgb_sctp_ppid(msg) = M3UA_PPID;
+
+	/* spoof SCTP Stream ID */
+	if (hdr->msg_class == M3UA_MSGC_XFER)
+		msgb_sctp_stream(msg) = 1;
+	else
+		msgb_sctp_stream(msg) = 0;
+
+	return m3ua_rx_msg(asp, msg);
+}
+
 /* netif code tells us we can read something from the socket */
 int ss7_asp_xua_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struct msgb *msg)
 {
 	struct osmo_ss7_asp *asp = osmo_stream_srv_get_data(conn);
 	struct osmo_stream_srv_link *link = osmo_stream_srv_get_master(conn);
-	unsigned int ppid;
 	int flags;
 	int rc = 0;
 
@@ -1101,17 +1130,9 @@ int ss7_asp_xua_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struct msg
 		return rc;
 	}
 
-	ppid = msgb_sctp_ppid(msg);
 	msg->dst = asp;
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_TOTAL);
-
-	if (ppid == SUA_PPID && asp->cfg.proto == OSMO_SS7_ASP_PROT_SUA)
-		rc = sua_rx_msg(asp, msg);
-	else if (ppid == M3UA_PPID && asp->cfg.proto == OSMO_SS7_ASP_PROT_M3UA)
-		rc = m3ua_rx_msg(asp, msg);
-	else
-		rc = ss7_asp_rx_unknown(asp, ppid, msg);
-
+	rc = xua_rx_msg(asp, msg);
 	msgb_free(msg);
 	return rc;
 }
@@ -1135,7 +1156,6 @@ int ss7_asp_m3ua_tcp_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struc
 {
 	struct osmo_ss7_asp *asp = osmo_stream_srv_get_data(conn);
 	struct osmo_stream_srv_link *link = osmo_stream_srv_get_master(conn);
-	const struct xua_common_hdr *hdr;
 	int rc;
 
 	/* Reparent msg to srv_link, to avoid "msg" being automatically freed if
@@ -1157,17 +1177,8 @@ int ss7_asp_m3ua_tcp_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struc
 
 	msg->dst = asp;
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_TOTAL);
-
-	/* spoof SCTP Stream ID */
-	hdr = (const struct xua_common_hdr *)msg->data;
-	if (hdr->msg_class == M3UA_MSGC_XFER)
-		msgb_sctp_stream(msg) = 1;
-	else
-		msgb_sctp_stream(msg) = 0;
-
-	rc = m3ua_rx_msg(asp, msg);
+	rc = m3ua_tcp_rx_msg(asp, msg);
 	msgb_free(msg);
-
 	return rc;
 }
 
@@ -1264,25 +1275,28 @@ static int ipa_cli_read_cb(struct osmo_stream_cli *conn, int res, struct msgb *m
 /* read call-back for M3UA-over-TCP socket */
 static int m3ua_tcp_cli_read_cb(struct osmo_stream_cli *conn, int res, struct msgb *msg)
 {
-	const struct xua_common_hdr *hdr;
+	struct osmo_ss7_asp *asp = osmo_stream_cli_get_data(conn);
+	int rc = 0;
 
-	/* spoof SCTP PPID */
-	msgb_sctp_ppid(msg) = M3UA_PPID;
+	if (res < 0) {
+		xua_cli_close_and_reconnect(conn);
+		goto out;
+	} else if (res == 0) {
+		xua_cli_close_and_reconnect(conn);
+		goto out;
+	}
 
-	/* spoof SCTP Stream ID */
-	hdr = (const struct xua_common_hdr *) msg->data;
-	if (hdr->msg_class == M3UA_MSGC_XFER)
-		msgb_sctp_stream(msg) = 1;
-	else
-		msgb_sctp_stream(msg) = 0;
-
-	return xua_cli_read_cb(conn, res, msg);
+	msg->dst = asp;
+	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_TOTAL);
+	rc = m3ua_tcp_rx_msg(asp, msg);
+out:
+	msgb_free(msg);
+	return rc;
 }
 
 static int xua_cli_read_cb(struct osmo_stream_cli *conn, int res, struct msgb *msg)
 {
 	struct osmo_ss7_asp *asp = osmo_stream_cli_get_data(conn);
-	unsigned int ppid;
 	int flags;
 	int rc = 0;
 
@@ -1313,21 +1327,12 @@ static int xua_cli_read_cb(struct osmo_stream_cli *conn, int res, struct msgb *m
 		goto out;
 	} else if (res == 0) {
 		xua_cli_close_and_reconnect(conn);
-
 		goto out;
 	}
 
-	ppid = msgb_sctp_ppid(msg);
 	msg->dst = asp;
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_TOTAL);
-
-	if (ppid == SUA_PPID && asp->cfg.proto == OSMO_SS7_ASP_PROT_SUA)
-		rc = sua_rx_msg(asp, msg);
-	else if (ppid == M3UA_PPID && asp->cfg.proto == OSMO_SS7_ASP_PROT_M3UA)
-		rc = m3ua_rx_msg(asp, msg);
-	else
-		rc = ss7_asp_rx_unknown(asp, ppid, msg);
-
+	rc = xua_rx_msg(asp, msg);
 out:
 	msgb_free(msg);
 	return rc;
