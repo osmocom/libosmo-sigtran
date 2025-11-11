@@ -2,8 +2,9 @@
 
 #include <osmocom/core/utils.h>
 
-/* Chapter 15.17.4 of Q.704 + RFC4666 3.4.5. */
-/* Section 5.1 of ETSI EG 201 693: MTP SI code allocations (for NI= 00) */
+/* Q.704 14.2.1, RFC4666 3.4.5.
+ * ETSI EG 201 693 Section 5.1: MTP SI code allocations (for NI=00 (international network) only)
+ */
 enum mtp_si_ni00 {
 	MTP_SI_SNM	= 0,
 	MTP_SI_STM	= 1,
@@ -24,13 +25,13 @@ enum mtp_si_ni00 {
 extern const struct value_string mtp_si_vals[];
 
 
-/* Chapter 15.17.5 of Q.704 */
+/* Q.704 15.17.5 */
 enum mtp_unavail_cause {
 	MTP_UNAVAIL_C_UNKNOWN		= 0x0,
 	MTP_UNAVAIL_C_UNEQUIP_REM_USER	= 0x1,
 	MTP_UNAVAIL_C_INACC_REM_USER	= 0x2,
 	/* This field is not explicitly listed in Q.704 15.17.5, but it is
-	 * expicitly described as one of four options in:
+	 * explicitly described as one of four options in:
 	 * Q.701 "TABLE 1" and 8.4
 	 * Q.704 2.4.2
 	 * Q.711 "Table 18" and 7.2.4
