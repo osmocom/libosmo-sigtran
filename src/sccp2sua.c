@@ -1427,7 +1427,7 @@ static int sua_to_sccp_xudt(struct msgb *msg, const struct xua_msg *xua)
 }
 
 /*! \returns \ref xua in case of success, NULL on error (xua not freed!) */
-static struct xua_msg *sccp_to_xua_ludt(struct msgb *msg, struct xua_msg *xua)
+static struct xua_msg *sccp_to_xua_ludt(const struct msgb *msg, struct xua_msg *xua)
 {
 	struct sccp_data_long_unitdata *ludt = (struct sccp_data_long_unitdata *)msg->l2h;
 
@@ -1664,7 +1664,7 @@ static int sua_to_sccp_err(struct msgb *msg, const struct xua_msg *xua)
 /*! \brief convert SCCP message to a SUA message
  *  \param[in] msg message buffer holding SCCP message at l2h
  *  \returns callee-allocated xUA message on success; NULL on error */
-struct xua_msg *osmo_sccp_to_xua(struct msgb *msg)
+struct xua_msg *osmo_sccp_to_xua(const struct msgb *msg)
 {
 	struct xua_msg *xua;
 
@@ -1778,7 +1778,7 @@ malformed:
 /*! \brief convert parsed SUA message to SCCP message
  *  \param[in] xua parsed SUA message to be converted
  *  \returns callee-allocated msgb containing encoded SCCP message */
-struct msgb *osmo_sua_to_sccp(struct xua_msg *xua)
+struct msgb *osmo_sua_to_sccp(const struct xua_msg *xua)
 {
 	struct msgb *msg = sccp_msgb_alloc("SCCP from SUA");
 	int rc;

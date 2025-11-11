@@ -16,8 +16,8 @@ int sua_addr_parse(struct osmo_sccp_addr *out, struct xua_msg *xua, uint16_t iei
 
 int sua_parse_gt(struct osmo_sccp_gt *gt, const uint8_t *data, unsigned int datalen);
 
-struct xua_msg *osmo_sccp_to_xua(struct msgb *msg);
-struct msgb *osmo_sua_to_sccp(struct xua_msg *xua);
+struct xua_msg *osmo_sccp_to_xua(const struct msgb *msg);
+struct msgb *osmo_sua_to_sccp(const struct xua_msg *xua);
 
 int sua_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg);
 
