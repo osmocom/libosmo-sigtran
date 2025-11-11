@@ -23,6 +23,18 @@ enum mtp_si_ni00 {
 };
 extern const struct value_string mtp_si_vals[];
 
+/* Q.704 14.2.2: "In the case of only one national signalling network the spare code of the
+ * network indicator reserved for national use can be used, for example, to define an additional
+ * 16 User Parts (making a total of 32 User Parts) for that national signalling network."
+ * Hence, we keep service indicators for Network Indicator "International network" (00) the same
+ * as for "National network" (10), and use "Reserved for national use" to specify extension
+ * service indicators.
+ * Note we pick enum values reserved in NI00 above in order to allow forming a
+ * superset so it can still be used with other NI values. */
+enum mtp_si_ni11 {
+	MTP_SI_NI11_OSMO_IPA = 2, /* Contains an IPA header + payload */
+};
+
 /* Q.704 14.2.2 Sub-service field (Network Indicator) */
 enum mtp_network_indicator {
 	MTP_NI_INTERNATIONAL		= 0,
