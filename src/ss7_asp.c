@@ -1031,6 +1031,7 @@ int ss7_asp_ipa_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struct msg
 {
 	struct osmo_ss7_asp *asp = osmo_stream_srv_get_data(conn);
 	struct osmo_stream_srv_link *link = osmo_stream_srv_get_master(conn);
+	int rc;
 
 	/* Reparent msg to srv_link, to avoid "msg" being automatically freed if
 	 * "conn" is teared down during msg handling (or if its associated
@@ -1051,7 +1052,9 @@ int ss7_asp_ipa_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struct msg
 
 	msg->dst = asp;
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_TOTAL);
-	return ipa_rx_msg(asp, msg, asp->ipa.sls);
+	rc = ipa_rx_msg(asp, msg, asp->ipa.sls);
+	msgb_free(msg);
+	return rc;
 }
 
 /* netif code tells us we can read something from the socket */
@@ -1239,6 +1242,7 @@ static int xua_cli_disconnect_cb(struct osmo_stream_cli *cli)
 static int ipa_cli_read_cb(struct osmo_stream_cli *conn, int res, struct msgb *msg)
 {
 	struct osmo_ss7_asp *asp = osmo_stream_cli_get_data(conn);
+	int rc;
 
 	if (res <= 0) {
 		if (res == -EAGAIN) {
@@ -1252,7 +1256,9 @@ static int ipa_cli_read_cb(struct osmo_stream_cli *conn, int res, struct msgb *m
 
 	msg->dst = asp;
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_TOTAL);
-	return ipa_rx_msg(asp, msg, asp->ipa.sls);
+	rc = ipa_rx_msg(asp, msg, asp->ipa.sls);
+	msgb_free(msg);
+	return rc;
 }
 
 /* read call-back for M3UA-over-TCP socket */

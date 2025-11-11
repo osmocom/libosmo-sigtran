@@ -149,8 +149,6 @@ static int ipa_rx_msg_ccm(struct osmo_ss7_asp *asp, struct msgb *msg)
 		rc = -1;
 	}
 
-	msgb_free(msg);
-
 	return rc;
 }
 
@@ -171,7 +169,7 @@ struct osmo_ss7_as *ipa_find_as_for_asp(struct osmo_ss7_asp *asp)
 }
 
 /* Patch a SCCP message and add point codes to Called/Calling Party (if missing) */
-static struct msgb *patch_sccp_with_pc(struct osmo_ss7_asp *asp, struct msgb *sccp_msg_in,
+static struct msgb *patch_sccp_with_pc(const struct osmo_ss7_asp *asp, const struct msgb *sccp_msg_in,
 					uint32_t opc, uint32_t dpc)
 {
 	struct osmo_sccp_addr addr;
@@ -184,11 +182,8 @@ static struct msgb *patch_sccp_with_pc(struct osmo_ss7_asp *asp, struct msgb *sc
 	if (!sua) {
 		LOGPASP(asp, DLSS7, LOGL_ERROR, "Couldn't convert SCCP to SUA: %s\n",
 			msgb_hexdump(sccp_msg_in));
-		msgb_free(sccp_msg_in);
 		return NULL;
 	}
-	/* free the input message and work with SUA version instead */
-	msgb_free(sccp_msg_in);
 
 	rc = sua_addr_parse(&addr, sua, SUA_IEI_DEST_ADDR);
 	switch (rc) {
@@ -238,13 +233,12 @@ static int ipa_rx_msg_sccp(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t s
 {
 	int rc;
 	struct m3ua_data_hdr data_hdr;
-	struct xua_msg *xua;
+	struct xua_msg *xua = NULL;
 	struct osmo_ss7_as *as = ipa_find_as_for_asp(asp);
 	uint32_t opc, dpc;
 
 	if (!as) {
 		LOGPASP(asp, DLSS7, LOGL_ERROR, "Rx message for IPA ASP without AS?!\n");
-		msgb_free(msg);
 		return -1;
 	}
 
@@ -302,25 +296,27 @@ static int ipa_rx_msg_sccp(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t s
 		dpc = as->cfg.pc_override.dpc;
 	}
 
-	/* Second, patch this into the SCCP message */
-	if (as->cfg.pc_override.sccp_mode == OSMO_SS7_PATCH_BOTH) {
-		msg = patch_sccp_with_pc(asp, msg, opc, dpc);
-		if (!msg) {
-			LOGPASP(asp, DLSS7, LOGL_ERROR, "Unable to patch PC into SCCP message; dropping\n");
-			return -1;
-		}
-	}
-
-	/* Third, create a MTP3/M3UA label with those point codes */
+	/* Second, create a MTP3/M3UA label with those point codes */
 	memset(&data_hdr, 0, sizeof(data_hdr));
 	data_hdr.si = MTP_SI_SCCP;
 	data_hdr.opc = osmo_htonl(opc);
 	data_hdr.dpc = osmo_htonl(dpc);
 	data_hdr.sls = sls;
 	data_hdr.ni = as->inst->cfg.network_indicator;
-	/* Create M3UA message in XUA structure */
-	xua = m3ua_xfer_from_data(&data_hdr, msgb_l2(msg), msgb_l2len(msg));
-	msgb_free(msg);
+
+	/* Third, patch this into the SCCP message and create M3UA message in XUA structure  */
+	if (as->cfg.pc_override.sccp_mode == OSMO_SS7_PATCH_BOTH) {
+		struct msgb *msg_patched = patch_sccp_with_pc(asp, msg, opc, dpc);
+		if (!msg_patched) {
+			LOGPASP(asp, DLSS7, LOGL_ERROR, "Unable to patch PC into SCCP message; dropping\n");
+			return -1;
+		}
+		xua = m3ua_xfer_from_data(&data_hdr, msgb_l2(msg_patched), msgb_l2len(msg_patched));
+		msgb_free(msg_patched);
+	} else {
+		xua = m3ua_xfer_from_data(&data_hdr, msgb_l2(msg), msgb_l2len(msg));
+	}
+
 	/* Update xua->mtp with values from data_hdr */
 	m3ua_dh_to_xfer_param(&xua->mtp, &data_hdr);
 
@@ -332,7 +328,7 @@ static int ipa_rx_msg_sccp(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t s
 
 /*! \brief process M3UA message received from socket
  *  \param[in] asp Application Server Process receiving \a msg
- *  \param[in] msg received message buffer. Callee takes ownership!
+ *  \param[in] msg received message buffer. It is kept owned by the caller.
  *  \param[in] sls The SLS (signaling link selector) field to use in the generated M3UA header
  *  \returns 0 on success; negative on error */
 int ipa_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t sls)
@@ -355,7 +351,6 @@ int ipa_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t sls)
 		break;
 	default:
 		rc = ss7_asp_rx_unknown(asp, hh->proto, msg);
-		msgb_free(msg);
 	}
 
 	return rc;
