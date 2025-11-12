@@ -1286,11 +1286,9 @@ static void write_one_cs7(struct vty *vty, struct osmo_ss7_instance *inst, bool 
 	vty_out(vty, "cs7 instance %u%s", inst->cfg.id, VTY_NEWLINE);
 	if (inst->cfg.description)
 		vty_out(vty, " description %s%s", inst->cfg.description, VTY_NEWLINE);
-	if (inst->cfg.network_indicator != MTP_NI_INTERNATIONAL)
-		vty_out(vty, " network-indicator %s%s",
-			get_value_string(mtp_network_indicator_vals,
-					 inst->cfg.network_indicator),
-			VTY_NEWLINE);
+	vty_out(vty, " network-indicator %s%s",
+		get_value_string(mtp_network_indicator_vals, inst->cfg.network_indicator),
+		VTY_NEWLINE);
 
 	if (inst->cfg.pc_fmt.component_len[0] != 3 ||
 	    inst->cfg.pc_fmt.component_len[1] != 8 ||

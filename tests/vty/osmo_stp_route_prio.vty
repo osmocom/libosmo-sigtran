@@ -36,6 +36,7 @@ OsmoSTP(config-cs7-as)# exit
 OsmoSTP(config-cs7)# show running-config
 ...
 cs7 instance 0
+ network-indicator international
  xua rkm routing-key-allocation dynamic-permitted
  asp asp1 2905 54321 m3ua
   local-ip 27.0.0.1

@@ -610,6 +610,7 @@ my-ass       AS_DOWN      0          3.2.1                                      
 OsmoSTP(config)# show running-config
 ...
 cs7 instance 0
+ network-indicator international
  xua rkm routing-key-allocation dynamic-permitted
  asp my-asp 12345 54321 m3ua
   local-ip 127.0.0.100
@@ -632,6 +633,7 @@ cs7 instance 0
   routing-indicator PC
   point-code 1.2.3
 cs7 instance 1
+ network-indicator international
  route-table system
  sccp-address bar
   routing-indicator PC
