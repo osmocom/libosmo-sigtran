@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <osmocom/core/linuxlist.h>
 
+#include <osmocom/sigtran/protocol/mtp.h>
+
 /***********************************************************************
  * SS7 Instances
  ***********************************************************************/
@@ -45,7 +47,7 @@ struct osmo_ss7_instance {
 		char *description;
 		uint32_t primary_pc;
 		/* capability PCs */
-		uint8_t network_indicator;
+		enum mtp_network_indicator network_indicator;
 		struct osmo_ss7_pc_fmt pc_fmt;
 		bool permit_dyn_rkm_alloc;
 		struct llist_head sccp_address_book;

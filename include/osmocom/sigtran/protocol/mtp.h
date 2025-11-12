@@ -21,8 +21,16 @@ enum mtp_si_ni00 {
 	MTP_SI_BICC	= 13,
 	MTP_SI_GCP	= 14,
 };
-
 extern const struct value_string mtp_si_vals[];
+
+/* Q.704 14.2.2 Sub-service field (Network Indicator) */
+enum mtp_network_indicator {
+	MTP_NI_INTERNATIONAL		= 0,
+	MTP_NI_SPARE_INTERNATIONAL	= 1,
+	MTP_NI_NATIONAL			= 2,
+	MTP_NI_RESERVED_NATIONAL	= 3
+};
+extern const struct value_string mtp_network_indicator_vals[];
 
 
 /* Q.704 15.17.5 */

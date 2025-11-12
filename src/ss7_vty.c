@@ -107,11 +107,11 @@ DEFUN_ATTR(cs7_instance, cs7_instance_cmd,
 	return CMD_SUCCESS;
 }
 
-static const struct value_string ss7_network_indicator_vals[] = {
-	{ 0,	"international" },
-	{ 1,	"spare" },
-	{ 2,	"national" },
-	{ 3,	"reserved" },
+const struct value_string mtp_network_indicator_vals[] = {
+	{ MTP_NI_INTERNATIONAL,		"international" },
+	{ MTP_NI_SPARE_INTERNATIONAL,	"spare" },
+	{ MTP_NI_NATIONAL,		"national" },
+	{ MTP_NI_RESERVED_NATIONAL,	"reserved" },
 	{ 0,	NULL }
 };
 
@@ -126,7 +126,7 @@ DEFUN_ATTR(cs7_net_ind, cs7_net_ind_cmd,
 	   CMD_ATTR_IMMEDIATE)
 {
 	struct osmo_ss7_instance *inst = vty->index;
-	int ni = get_string_value(ss7_network_indicator_vals, argv[0]);
+	int ni = get_string_value(mtp_network_indicator_vals, argv[0]);
 
 	inst->cfg.network_indicator = ni;
 	return CMD_SUCCESS;
@@ -1286,9 +1286,9 @@ static void write_one_cs7(struct vty *vty, struct osmo_ss7_instance *inst, bool 
 	vty_out(vty, "cs7 instance %u%s", inst->cfg.id, VTY_NEWLINE);
 	if (inst->cfg.description)
 		vty_out(vty, " description %s%s", inst->cfg.description, VTY_NEWLINE);
-	if (inst->cfg.network_indicator)
+	if (inst->cfg.network_indicator != MTP_NI_INTERNATIONAL)
 		vty_out(vty, " network-indicator %s%s",
-			get_value_string(ss7_network_indicator_vals,
+			get_value_string(mtp_network_indicator_vals,
 					 inst->cfg.network_indicator),
 			VTY_NEWLINE);
 
