@@ -93,6 +93,12 @@ struct osmo_ss7_asp {
 		bool sls_assigned;
 	} ipa;
 
+#ifdef WITH_TCAP_LOADSHARING
+	struct {
+		bool enabled;
+	} tcap;
+#endif /* WITH_TCAP_LOADSHARING */
+
 	struct {
 		char *name;
 		char *description;

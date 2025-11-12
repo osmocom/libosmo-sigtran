@@ -47,6 +47,9 @@
 
 #include "mtp3_hmdc.h"
 #include "ss7_as.h"
+#ifdef WITH_TCAP_LOADSHARING
+#include "tcap_as_loadshare.h"
+#endif /* WITH_TCAP_LOADSHARING */
 #include "ss7_asp.h"
 #include "ss7_internal.h"
 #include "xua_asp_fsm.h"
@@ -319,6 +322,10 @@ static int ipa_rx_msg_up(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t sls
 	case IPAC_PROTO_SCCP:
 		/* Third, patch this into the SCCP message and create M3UA message in XUA structure  */
 		data_hdr.si = MTP_SI_SCCP;
+#ifdef WITH_TCAP_LOADSHARING
+		/* update TCAP Transaction Tracking (Rx) */
+		tcap_as_rx_sccp_asp(as, asp, opc, dpc, msg);
+#endif /* WITH_TCAP_LOADSHARING */
 		if (as->cfg.pc_override.sccp_mode == OSMO_SS7_PATCH_BOTH) {
 			struct msgb *msg_patched = patch_sccp_with_pc(asp, msg, opc, dpc);
 			if (!msg_patched) {
@@ -368,6 +375,14 @@ int ipa_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t sls)
 	case IPAC_PROTO_IPACCESS:
 		rc = ipa_rx_msg_ccm(asp, msg);
 		break;
+#ifdef WITH_TCAP_LOADSHARING
+	case IPAC_PROTO_OSMO:
+		if (osmo_ipa_msgb_cb_proto_ext(msg) == IPAC_PROTO_EXT_TCAP_ROUTING) {
+			rc = ipa_rx_msg_osmo_ext_tcap_routing(asp, msg);
+			break;
+		}
+		/* fall-through */
+#endif /* WITH_TCAP_LOADSHARING */
 	default:
 		rc = ipa_rx_msg_up(asp, msg, sls);
 		break;

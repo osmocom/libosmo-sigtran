@@ -36,6 +36,10 @@
 #include "xua_as_fsm.h"
 #include "xua_internal.h"
 
+#ifdef WITH_TCAP_LOADSHARING
+#include "tcap_as_loadshare.h"
+#endif /* WITH_TCAP_LOADSHARING */
+
 #define S(x)	(1 << (x))
 
 /* The general idea is:
@@ -489,6 +493,11 @@ static void common_asp_fsm_down_onenter(struct osmo_ss7_asp *asp)
 	llist_for_each_entry_safe(as, as2, &inst->as_list, list) {
 		if (!osmo_ss7_as_has_asp(as, asp))
 			continue;
+
+#ifdef WITH_TCAP_LOADSHARING
+			tcap_as_del_asp(as, asp);
+#endif
+
 		if (as->rkm_dyn_allocated) {
 			/* RFC 4666 4.4.2: "An ASP SHOULD deregister from all Application Servers
 			 * of which it is a member before attempting to move to the ASP-Down state [...]

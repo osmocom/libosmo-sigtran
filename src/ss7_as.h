@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/fsm.h>
+#include <osmocom/core/hashtable.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/tdef.h>
 #include <osmocom/netif/stream.h>
@@ -19,6 +20,7 @@
 struct osmo_ss7_instance;
 struct osmo_ss7_asp;
 struct osmo_mtp_transfer_param;
+struct xua_msg;
 
 enum osmo_ss7_as_patch_sccp_mode {
 	OSMO_SS7_PATCH_NONE,	/* no patching of SCCP */
@@ -92,6 +94,21 @@ struct osmo_ss7_as {
 	/* ASP loadshare: */
 	struct osmo_ss7_as_esls_entry aesls_table[NUM_AS_EXT_SLS];
 
+#ifdef WITH_TCAP_LOADSHARING
+	struct {
+		/* optimisation: true if tid_ranges contains PCs (not only wildcards) */
+		bool contains_pc;
+		/* optimisation: true if tid_ranges contains SSNs (not only wildcards (0))  */
+		bool contains_ssn;
+		DECLARE_HASHTABLE(tid_ranges, 10);
+		/* gargabe collector timer */
+		struct osmo_timer_list gc_timer;
+		/* TODO: the hash tables size might not be optimal */
+		DECLARE_HASHTABLE(trans_track_own, 10);
+		DECLARE_HASHTABLE(trans_track_peer, 10);
+	} tcap;
+#endif /* WITH_TCAP_LOADSHARING */
+
 	struct {
 		char *name;
 		char *description;
@@ -128,6 +145,13 @@ struct osmo_ss7_as {
 			* to skip for routing decisions (always takes 12 bits).
 			* range 0-2, defaults to 0, which means take least significant 12 bits. */
 			uint8_t opc_shift;
+#ifdef WITH_TCAP_LOADSHARING
+			/* Should we do load-sharing based on tcap ids? */
+			struct {
+				bool enabled;
+				unsigned int timeout_s;
+			} tcap;
+#endif /* WITH_TCAP_LOADSHARING */
 		} loadshare;
 	} cfg;
 };

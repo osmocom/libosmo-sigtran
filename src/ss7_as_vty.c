@@ -36,6 +36,9 @@
 #include <osmocom/sigtran/protocol/mtp.h>
 
 #include "ss7_as.h"
+#ifdef WITH_TCAP_LOADSHARING
+#include "tcap_as_loadshare.h"
+#endif /* WITH_TCAP_LOADSHARING */
 #include "ss7_asp.h"
 #include "ss7_route.h"
 #include "ss7_route_table.h"
@@ -216,6 +219,30 @@ DEFUN_ATTR(as_sls_shift, as_sls_shift_cmd,
 
 	return CMD_SUCCESS;
 }
+
+#ifdef WITH_TCAP_LOADSHARING
+DEFUN_USRATTR(as_tcap_routing, as_tcap_routing_cmd,
+	      OSMO_SCCP_LIB_ATTR_RSTRT_ASP,
+	      "tcap-routing",
+	      "Enable TCAP-based routing when in traffic-mode loadshare\n")
+{
+	struct osmo_ss7_as *as = vty->index;
+	tcap_enable(as);
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(as_no_tcap_routing, as_no_tcap_routing_cmd,
+	      OSMO_SCCP_LIB_ATTR_RSTRT_ASP,
+	      "no tcap-routing",
+	      NO_STR "Disable TCAP-based routing when in traffic-mode loadshare\n")
+{
+	struct osmo_ss7_as *as = vty->index;
+	tcap_disable(as);
+
+	return CMD_SUCCESS;
+}
+#endif /* WITH_TCAP_LOADSHARING */
 
 DEFUN_ATTR(as_bindingtable_reset, as_bindingtable_reset_cmd,
 	"binding-table reset",
@@ -474,6 +501,10 @@ void ss7_vty_write_one_as(struct vty *vty, struct osmo_ss7_as *as, bool show_dyn
 		if (as->cfg.loadshare.sls_shift != 0)
 			vty_out(vty, "  sls-shift %u%s", as->cfg.loadshare.sls_shift, VTY_NEWLINE);
 	}
+#ifdef WITH_TCAP_LOADSHARING
+	if (as->cfg.loadshare.tcap.enabled)
+		vty_out(vty, "tcap-routing");
+#endif /* WITH_TCAP_LOADSHARING */
 
 	if (as->cfg.recovery_timeout_msec != 2000) {
 		vty_out(vty, "  recovery-timeout %u%s",
@@ -651,6 +682,11 @@ int ss7_vty_node_as_go_parent(struct vty *vty)
 					"'point-code override dpc PC' configured in its routing-key. Fix your config!%s",
 					 as->cfg.name, VTY_NEWLINE);
 		}
+#ifdef WITH_TCAP_LOADSHARING
+		if (as->cfg.loadshare.tcap.enabled && as->cfg.mode != OSMO_SS7_AS_TMOD_LOADSHARE)
+			vty_out(vty, "%% AS '%s' TCAP routing is enabled, but only works in traffic-mode loadshare!%s",
+				as->cfg.name, VTY_NEWLINE);
+#endif /* WITH_TCAP_LOADSHARING */
 	}
 	return 0;
 }
@@ -670,6 +706,10 @@ void ss7_vty_init_node_as(void)
 	install_lib_element(L_CS7_AS_NODE, &as_traf_mode_loadshare_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_no_traf_mode_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_sls_shift_cmd);
+#ifdef WITH_TCAP_LOADSHARING
+	install_lib_element(L_CS7_AS_NODE, &as_tcap_routing_cmd);
+	install_lib_element(L_CS7_AS_NODE, &as_no_tcap_routing_cmd);
+#endif /* WITH_TCAP_LOADSHARING */
 	install_lib_element(L_CS7_AS_NODE, &as_bindingtable_reset_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_recov_tout_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_qos_class_cmd);

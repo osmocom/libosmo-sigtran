@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 
+#include <osmocom/core/hashtable.h>
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/utils.h>
 #include <osmocom/core/talloc.h>
@@ -36,6 +37,9 @@
 #include <osmocom/sigtran/mtp_sap.h>
 
 #include "ss7_as.h"
+#ifdef WITH_TCAP_LOADSHARING
+#include "tcap_as_loadshare.h"
+#endif /* WITH_TCAP_LOADSHARING */
 #include "ss7_asp.h"
 #include "ss7_route.h"
 #include "ss7_route_table.h"
@@ -133,6 +137,16 @@ struct osmo_ss7_as *ss7_as_alloc(struct osmo_ss7_instance *inst, const char *nam
 	/* Pick 1st ASP upon 1st roundrobin assignment: */
 	as->cfg.last_asp_idx_assigned = ARRAY_SIZE(as->cfg.asps) - 1;
 
+#ifdef WITH_TCAP_LOADSHARING
+	/* loadshare-tcap based id sharing */
+	hash_init(as->tcap.tid_ranges);
+	hash_init(as->tcap.trans_track_own);
+	hash_init(as->tcap.trans_track_peer);
+
+	/* TODO: use Tdef */
+	as->cfg.loadshare.tcap.timeout_s = 30;
+#endif /* WITH_TCAP_LOADSHARING */
+
 	as->fi = xua_as_fsm_start(as, LOGL_DEBUG);
 	llist_add_tail(&as->list, &inst->as_list);
 
@@ -211,6 +225,10 @@ int ss7_as_del_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp)
 			as->aesls_table[i].alt_asp = NULL;
 	}
 
+#ifdef WITH_TCAP_LOADSHARING
+	tcap_as_del_asp(as, asp);
+#endif /* WITH_TCAP_LOADSHARING */
+
 	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
 		if (as->cfg.asps[i] == asp) {
 			as->cfg.asps[i] = NULL;
@@ -252,6 +270,10 @@ void osmo_ss7_as_destroy(struct osmo_ss7_as *as)
 {
 	OSMO_ASSERT(ss7_initialized);
 	LOGPAS(as, DLSS7, LOGL_INFO, "Destroying AS\n");
+
+#ifdef WITH_TCAP_LOADSHARING
+	tcap_disable(as);
+#endif /* WITH_TCAP_LOADSHARING */
 
 	if (as->fi)
 		osmo_fsm_inst_term(as->fi, OSMO_FSM_TERM_REQUEST, NULL);
@@ -550,7 +572,17 @@ struct osmo_ss7_asp *ss7_as_select_asp(struct osmo_ss7_as *as, const struct xua_
 		asp = ss7_as_select_asp_override(as);
 		break;
 	case OSMO_SS7_AS_TMOD_LOADSHARE:
-		asp = ss7_as_select_asp_loadshare(as, mtp);
+#ifdef WITH_TCAP_LOADSHARING
+		if (as->cfg.loadshare.tcap.enabled) {
+			int rc = tcap_as_select_asp_loadshare(&asp, as, xua);
+			if (rc == -EPROTONOSUPPORT) /* fallback to non-tcap loadsharing */
+				asp = ss7_as_select_asp_loadshare(as, mtp);
+			/* for all other cases, the asp has been either set to NULL or the corresponding asp */
+		} else
+#endif
+		{
+			asp = ss7_as_select_asp_loadshare(as, mtp);
+		}
 		break;
 	case OSMO_SS7_AS_TMOD_ROUNDROBIN:
 		asp = ss7_as_select_asp_roundrobin(as);

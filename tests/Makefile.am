@@ -1,5 +1,9 @@
 SUBDIRS = xua m2ua ss7 vty
 
+if BUILD_WITH_TCAP_LOADSHARING
+SUBDIRS += tcap
+endif
+
 # The `:;' works around a Bash 3.2 bug when the output is not writeable.
 $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 	:;{ \

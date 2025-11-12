@@ -204,6 +204,7 @@ AC_OUTPUT(
     tests/m2ua/Makefile
     tests/xua/Makefile
     tests/ss7/Makefile
+    tests/tcap/Makefile
     tests/vty/Makefile
     examples/Makefile
     stp/Makefile

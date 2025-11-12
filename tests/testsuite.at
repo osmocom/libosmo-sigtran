@@ -19,3 +19,10 @@ AT_KEYWORDS([ss7])
 cat $abs_srcdir/ss7/ss7_test.ok > expout
 AT_CHECK([$abs_top_builddir/tests/ss7/ss7_test], [], [expout], [ignore])
 AT_CLEANUP
+
+AT_SETUP([tcap_transaction_tracking])
+AT_KEYWORDS([tcap_transaction_tracking])
+AT_SKIP_IF([test ! -e $abs_srcdir/tcap/tcap_transaction_tracking_test])
+cat $abs_srcdir/tcap/tcap_transaction_tracking_test.ok > expout
+AT_CHECK([$abs_top_builddir/tests/tcap/tcap_transaction_tracking_test], [], [expout], [ignore])
+AT_CLEANUP

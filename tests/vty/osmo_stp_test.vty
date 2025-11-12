@@ -387,6 +387,7 @@ OsmoSTP(config-cs7-as)# list
   traffic-mode loadshare [bindings] [sls] [opc-sls] [opc-shift] [<0-2>]
   no traffic-mode
   sls-shift <0-3>
+...
   binding-table reset
   recovery-timeout <1-2000>
   qos-class <0-7>
@@ -405,6 +406,7 @@ OsmoSTP(config-cs7-as)# ?
   no                Negate a command or set its defaults
   traffic-mode      Specifies traffic mode of operation of the ASP within the AS
   sls-shift         Shift SLS bits used during routing decision
+...
   binding-table     AS Loadshare binding table operations
   recovery-timeout  Specifies RFC4666 recovery timer T(r) timeout
   qos-class         Specity QoS Class of AS
@@ -414,6 +416,7 @@ OsmoSTP(config-cs7-as)# ?
 OsmoSTP(config-cs7-as)# no ?
   asp           Specify ASP to be removed from this AS
   traffic-mode  Remove explicit traffic mode of operation of this AS
+...
   point-code    Point Code Specific Features
 
 OsmoSTP(config-cs7-as)# do show cs7 instance 0 as all

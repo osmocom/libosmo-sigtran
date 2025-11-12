@@ -1,0 +1,35 @@
+OsmoSTP> enable
+OsmoSTP# configure terminal
+OsmoSTP(config)# cs7 instance 0
+
+OsmoSTP(config-cs7)# as my-ass m3ua
+OsmoSTP(config-cs7-as)# list
+...
+  tcap-routing
+  no tcap-routing
+...
+
+OsmoSTP(config-cs7-as)# ?
+  help              Description of the interactive help system
+  list              Print command list
+  show              Show running system information
+  write             Write running configuration to memory, network, or terminal
+  exit              Exit current mode and down to previous mode
+  end               End current mode and change to enable mode.
+  description       Save human-readable description of the object
+  asp               Specify that a given ASP is part of this AS
+  no                Negate a command or set its defaults
+  traffic-mode      Specifies traffic mode of operation of the ASP within the AS
+  sls-shift         Shift SLS bits used during routing decision
+  tcap-routing      Enable TCAP-based routing when in traffic-mode loadshare
+  binding-table     AS Loadshare binding table operations
+  recovery-timeout  Specifies RFC4666 recovery timer T(r) timeout
+  qos-class         Specity QoS Class of AS
+  routing-key       Define a routing key
+  point-code        Point Code Specific Features
+
+OsmoSTP(config-cs7-as)# no ?
+  asp           Specify ASP to be removed from this AS
+  traffic-mode  Remove explicit traffic mode of operation of this AS
+  tcap-routing  Disable TCAP-based routing when in traffic-mode loadshare
+  point-code    Point Code Specific Features
