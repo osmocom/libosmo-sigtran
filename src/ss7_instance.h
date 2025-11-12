@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <osmocom/core/linuxlist.h>
+#include <osmocom/core/rate_ctr.h>
 
 #include <osmocom/sigtran/protocol/mtp.h>
 
@@ -14,6 +15,12 @@ struct osmo_ss7_user;
 struct osmo_ss7_route_table;
 struct osmo_ss7_route_label;
 struct osmo_sccp_instance;
+
+enum ss7_instance_ctr {
+	SS7_INST_CTR_PKT_RX_TOTAL,
+	SS7_INST_CTR_PKT_RX_UNKNOWN,
+	SS7_INST_CTR_PKT_TX_TOTAL,
+};
 
 struct osmo_ss7_pc_fmt {
 	char delimiter;
@@ -40,6 +47,8 @@ struct osmo_ss7_instance {
 	struct osmo_ss7_route_table *rtable_system;
 
 	struct osmo_sccp_instance *sccp;
+
+	struct rate_ctr_group *ctrg;
 
 	struct {
 		uint32_t id;

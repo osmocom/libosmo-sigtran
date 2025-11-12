@@ -49,6 +49,19 @@ static const struct osmo_ss7_pc_fmt default_pc_fmt = {
 	.component_len = { 3, 8, 3},
 };
 
+static const struct rate_ctr_desc ss7_inst_rcd[] = {
+	[SS7_INST_CTR_PKT_RX_TOTAL] = { "rx:packets:total", "Total number of packets received" },
+	[SS7_INST_CTR_PKT_RX_UNKNOWN] = { "rx:packets:unknown", "Number of packets received for unknown PPID" },
+	[SS7_INST_CTR_PKT_TX_TOTAL] = { "tx:packets:total", "Total number of packets transmitted" },
+};
+
+static const struct rate_ctr_group_desc ss7_inst_rcgd = {
+	.group_name_prefix = "s7i",
+	.group_description = "SS7 Instance",
+	.num_ctr = ARRAY_SIZE(ss7_inst_rcd),
+	.ctr_desc = ss7_inst_rcd,
+};
+
 struct osmo_ss7_instance *
 ss7_instance_alloc(void *ctx, uint32_t id)
 {
@@ -64,11 +77,18 @@ ss7_instance_alloc(void *ctx, uint32_t id)
 	inst->cfg.id = id;
 	LOGSS7(inst, LOGL_INFO, "Creating SS7 Instance\n");
 
+	INIT_LLIST_HEAD(&inst->cfg.sccp_address_book);
 	INIT_LLIST_HEAD(&inst->linksets);
 	INIT_LLIST_HEAD(&inst->as_list);
 	INIT_LLIST_HEAD(&inst->asp_list);
 	INIT_LLIST_HEAD(&inst->rtable_list);
 	INIT_LLIST_HEAD(&inst->xua_servers);
+
+	inst->ctrg = rate_ctr_group_alloc(inst, &ss7_inst_rcgd, id);
+	if (!inst->ctrg) {
+		talloc_free(inst);
+		return NULL;
+	}
 	inst->rtable_system = ss7_route_table_find_or_create(inst, "system");
 
 	/* default point code structure + formatting */
@@ -78,8 +98,6 @@ ss7_instance_alloc(void *ctx, uint32_t id)
 	inst->cfg.pc_fmt.component_len[2] = 3;
 
 	llist_add_tail(&inst->list, &osmo_ss7_instances);
-
-	INIT_LLIST_HEAD(&inst->cfg.sccp_address_book);
 
 	return inst;
 }
@@ -105,6 +123,7 @@ void osmo_ss7_instance_destroy(struct osmo_ss7_instance *inst)
 	llist_for_each_entry_safe(lset, lset2, &inst->linksets, list)
 		ss7_linkset_destroy(lset);
 
+	rate_ctr_group_free(inst->ctrg);
 	llist_del(&inst->list);
 	talloc_free(inst);
 }

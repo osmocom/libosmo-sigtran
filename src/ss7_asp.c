@@ -1051,6 +1051,7 @@ int ss7_asp_ipa_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struct msg
 	}
 
 	msg->dst = asp;
+	rate_ctr_inc2(asp->inst->ctrg, SS7_INST_CTR_PKT_RX_TOTAL);
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_TOTAL);
 	rc = ipa_rx_msg(asp, msg, asp->ipa.sls);
 	msgb_free(msg);
@@ -1131,6 +1132,7 @@ int ss7_asp_xua_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struct msg
 	}
 
 	msg->dst = asp;
+	rate_ctr_inc2(asp->inst->ctrg, SS7_INST_CTR_PKT_RX_TOTAL);
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_TOTAL);
 	rc = xua_rx_msg(asp, msg);
 	msgb_free(msg);
@@ -1176,6 +1178,7 @@ int ss7_asp_m3ua_tcp_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struc
 	}
 
 	msg->dst = asp;
+	rate_ctr_inc2(asp->inst->ctrg, SS7_INST_CTR_PKT_RX_TOTAL);
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_TOTAL);
 	rc = m3ua_tcp_rx_msg(asp, msg);
 	msgb_free(msg);
@@ -1266,6 +1269,7 @@ static int ipa_cli_read_cb(struct osmo_stream_cli *conn, int res, struct msgb *m
 	}
 
 	msg->dst = asp;
+	rate_ctr_inc2(asp->inst->ctrg, SS7_INST_CTR_PKT_RX_TOTAL);
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_TOTAL);
 	rc = ipa_rx_msg(asp, msg, asp->ipa.sls);
 	msgb_free(msg);
@@ -1287,6 +1291,7 @@ static int m3ua_tcp_cli_read_cb(struct osmo_stream_cli *conn, int res, struct ms
 	}
 
 	msg->dst = asp;
+	rate_ctr_inc2(asp->inst->ctrg, SS7_INST_CTR_PKT_RX_TOTAL);
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_TOTAL);
 	rc = m3ua_tcp_rx_msg(asp, msg);
 out:
@@ -1331,6 +1336,7 @@ static int xua_cli_read_cb(struct osmo_stream_cli *conn, int res, struct msgb *m
 	}
 
 	msg->dst = asp;
+	rate_ctr_inc2(asp->inst->ctrg, SS7_INST_CTR_PKT_RX_TOTAL);
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_TOTAL);
 	rc = xua_rx_msg(asp, msg);
 out:
@@ -1390,6 +1396,7 @@ int osmo_ss7_asp_send(struct osmo_ss7_asp *asp, struct msgb *msg)
 		OSMO_ASSERT(0);
 	}
 
+	rate_ctr_inc2(asp->inst->ctrg, SS7_INST_CTR_PKT_TX_TOTAL);
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_TX_TOTAL);
 	LOGPASP(asp, DLSS7, LOGL_DEBUG, "Tx %d bytes: %s\n", msg->len, msgb_hexdump(msg));
 
@@ -1438,6 +1445,7 @@ void osmo_ss7_register_rx_unknown_cb(osmo_ss7_asp_rx_unknown_cb *cb)
 
 int ss7_asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *msg)
 {
+	rate_ctr_inc2(asp->inst->ctrg, SS7_INST_CTR_PKT_RX_UNKNOWN);
 	rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_UNKNOWN);
 
 	if (g_osmo_ss7_asp_rx_unknown_cb)
