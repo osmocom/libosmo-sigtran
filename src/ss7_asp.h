@@ -36,6 +36,7 @@ extern const struct osmo_tdef ss7_asp_xua_timer_defaults[SS7_ASP_XUA_TIMERS_LEN]
 enum ss7_asp_ctr {
 	SS7_ASP_CTR_PKT_RX_TOTAL,
 	SS7_ASP_CTR_PKT_RX_UNKNOWN,
+	SS7_ASP_CTR_PKT_RX_NI_MISMATCH,
 	SS7_ASP_CTR_PKT_TX_TOTAL,
 };
 

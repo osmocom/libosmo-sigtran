@@ -19,6 +19,7 @@ struct osmo_sccp_instance;
 enum ss7_instance_ctr {
 	SS7_INST_CTR_PKT_RX_TOTAL,
 	SS7_INST_CTR_PKT_RX_UNKNOWN,
+	SS7_INST_CTR_PKT_RX_NI_MISMATCH,
 	SS7_INST_CTR_PKT_TX_TOTAL,
 };
 

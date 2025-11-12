@@ -590,6 +590,7 @@ struct m3ua_data_hdr *data_hdr_from_m3ua(struct xua_msg *xua)
 /* This function takes ownership of xua msg passed to it. */
 static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
+	struct xua_msg_part *data_ie = xua_msg_find_tag(xua, M3UA_IEI_PROT_DATA);
 	struct xua_msg_part *na_ie = xua_msg_find_tag(xua, M3UA_IEI_NET_APPEAR);
 	struct xua_msg_part *rctx_ie = xua_msg_find_tag(xua, M3UA_IEI_ROUTE_CTX);
 	struct m3ua_data_hdr *dh;
@@ -621,6 +622,29 @@ static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		goto ret_free;
 	}
 
+	/* store the MTP-level information in the xua_msg for use by
+	 * higher layer protocols */
+	OSMO_ASSERT(data_ie);
+	dh = (struct m3ua_data_hdr *) data_ie->dat;
+	OSMO_ASSERT(dh);
+	m3ua_dh_to_xfer_param(&xua->mtp, dh);
+	LOGPASP(asp, DLM3UA, LOGL_DEBUG,
+		"%s(): M3UA data header: opc=%u=%s dpc=%u=%s sls=%u\n",
+		__func__, xua->mtp.opc, osmo_ss7_pointcode_print(asp->inst, xua->mtp.opc),
+		xua->mtp.dpc, osmo_ss7_pointcode_print2(asp->inst, xua->mtp.dpc),
+		xua->mtp.sls);
+
+	/* Drop packets not matching our configured Network Indicator: */
+	if (dh->ni != asp->inst->cfg.network_indicator) {
+		LOGPASP(asp, DLM3UA, LOGL_NOTICE,
+			"Discarding received XUA Message %s: NI=%u not matching ss7 instance configured NI=%u\n",
+			xua_hdr_dump(xua, &xua_dialect_sua), dh->ni, asp->inst->cfg.network_indicator);
+		rate_ctr_inc2(asp->inst->ctrg, SS7_INST_CTR_PKT_RX_NI_MISMATCH);
+		rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_NI_MISMATCH);
+		rc = M3UA_ERR_UNEXPECTED_MSG;
+		goto ret_free;
+	}
+
 	rc = xua_find_as_for_asp(&as, asp, rctx_ie);
 	if (rc)
 		goto ret_free;
@@ -633,17 +657,6 @@ static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	}
 
 	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_TOTAL);
-
-	/* store the MTP-level information in the xua_msg for use by
-	 * higher layer protocols */
-	dh = data_hdr_from_m3ua(xua);
-	OSMO_ASSERT(dh);
-	m3ua_dh_to_xfer_param(&xua->mtp, dh);
-	LOGPASP(asp, DLM3UA, LOGL_DEBUG,
-		"%s(): M3UA data header: opc=%u=%s dpc=%u=%s sls=%u\n",
-		__func__, xua->mtp.opc, osmo_ss7_pointcode_print(asp->inst, xua->mtp.opc),
-		xua->mtp.dpc, osmo_ss7_pointcode_print2(asp->inst, xua->mtp.dpc),
-		xua->mtp.sls);
 	OSMO_ASSERT(xua->mtp.sls <= 0xf);
 	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_SLS_0 + xua->mtp.sls);
 

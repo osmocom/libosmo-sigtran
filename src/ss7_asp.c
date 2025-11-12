@@ -216,6 +216,7 @@ int osmo_ss7_asp_protocol_port(enum osmo_ss7_asp_protocol prot)
 static const struct rate_ctr_desc ss7_asp_rcd[] = {
 	[SS7_ASP_CTR_PKT_RX_TOTAL] = { "rx:packets:total", "Total number of packets received" },
 	[SS7_ASP_CTR_PKT_RX_UNKNOWN] = { "rx:packets:unknown", "Number of packets received for unknown PPID" },
+	[SS7_ASP_CTR_PKT_RX_NI_MISMATCH] = { "rx:packets:ni_mismatch", "Number of packets received and dropped due to Network Indicator mismatch" },
 	[SS7_ASP_CTR_PKT_TX_TOTAL] = { "tx:packets:total", "Total number of packets transmitted" },
 };
 

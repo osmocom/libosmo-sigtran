@@ -52,6 +52,7 @@ static const struct osmo_ss7_pc_fmt default_pc_fmt = {
 static const struct rate_ctr_desc ss7_inst_rcd[] = {
 	[SS7_INST_CTR_PKT_RX_TOTAL] = { "rx:packets:total", "Total number of packets received" },
 	[SS7_INST_CTR_PKT_RX_UNKNOWN] = { "rx:packets:unknown", "Number of packets received for unknown PPID" },
+	[SS7_INST_CTR_PKT_RX_NI_MISMATCH] = { "rx:packets:ni_mismatch", "Number of packets received and dropped due to Network Indicator mismatch" },
 	[SS7_INST_CTR_PKT_TX_TOTAL] = { "tx:packets:total", "Total number of packets transmitted" },
 };
 
