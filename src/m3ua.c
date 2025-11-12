@@ -570,7 +570,7 @@ int m3ua_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
  ***********************************************************************/
 
 /* obtain the destination point code from a M3UA message in XUA fmt * */
-struct m3ua_data_hdr *data_hdr_from_m3ua(struct xua_msg *xua)
+struct m3ua_data_hdr *data_hdr_from_m3ua(const struct xua_msg *xua)
 {
 	struct xua_msg_part *data_ie;
 	struct m3ua_data_hdr *data_hdr;

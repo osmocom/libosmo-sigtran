@@ -64,7 +64,7 @@ int m3ua_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg);
 struct msgb *m3ua_msgb_alloc(const char *name);
 struct xua_msg *m3ua_xfer_from_data(const struct m3ua_data_hdr *data_hdr,
 				    const uint8_t *data, unsigned int data_len);
-struct m3ua_data_hdr *data_hdr_from_m3ua(struct xua_msg *xua);
+struct m3ua_data_hdr *data_hdr_from_m3ua(const struct xua_msg *xua);
 void m3ua_dh_to_xfer_param(struct osmo_mtp_transfer_param *param,
 			   const struct m3ua_data_hdr *mdh);
 void mtp_xfer_param_to_m3ua_dh(struct m3ua_data_hdr *mdh,
