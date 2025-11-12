@@ -32,7 +32,7 @@ enum osmo_mtp_prim_type {
 };
 
 /* ITU Q.704 14.2 Service information octet. See enum mtp_si_ni00 in mtp.h. */
-#define MTP_SIO(service, net_ind)	(((net_ind & 0x3) << 6) | (service & 0xF))
+#define MTP_SIO(service, net_ind)	((((net_ind) & 0x3) << 6) | ((service) & 0xF))
 
 struct osmo_mtp_transfer_param {
 	uint32_t opc;
