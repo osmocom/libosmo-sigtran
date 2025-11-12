@@ -5,7 +5,7 @@
 #include <osmocom/sigtran/mtp_sap.h>
 
 /***********************************************************************
- * SS7 Linksets
+ * SS7 User (MTP SAP)
  ***********************************************************************/
 
 struct osmo_ss7_instance;
@@ -21,4 +21,11 @@ struct osmo_ss7_user {
 	void *priv;
 };
 
-int ss7_mtp_to_user(struct osmo_ss7_instance *inst, struct osmo_mtp_prim *omp);
+struct osmo_ss7_user *ss7_user_find(struct osmo_ss7_instance *inst, uint8_t service_indicator);
+void ss7_user_unregister_all(struct osmo_ss7_user *user);
+int ss7_user_mtp_sap_prim_up(const struct osmo_ss7_user *osu, struct osmo_mtp_prim *omp);
+
+#define _LOGPSS7U(osu, subsys, level, fmt, args ...) \
+	_LOGSS7((osu)->inst, subsys, level, "ss7_user(%s) " fmt, osu->name, ## args)
+#define LOGPSS7U(osu, level, fmt, args ...) \
+	_LOGPSS7U(osu, DLSS7, level, fmt, ## args)

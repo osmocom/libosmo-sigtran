@@ -26,9 +26,11 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/prim.h>
 #include <osmocom/sigtran/osmo_ss7.h>
+#include <osmocom/sigtran/mtp_sap.h>
 
 #include "ss7_user.h"
 #include "ss7_internal.h"
+#include "xua_internal.h"
 
 /***********************************************************************
  * MTP Users (Users of MTP, such as SCCP or ISUP)
@@ -48,7 +50,15 @@ struct osmo_ss7_user *osmo_ss7_user_create(struct osmo_ss7_instance *inst, const
 
 void osmo_ss7_user_destroy(struct osmo_ss7_user *user)
 {
+	ss7_user_unregister_all(user);
 	talloc_free(user);
+}
+
+struct osmo_ss7_user *ss7_user_find(struct osmo_ss7_instance *inst, uint8_t service_indicator)
+{
+	if (service_indicator >= ARRAY_SIZE(inst->user))
+		return NULL;
+	return inst->user[service_indicator];
 }
 
 struct osmo_ss7_instance *osmo_ss7_user_get_instance(const struct osmo_ss7_user *user)
@@ -72,75 +82,57 @@ void *osmo_ss7_user_get_priv(const struct osmo_ss7_user *user)
 }
 
 /*! \brief Register a MTP user for a given service indicator
- *  \param[in] inst SS7 instance for which we register the user
+ *  \param[in] user SS7 user to register (including primitive call-back)
  *  \param[in] service_ind Service (ISUP, SCCP, ...)
- *  \param[in] user SS7 user (including primitive call-back)
  *  \returns 0 on success; negative on error */
-int osmo_ss7_user_register(struct osmo_ss7_instance *inst, uint8_t service_ind,
-			   struct osmo_ss7_user *user)
+int osmo_ss7_user_register(struct osmo_ss7_user *user, uint8_t service_ind)
 {
+	struct osmo_ss7_instance *inst = user->inst;
+
 	if (service_ind >= ARRAY_SIZE(inst->user))
 		return -EINVAL;
 
 	if (inst->user[service_ind])
 		return -EBUSY;
 
-	DEBUGP(DLSS7, "registering user=%s for SI %u with priv %p\n",
-		user->name, service_ind, user->priv);
+	LOGPSS7U(user, LOGL_DEBUG, "registering for SI %u with priv %p\n",
+		 service_ind, user->priv);
 
-	user->inst = inst;
 	inst->user[service_ind] = user;
 
 	return 0;
 }
 
 /*! \brief Unregister a MTP user for a given service indicator
- *  \param[in] inst SS7 instance for which we register the user
+ *  \param[in] user SS7 user to unregister.
  *  \param[in] service_ind Service (ISUP, SCCP, ...)
- *  \param[in] user (optional) SS7 user. If present, we will not
- *		unregister other users
  *  \returns 0 on success; negative on error */
-int osmo_ss7_user_unregister(struct osmo_ss7_instance *inst, uint8_t service_ind,
-			     struct osmo_ss7_user *user)
+int osmo_ss7_user_unregister(struct osmo_ss7_user *user, uint8_t service_ind)
 {
+	struct osmo_ss7_instance *inst = user->inst;
+
 	if (service_ind >= ARRAY_SIZE(inst->user))
 		return -EINVAL;
 
 	if (!inst->user[service_ind])
 		return -ENODEV;
 
-	if (user && (inst->user[service_ind] != user))
+	if (inst->user[service_ind] != user)
 		return -EINVAL;
 
-	if (user)
-		user->inst = NULL;
+	LOGPSS7U(user, LOGL_DEBUG, "unregistering from SI %u with priv %p\n",
+		 service_ind, user->priv);
+
 	inst->user[service_ind] = NULL;
 
 	return 0;
 }
 
-/* deliver to a local MTP user */
-int ss7_mtp_to_user(struct osmo_ss7_instance *inst, struct osmo_mtp_prim *omp)
+void ss7_user_unregister_all(struct osmo_ss7_user *user)
 {
-	uint32_t service_ind;
-	const struct osmo_ss7_user *osu;
-
-	if (omp->oph.sap != MTP_SAP_USER ||
-	    omp->oph.primitive != OSMO_MTP_PRIM_TRANSFER ||
-	    omp->oph.operation != PRIM_OP_INDICATION) {
-		LOGP(DLSS7, LOGL_ERROR, "Unsupported Primitive\n");
-		return -EINVAL;
+	struct osmo_ss7_instance *inst = user->inst;
+	for (unsigned int i = 0; i < ARRAY_SIZE(inst->user); i++) {
+		if (inst->user[i] == user)
+			inst->user[i] = NULL;
 	}
-
-	service_ind = omp->u.transfer.sio & 0xF;
-	osu = inst->user[service_ind];
-
-	if (!osu) {
-		LOGP(DLSS7, LOGL_NOTICE, "No MTP-User for SI %u\n", service_ind);
-		return -ENODEV;
-	}
-
-	DEBUGP(DLSS7, "delivering MTP-TRANSFER.ind to user %s, priv=%p\n",
-		osu->name, osu->priv);
-	return osu->prim_cb(&omp->oph, (void *) osu->priv);
 }

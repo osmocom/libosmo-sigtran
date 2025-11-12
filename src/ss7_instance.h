@@ -43,7 +43,7 @@ struct osmo_ss7_instance {
 	struct llist_head xua_servers;
 	/* array for faster lookup of user (indexed by service
 	 * indicator) */
-	const struct osmo_ss7_user *user[16];
+	struct osmo_ss7_user *user[16];
 
 	struct osmo_ss7_route_table *rtable_system;
 

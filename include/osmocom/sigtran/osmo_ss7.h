@@ -92,15 +92,13 @@ void osmo_ss7_user_set_prim_cb(struct osmo_ss7_user *user, osmo_prim_cb prim_cb)
 void osmo_ss7_user_set_priv(struct osmo_ss7_user *user, void *priv);
 void *osmo_ss7_user_get_priv(const struct osmo_ss7_user *user);
 
-int osmo_ss7_user_register(struct osmo_ss7_instance *inst, uint8_t service_ind,
-			   struct osmo_ss7_user *user);
-int osmo_ss7_user_unregister(struct osmo_ss7_instance *inst, uint8_t service_ind,
-			     struct osmo_ss7_user *user);
+int osmo_ss7_user_register(struct osmo_ss7_user *user, uint8_t service_ind);
+int osmo_ss7_user_unregister(struct osmo_ss7_user *user, uint8_t service_ind);
 
-/* SS7 User wants to issue MTP-TRANSFER.req */
-int osmo_ss7_user_mtp_xfer_req(struct osmo_ss7_instance *inst,
-				struct osmo_mtp_prim *omp);
 
+/* MTP User wants to submit a primitive down to MTP SAP */
+int osmo_ss7_user_mtp_sap_prim_down(struct osmo_ss7_user *user,
+				    struct osmo_mtp_prim *omp);
 
 /***********************************************************************
  * SCCP Instance

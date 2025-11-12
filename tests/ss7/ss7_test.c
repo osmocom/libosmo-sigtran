@@ -124,25 +124,18 @@ static void test_user(void)
 	osmo_ss7_user_set_priv(user, (void *) 0x1234);
 
 	/* registration */
-	OSMO_ASSERT(osmo_ss7_user_register(s7i, 1, user) == 0);
-	OSMO_ASSERT(osmo_ss7_user_register(s7i, 1, NULL) == -EBUSY);
-	OSMO_ASSERT(osmo_ss7_user_register(s7i, 255, NULL) == -EINVAL);
+	OSMO_ASSERT(osmo_ss7_user_register(user, 1) == 0);
+	OSMO_ASSERT(osmo_ss7_user_register(user, 1) == -EBUSY);
+	OSMO_ASSERT(osmo_ss7_user_register(user, 255) == -EINVAL);
 
 	/* primitive delivery */
-	OSMO_ASSERT(ss7_mtp_to_user(s7i, &omp) == 23);
+	OSMO_ASSERT(ss7_user_mtp_sap_prim_up(user, &omp) == 23);
 
 	/* cleanup */
-	OSMO_ASSERT(osmo_ss7_user_unregister(s7i, 255, NULL) == -EINVAL);
-	OSMO_ASSERT(osmo_ss7_user_unregister(s7i, 10, NULL) == -ENODEV);
-	OSMO_ASSERT(osmo_ss7_user_unregister(s7i, 1, user2) == -EINVAL);
-	OSMO_ASSERT(osmo_ss7_user_unregister(s7i, 1, user) == 0);
-
-	/* primitive delivery should fail now */
-	OSMO_ASSERT(ss7_mtp_to_user(s7i, &omp) == -ENODEV);
-
-	/* wrong primitive delivery should also fail */
-	omp.oph.primitive = OSMO_MTP_PRIM_PAUSE;
-	OSMO_ASSERT(ss7_mtp_to_user(s7i, &omp) == -EINVAL);
+	OSMO_ASSERT(osmo_ss7_user_unregister(user, 255) == -EINVAL);
+	OSMO_ASSERT(osmo_ss7_user_unregister(user, 10) == -ENODEV);
+	OSMO_ASSERT(osmo_ss7_user_unregister(user2, 1) == -EINVAL);
+	OSMO_ASSERT(osmo_ss7_user_unregister(user, 1) == 0);
 
 	osmo_ss7_user_destroy(user);
 	osmo_ss7_user_destroy(user2);

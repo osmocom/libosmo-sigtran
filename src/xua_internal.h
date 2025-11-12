@@ -1,5 +1,8 @@
 #pragma once
 
+#include <unistd.h>
+#include <stdint.h>
+
 #include <osmocom/core/tdef.h>
 #include <osmocom/sigtran/osmo_ss7.h>
 #include "xua_msg.h"
@@ -34,7 +37,6 @@ void sua_tx_snm_daud(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned in
 void sua_tx_dupu(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int num_rctx,
 		 uint32_t dpc, uint16_t user, uint16_t cause, const char *info_str);
 
-struct osmo_mtp_prim *m3ua_to_xfer_ind(struct xua_msg *xua);
 int m3ua_hmdc_rx_from_l2(struct osmo_ss7_instance *inst, struct xua_msg *xua);
 struct msgb *m3ua_to_msg(struct xua_msg *xua);
 int m3ua_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua);
@@ -69,6 +71,9 @@ void m3ua_dh_to_xfer_param(struct osmo_mtp_transfer_param *param,
 			   const struct m3ua_data_hdr *mdh);
 void mtp_xfer_param_to_m3ua_dh(struct m3ua_data_hdr *mdh,
 				const struct osmo_mtp_transfer_param *param);
+int hmrt_mtp_xfer_request_l4_to_l3(struct osmo_ss7_instance *inst,
+				   const struct osmo_mtp_transfer_param *param,
+				   uint8_t *user_data, size_t user_data_len);
 
 
 extern const struct xua_msg_class m3ua_msg_class_mgmt;

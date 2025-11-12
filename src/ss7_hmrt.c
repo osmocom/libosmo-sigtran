@@ -44,7 +44,7 @@
 #include "ss7_user.h"
 
 /* convert from M3UA message to MTP-TRANSFER.ind osmo_mtp_prim */
-struct osmo_mtp_prim *m3ua_to_xfer_ind(struct xua_msg *xua)
+static struct osmo_mtp_prim *m3ua_to_xfer_ind(struct xua_msg *xua)
 {
 	struct osmo_mtp_prim *prim;
 	struct osmo_mtp_transfer_param *param;
@@ -74,23 +74,10 @@ struct osmo_mtp_prim *m3ua_to_xfer_ind(struct xua_msg *xua)
 	return prim;
 }
 
-/* convert from MTP-TRANSFER.req to osmo_mtp_prim */
-static struct xua_msg *mtp_prim_to_m3ua(struct osmo_mtp_prim *prim)
-{
-	struct msgb *msg = prim->oph.msg;
-	struct osmo_mtp_transfer_param *param = &prim->u.transfer;
-	struct m3ua_data_hdr data_hdr;
-
-	mtp_xfer_param_to_m3ua_dh(&data_hdr, param);
-
-	return m3ua_xfer_from_data(&data_hdr, msgb_l2(msg), msgb_l2len(msg));
-}
-
 /* delivery given XUA message to given SS7 user
  * Ownership of xua_msg passed is transferred to this function.
  */
-static int deliver_to_mtp_user(const struct osmo_ss7_user *osu,
-				struct xua_msg *xua)
+static int deliver_to_mtp_user(const struct osmo_ss7_user *osu, struct xua_msg *xua)
 {
 	struct osmo_mtp_prim *prim;
 	int rc;
@@ -103,7 +90,7 @@ static int deliver_to_mtp_user(const struct osmo_ss7_user *osu,
 	}
 	prim->u.transfer = xua->mtp;
 
-	rc = osu->prim_cb(&prim->oph, (void *) osu->priv);
+	rc = ss7_user_mtp_sap_prim_up(osu, prim);
 
 ret_free:
 	xua_msg_free(xua);
@@ -145,17 +132,18 @@ static int hmdt_message_for_distribution(struct osmo_ss7_instance *inst, struct 
 		return -1;
 	}
 
-	/* Check for local SSN registered for this DPC/SSN */
-	osu = inst->user[service_ind];
-	if (osu) {
-		return deliver_to_mtp_user(osu, xua);
-	} else {
+	/* "User Part Available?" */
+	osu = ss7_user_find(inst, service_ind);
+	if (!osu) {
+		/* "Discard Message" */
 		LOGSS7(inst, LOGL_NOTICE, "No MTP-User for SI %u\n", service_ind);
-		/* Discard Message */
 		/* FIXME: User Part Unavailable HMDT -> HMRT */
 		xua_msg_free(xua);
 		return -1;
 	}
+
+	/* "MTP Transfer indication HMDT→L4" */
+	return deliver_to_mtp_user(osu, xua);
 }
 
 /* HMDC->HMRT Msg For Routing; Figure 26/Q.704 */
@@ -251,35 +239,22 @@ int m3ua_hmdc_rx_from_l2(struct osmo_ss7_instance *inst, struct xua_msg *xua)
 	}
 }
 
-/* MTP-User requests to send a MTP-TRANSFER.req via the stack */
-int osmo_ss7_user_mtp_xfer_req(struct osmo_ss7_instance *inst,
-				struct osmo_mtp_prim *omp)
+/* Figure 26/Q.704 (sheet 1 of 5) "MTP Transfer request L4→L3" */
+int hmrt_mtp_xfer_request_l4_to_l3(struct osmo_ss7_instance *inst, const struct osmo_mtp_transfer_param *param, uint8_t *user_data, size_t user_data_len)
 {
+	struct m3ua_data_hdr data_hdr;
 	struct xua_msg *xua;
-	int rc;
 
-	OSMO_ASSERT(omp->oph.sap == MTP_SAP_USER);
+	/* convert from osmo_mtp_prim MTP-TRANSFER.req to xua_msg */
+	mtp_xfer_param_to_m3ua_dh(&data_hdr, param);
+	xua = m3ua_xfer_from_data(&data_hdr, user_data, user_data_len);
+	OSMO_ASSERT(xua);
+	xua->mtp = *param;
 
-	switch (OSMO_PRIM_HDR(&omp->oph)) {
-	case OSMO_PRIM(OSMO_MTP_PRIM_TRANSFER, PRIM_OP_REQUEST):
-		xua = mtp_prim_to_m3ua(omp);
-		xua->mtp = omp->u.transfer;
-		/* normally we would call hmrt_message_for_routing()
-		 * here, if we were to follow the state diagrams of the
-		 * ITU-T Q.70x specifications.  However, what if a local
-		 * MTP user sends a MTP-TRANSFER.req to a local SSN?
-		 * This wouldn't work as per the spec, but I believe it
-		 * is a very useful feature (aka "loopback device" in
-		 * IPv4). So we call m3ua_hmdc_rx_from_l2() just like
-		 * the MTP-TRANSFER had been received from L2. */
-		rc = m3ua_hmdc_rx_from_l2(inst, xua);
-		break;
-	default:
-		LOGSS7(inst, LOGL_ERROR, "Ignoring unknown primitive %u:%u\n",
-		       omp->oph.primitive, omp->oph.operation);
-		rc = -1;
-	}
-
-	msgb_free(omp->oph.msg);
-	return rc;
+	/* normally we would call hmrt_message_for_routing() here, if we were to follow the state
+	 * diagrams of the ITU-T Q.70x specifications.  However, what if a local MTP user sends a
+	 * MTP-TRANSFER.req to a local SSN? This wouldn't work as per the spec, but I believe it
+	 * is a very useful feature (aka "loopback device" in IPv4). So we call
+	 * m3ua_hmdc_rx_from_l2() just like the MTP-TRANSFER had been received from L2. */
+	return m3ua_hmdc_rx_from_l2(inst, xua);
 }

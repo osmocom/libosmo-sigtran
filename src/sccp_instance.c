@@ -326,7 +326,7 @@ osmo_sccp_instance_create(struct osmo_ss7_instance *ss7, void *priv)
 	inst->ss7_user = osmo_ss7_user_create(ss7, "SCCP");
 	osmo_ss7_user_set_prim_cb(inst->ss7_user, mtp_user_prim_cb);
 	osmo_ss7_user_set_priv(inst->ss7_user, inst);
-	osmo_ss7_user_register(ss7, MTP_SI_SCCP, inst->ss7_user);
+	osmo_ss7_user_register(inst->ss7_user, MTP_SI_SCCP);
 
 	llist_add_tail(&inst->list, &sccp_instances);
 
@@ -341,7 +341,7 @@ void osmo_sccp_instance_destroy(struct osmo_sccp_instance *inst)
 		return;
 
 	inst->ss7->sccp = NULL;
-	osmo_ss7_user_unregister(inst->ss7, MTP_SI_SCCP, inst->ss7_user);
+	osmo_ss7_user_unregister(inst->ss7_user, MTP_SI_SCCP);
 	osmo_ss7_user_destroy(inst->ss7_user);
 	inst->ss7_user = NULL;
 

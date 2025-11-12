@@ -134,7 +134,7 @@ static int sua2sccp_tx_m3ua(struct osmo_sccp_instance *inst,
 	param->sio = MTP_SIO(MTP_SI_SCCP, s7i->cfg.network_indicator);
 
 	/* 3) send via MTP-SAP (osmo_ss7_instance) */
-	return osmo_ss7_user_mtp_xfer_req(s7i, omp);
+	return osmo_ss7_user_mtp_sap_prim_down(inst->ss7_user, omp);
 }
 
 /* Generate MTP-TRANSFER.req from xUA message */
