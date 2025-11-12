@@ -201,7 +201,7 @@ int xua_as_transmit_msg(struct osmo_ss7_as *as, struct xua_msg *xua)
 		 * strictly required by M3UA RFC, but would fit the overall
 		 * principle. */
 	case OSMO_SS7_AS_TMOD_ROUNDROBIN:
-		asp = ss7_as_select_asp(as, &xua->mtp);
+		asp = ss7_as_select_asp(as, xua);
 		break;
 	case OSMO_SS7_AS_TMOD_BCAST:
 		return xua_as_transmit_msg_broadcast(as, xua);

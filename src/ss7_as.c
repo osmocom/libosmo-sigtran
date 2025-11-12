@@ -42,6 +42,7 @@
 #include "ss7_internal.h"
 #include "xua_as_fsm.h"
 #include "xua_asp_fsm.h"
+#include "xua_msg.h"
 
 /***********************************************************************
  * SS7 Application Server
@@ -517,8 +518,9 @@ static struct osmo_ss7_asp *ss7_as_select_asp_broadcast(struct osmo_ss7_as *as)
  *  This function returns NULL too if multiple ASPs would be selected, ie. AS is
  *  configured in broadcast mode and more than one ASP is configured.
  */
-struct osmo_ss7_asp *ss7_as_select_asp(struct osmo_ss7_as *as, const struct osmo_mtp_transfer_param *mtp)
+struct osmo_ss7_asp *ss7_as_select_asp(struct osmo_ss7_as *as, const struct xua_msg *xua)
 {
+	const struct osmo_mtp_transfer_param *mtp = &xua->mtp;
 	struct osmo_ss7_asp *asp = NULL;
 
 	switch (as->cfg.mode) {

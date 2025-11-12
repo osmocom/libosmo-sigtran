@@ -10,6 +10,7 @@
 #include <osmocom/sigtran/osmo_ss7.h>
 
 #include "ss7_internal.h"
+#include "xua_msg.h"
 
 /***********************************************************************
  * SS7 Application Server
@@ -132,7 +133,7 @@ struct osmo_ss7_as {
 };
 struct osmo_ss7_as *ss7_as_alloc(struct osmo_ss7_instance *inst, const char *name,
 				 enum osmo_ss7_asp_protocol proto);
-struct osmo_ss7_asp *ss7_as_select_asp(struct osmo_ss7_as *as, const struct osmo_mtp_transfer_param *mtp);
+struct osmo_ss7_asp *ss7_as_select_asp(struct osmo_ss7_as *as, const struct xua_msg *xua);
 
 unsigned int osmo_ss7_as_count_asp(const struct osmo_ss7_as *as);
 int ss7_as_add_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp);
