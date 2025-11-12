@@ -717,7 +717,7 @@ int sua_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg)
 	xua->mtp.opc = ;
 	xua->mtp.dpc = ;
 #endif
-	xua->mtp.sio = MTP_SI_SCCP;
+	xua->mtp.sio = MTP_SIO(MTP_SI_SCCP, asp->inst->cfg.network_indicator);
 
 	LOGPASP(asp, DLSUA, LOGL_DEBUG, "Received SUA Message (%s)\n",
 		xua_hdr_dump(xua, &xua_dialect_sua));
