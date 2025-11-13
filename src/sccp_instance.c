@@ -285,6 +285,11 @@ static int mtp_user_prim_cb(struct osmo_prim_hdr *oph, void *ctx)
 	case OSMO_PRIM(OSMO_MTP_PRIM_PAUSE, PRIM_OP_INDICATION):
 		sccp_scmg_rx_mtp_pause(inst, omp->u.pause.affected_dpc);
 		break;
+	case OSMO_PRIM(OSMO_MTP_PRIM_STATUS, PRIM_OP_INDICATION):
+		sccp_scmg_rx_mtp_status(inst, omp->u.status.affected_dpc,
+					omp->u.status.cause,
+					omp->u.status.congestion_level);
+		break;
 	default:
 		LOGPSCI(inst, LOGL_ERROR, "Unknown primitive %u:%u receivd\n",
 			oph->primitive, oph->operation);

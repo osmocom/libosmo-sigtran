@@ -56,7 +56,9 @@ struct osmo_mtp_resume_param {
 
 struct osmo_mtp_status_param {
 	uint32_t affected_dpc;
-	uint32_t cause;
+	uint32_t cause; /* enum mtp_unavail_cause */
+	bool congestion_level_present;
+	uint8_t congestion_level;
 };
 
 struct osmo_mtp_prim {

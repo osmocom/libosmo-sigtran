@@ -95,6 +95,26 @@ static struct osmo_mtp_prim *mtp_prim_pause_ind_alloc(uint32_t pc)
 	return prim;
 }
 
+struct osmo_mtp_prim *mtp_prim_status_ind_alloc(uint32_t dpc,
+						enum mtp_unavail_cause cause,
+						bool cong_level_present,
+						uint8_t cong_level)
+{
+	struct msgb *upmsg = mtp_prim_msgb_alloc();
+	struct osmo_mtp_prim *prim;
+
+	OSMO_ASSERT(upmsg);
+	prim = (struct osmo_mtp_prim *) msgb_put(upmsg, sizeof(*prim));
+	osmo_prim_init(&prim->oph, MTP_SAP_USER,
+			OSMO_MTP_PRIM_STATUS,
+			PRIM_OP_INDICATION, upmsg);
+	prim->u.status.affected_dpc = dpc;
+	prim->u.status.cause = cause;
+	prim->u.status.congestion_level_present = cong_level_present;
+	prim->u.status.congestion_level = cong_level;
+	return prim;
+}
+
 struct osmo_mtp_prim *mtp_prim_xfer_ind_alloc(const struct osmo_mtp_transfer_param *param,
 					      const uint8_t *user_data, size_t user_data_len)
 {
@@ -154,6 +174,19 @@ void mtp_pause_ind_up_to_all_users(struct osmo_ss7_instance *s7i, uint32_t pc)
 		if (!s7i->user[service_ind])
 			continue;
 		omp = mtp_prim_pause_ind_alloc(pc);
+		ss7_user_mtp_sap_prim_up(s7i->user[service_ind], omp);
+	}
+}
+
+void mtp_status_ind_up_to_all_users(struct osmo_ss7_instance *s7i,
+				    uint32_t dpc, enum mtp_unavail_cause cause,
+				    bool cong_level_present, uint8_t cong_level)
+{
+	for (unsigned int service_ind = 0; service_ind < ARRAY_SIZE(s7i->user); service_ind++) {
+		struct osmo_mtp_prim *omp;
+		if (!s7i->user[service_ind])
+			continue;
+		omp = mtp_prim_status_ind_alloc(dpc, cause, cong_level_present, cong_level);
 		ss7_user_mtp_sap_prim_up(s7i->user[service_ind], omp);
 	}
 }
