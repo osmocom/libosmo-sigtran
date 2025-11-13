@@ -46,6 +46,7 @@ LIBVERSION=11:0:0
 libosmo_sigtran_la_SOURCES = \
 	ipa.c \
 	m3ua.c \
+	mtp_sap.c \
 	sccp2sua.c \
 	sccp_connection.c \
 	sccp_helpers.c \
