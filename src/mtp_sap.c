@@ -62,6 +62,47 @@ char *osmo_mtp_prim_name(const struct osmo_prim_hdr *oph)
 	return prim_name_buf;
 }
 
+struct osmo_mtp_prim *mtp_prim_xfer_ind_alloc(const struct osmo_mtp_transfer_param *param,
+					      const uint8_t *user_data, size_t user_data_len)
+{
+	struct osmo_mtp_prim *prim;
+	struct msgb *upmsg = m3ua_msgb_alloc("M3UA MTP-TRANSFER.ind");
+
+	OSMO_ASSERT(upmsg);
+	prim = (struct osmo_mtp_prim *) msgb_put(upmsg, sizeof(*prim));
+
+	/* Allow filling in params later: */
+	if (param)
+		prim->u.transfer = *param;
+
+	osmo_prim_init(&prim->oph, MTP_SAP_USER,
+			OSMO_MTP_PRIM_TRANSFER,
+			PRIM_OP_INDICATION, upmsg);
+	/* copy data */
+	upmsg->l2h = msgb_put(upmsg, user_data_len);
+	memcpy(upmsg->l2h, user_data, user_data_len);
+
+	return prim;
+}
+
+/*! \brief Wrap MTP payload into an MTP-TRANSFER.req primitive
+ *  \param[in] param MTP-TRANSFER.req params to copy to the primitive (Optional, can be NULL)
+ *  \param[in] msg msgb containing MTP payload and where primitive will be prepended
+ *  \returns return MTP-TRANSFER.req prepended to msgb
+ */
+struct osmo_mtp_prim *osmo_mtp_prim_xfer_req_prepend(const struct osmo_mtp_transfer_param *param, struct msgb *msg)
+{
+	struct osmo_mtp_prim *omp;
+
+	msg->l2h = msg->data;
+	omp = (struct osmo_mtp_prim *) msgb_push(msg, sizeof(*omp));
+	osmo_prim_init(&omp->oph, MTP_SAP_USER,
+			OSMO_MTP_PRIM_TRANSFER, PRIM_OP_REQUEST, msg);
+	if (param)
+		omp->u.transfer = *param;
+	return omp;
+}
+
 /*! \brief Send a MTP SAP Primitive up to the MTP User
  *  \param[in] osu MTP User to whom to send the primitive
  *  \param[in] prim Primitive to send to the user

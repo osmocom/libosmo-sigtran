@@ -114,10 +114,7 @@ static int sua2sccp_tx_m3ua(struct osmo_sccp_instance *inst,
 	}
 
 	/* 2) wrap into MTP-TRANSFER.req primitive */
-	msg->l2h = msg->data;
-	omp = (struct osmo_mtp_prim *) msgb_push(msg, sizeof(*omp));
-	osmo_prim_init(&omp->oph, MTP_SAP_USER,
-			OSMO_MTP_PRIM_TRANSFER, PRIM_OP_REQUEST, msg);
+	omp = osmo_mtp_prim_xfer_req_prepend(NULL, msg);
 	param = &omp->u.transfer;
 	if (sua->mtp.opc)
 		param->opc = sua->mtp.opc;

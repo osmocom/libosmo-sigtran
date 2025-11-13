@@ -46,30 +46,20 @@
 /* convert from M3UA message to MTP-TRANSFER.ind osmo_mtp_prim */
 static struct osmo_mtp_prim *m3ua_to_xfer_ind(struct xua_msg *xua)
 {
-	struct osmo_mtp_prim *prim;
-	struct osmo_mtp_transfer_param *param;
 	struct xua_msg_part *data_ie = xua_msg_find_tag(xua, M3UA_IEI_PROT_DATA);
+	struct osmo_mtp_prim *prim;
 	struct m3ua_data_hdr *data_hdr;
-	struct msgb *upmsg = m3ua_msgb_alloc("M3UA MTP-TRANSFER.ind");
 
 	if (!data_ie || data_ie->len < sizeof(*data_hdr)) {
 		/* FIXME: ERROR message */
-		msgb_free(upmsg);
 		return NULL;
 	}
 	data_hdr = (struct m3ua_data_hdr *) data_ie->dat;
 
-	/* fill primitive */
-	prim = (struct osmo_mtp_prim *) msgb_put(upmsg, sizeof(*prim));
-	param = &prim->u.transfer;
-	osmo_prim_init(&prim->oph, MTP_SAP_USER,
-			OSMO_MTP_PRIM_TRANSFER,
-			PRIM_OP_INDICATION, upmsg);
-
-	m3ua_dh_to_xfer_param(param, data_hdr);
-	/* copy data */
-	upmsg->l2h = msgb_put(upmsg, data_ie->len - sizeof(*data_hdr));
-	memcpy(upmsg->l2h, data_ie->dat+sizeof(*data_hdr), data_ie->len - sizeof(*data_hdr));
+	prim = mtp_prim_xfer_ind_alloc(NULL,
+				       data_ie->dat + sizeof(*data_hdr),
+				       data_ie->len - sizeof(*data_hdr));
+	m3ua_dh_to_xfer_param(&prim->u.transfer, data_hdr);
 
 	return prim;
 }

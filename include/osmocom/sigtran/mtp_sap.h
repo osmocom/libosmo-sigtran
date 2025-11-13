@@ -72,3 +72,6 @@ struct osmo_mtp_prim {
 #define msgb_mtp_prim(msg) ((struct osmo_mtp_prim *)(msg)->l1h)
 
 char *osmo_mtp_prim_name(const struct osmo_prim_hdr *oph);
+
+struct osmo_mtp_prim *osmo_mtp_prim_xfer_req_prepend(const struct osmo_mtp_transfer_param *param,
+						     struct msgb *msg);
