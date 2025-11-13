@@ -309,7 +309,7 @@ static void xua_snm_upu(struct osmo_ss7_as *as, uint32_t dpc, uint16_t user, uin
 	unsigned int num_rctx;
 
 	/* Translate to MTP-STATUS.ind towards MTP-User (SCCP will create N-PCSTATE.ind to SCU) */
-	osu = ss7_user_find(s7i, user);
+	osu = osmo_ss7_user_find_by_si(s7i, user);
 	if (osu) {
 		struct osmo_mtp_prim *omp = mtp_prim_status_ind_alloc(dpc, cause, false, 0);
 		ss7_user_mtp_sap_prim_up(osu, omp);

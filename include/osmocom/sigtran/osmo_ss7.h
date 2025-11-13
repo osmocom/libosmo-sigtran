@@ -95,6 +95,7 @@ void *osmo_ss7_user_get_priv(const struct osmo_ss7_user *user);
 int osmo_ss7_user_register(struct osmo_ss7_user *user, uint8_t service_ind);
 int osmo_ss7_user_unregister(struct osmo_ss7_user *user, uint8_t service_ind);
 
+struct osmo_ss7_user *osmo_ss7_user_find_by_si(const struct osmo_ss7_instance *inst, uint8_t service_indicator);
 
 /* MTP User wants to submit a primitive down to MTP SAP */
 int osmo_ss7_user_mtp_sap_prim_down(struct osmo_ss7_user *user,

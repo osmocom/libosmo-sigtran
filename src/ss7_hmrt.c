@@ -123,7 +123,7 @@ static int hmdt_message_for_distribution(struct osmo_ss7_instance *inst, struct 
 	}
 
 	/* "User Part Available?" */
-	osu = ss7_user_find(inst, service_ind);
+	osu = osmo_ss7_user_find_by_si(inst, service_ind);
 	if (!osu) {
 		/* "Discard Message" */
 		LOGSS7(inst, LOGL_NOTICE, "No MTP-User for SI %u\n", service_ind);

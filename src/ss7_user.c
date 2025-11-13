@@ -54,7 +54,7 @@ void osmo_ss7_user_destroy(struct osmo_ss7_user *user)
 	talloc_free(user);
 }
 
-struct osmo_ss7_user *ss7_user_find(struct osmo_ss7_instance *inst, uint8_t service_indicator)
+struct osmo_ss7_user *osmo_ss7_user_find_by_si(const struct osmo_ss7_instance *inst, uint8_t service_indicator)
 {
 	if (service_indicator >= ARRAY_SIZE(inst->user))
 		return NULL;

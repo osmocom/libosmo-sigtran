@@ -23,7 +23,6 @@ struct osmo_ss7_user {
 	void *priv;
 };
 
-struct osmo_ss7_user *ss7_user_find(struct osmo_ss7_instance *inst, uint8_t service_indicator);
 void ss7_user_unregister_all(struct osmo_ss7_user *user);
 int ss7_user_mtp_sap_prim_up(const struct osmo_ss7_user *osu, struct osmo_mtp_prim *omp);
 
