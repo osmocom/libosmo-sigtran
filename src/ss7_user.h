@@ -29,6 +29,10 @@ int ss7_user_mtp_sap_prim_up(const struct osmo_ss7_user *osu, struct osmo_mtp_pr
 struct osmo_mtp_prim *mtp_prim_xfer_ind_alloc(const struct osmo_mtp_transfer_param *param,
 					      const uint8_t *user_data, size_t user_data_len);
 
+void mtp_resume_ind_up_to_all_users(struct osmo_ss7_instance *s7i, uint32_t pc);
+void mtp_pause_ind_up_to_all_users(struct osmo_ss7_instance *s7i, uint32_t pc);
+
+
 #define _LOGPSS7U(osu, subsys, level, fmt, args ...) \
 	_LOGSS7((osu)->inst, subsys, level, "ss7_user(%s) " fmt, osu->name, ## args)
 #define LOGPSS7U(osu, level, fmt, args ...) \

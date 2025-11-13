@@ -260,7 +260,7 @@ static int mtp_user_prim_cb(struct osmo_prim_hdr *oph, void *ctx)
 	struct osmo_sccp_instance *inst = ctx;
 	struct osmo_mtp_prim *omp = (struct osmo_mtp_prim *)oph;
 	struct xua_msg *xua;
-	int rc;
+	int rc = 0;
 
 	OSMO_ASSERT(oph->sap == MTP_SAP_USER);
 
@@ -278,6 +278,12 @@ static int mtp_user_prim_cb(struct osmo_prim_hdr *oph, void *ctx)
 		/* hand this primitive into SCCP via the SCRC code */
 		rc = scrc_rx_mtp_xfer_ind_xua(inst, xua);
 		xua_msg_free(xua);
+		break;
+	case OSMO_PRIM(OSMO_MTP_PRIM_RESUME, PRIM_OP_INDICATION):
+		sccp_scmg_rx_mtp_resume(inst, omp->u.resume.affected_dpc);
+		break;
+	case OSMO_PRIM(OSMO_MTP_PRIM_PAUSE, PRIM_OP_INDICATION):
+		sccp_scmg_rx_mtp_pause(inst, omp->u.pause.affected_dpc);
 		break;
 	default:
 		LOGPSCI(inst, LOGL_ERROR, "Unknown primitive %u:%u receivd\n",

@@ -62,6 +62,39 @@ char *osmo_mtp_prim_name(const struct osmo_prim_hdr *oph)
 	return prim_name_buf;
 }
 
+static struct msgb *mtp_prim_msgb_alloc(void)
+{
+	return m3ua_msgb_alloc("mtp_prim_up");
+}
+
+static struct osmo_mtp_prim *mtp_prim_resume_ind_alloc(uint32_t pc)
+{
+	struct msgb *upmsg = mtp_prim_msgb_alloc();
+	struct osmo_mtp_prim *prim;
+
+	OSMO_ASSERT(upmsg);
+	prim = (struct osmo_mtp_prim *) msgb_put(upmsg, sizeof(*prim));
+	osmo_prim_init(&prim->oph, MTP_SAP_USER,
+			OSMO_MTP_PRIM_RESUME,
+			PRIM_OP_INDICATION, upmsg);
+	prim->u.resume.affected_dpc = pc;
+	return prim;
+}
+
+static struct osmo_mtp_prim *mtp_prim_pause_ind_alloc(uint32_t pc)
+{
+	struct msgb *upmsg = mtp_prim_msgb_alloc();
+	struct osmo_mtp_prim *prim;
+
+	OSMO_ASSERT(upmsg);
+	prim = (struct osmo_mtp_prim *) msgb_put(upmsg, sizeof(*prim));
+	osmo_prim_init(&prim->oph, MTP_SAP_USER,
+			OSMO_MTP_PRIM_PAUSE,
+			PRIM_OP_INDICATION, upmsg);
+	prim->u.pause.affected_dpc = pc;
+	return prim;
+}
+
 struct osmo_mtp_prim *mtp_prim_xfer_ind_alloc(const struct osmo_mtp_transfer_param *param,
 					      const uint8_t *user_data, size_t user_data_len)
 {
@@ -101,6 +134,28 @@ struct osmo_mtp_prim *osmo_mtp_prim_xfer_req_prepend(const struct osmo_mtp_trans
 	if (param)
 		omp->u.transfer = *param;
 	return omp;
+}
+
+void mtp_resume_ind_up_to_all_users(struct osmo_ss7_instance *s7i, uint32_t pc)
+{
+	for (unsigned int service_ind = 0; service_ind < ARRAY_SIZE(s7i->user); service_ind++) {
+		struct osmo_mtp_prim *omp;
+		if (!s7i->user[service_ind])
+			continue;
+		omp = mtp_prim_resume_ind_alloc(pc);
+		ss7_user_mtp_sap_prim_up(s7i->user[service_ind], omp);
+	}
+}
+
+void mtp_pause_ind_up_to_all_users(struct osmo_ss7_instance *s7i, uint32_t pc)
+{
+	for (unsigned int service_ind = 0; service_ind < ARRAY_SIZE(s7i->user); service_ind++) {
+		struct osmo_mtp_prim *omp;
+		if (!s7i->user[service_ind])
+			continue;
+		omp = mtp_prim_pause_ind_alloc(pc);
+		ss7_user_mtp_sap_prim_up(s7i->user[service_ind], omp);
+	}
 }
 
 /*! \brief Send a MTP SAP Primitive up to the MTP User

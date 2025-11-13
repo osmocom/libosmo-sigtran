@@ -36,6 +36,7 @@
 #include "ss7_route.h"
 #include "ss7_internal.h"
 #include "ss7_route_table.h"
+#include "ss7_user.h"
 #include "xua_internal.h"
 #include "sccp_internal.h"
 
@@ -132,10 +133,10 @@ static void xua_tx_scon(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned
 	}
 }
 
-/* generate MTP-PAUSE / MTP-RESUME towards local SCCP users */
-static void xua_snm_pc_available_to_sccp(struct osmo_sccp_instance *sccp,
-					 const uint32_t *aff_pc, unsigned int num_aff_pc,
-					 bool available)
+/* generate MTP-PAUSE / MTP-RESUME towards local MTP users */
+static void xua_snm_pc_available_to_mtp_users(struct osmo_ss7_instance *s7i,
+					      const uint32_t *aff_pc, unsigned int num_aff_pc,
+					      bool available)
 {
 	int i;
 	for (i = 0; i < num_aff_pc; i++) {
@@ -147,9 +148,9 @@ static void xua_snm_pc_available_to_sccp(struct osmo_sccp_instance *sccp,
 
 		if (!mask) {
 			if (available)
-				sccp_scmg_rx_mtp_resume(sccp, pc);
+				mtp_resume_ind_up_to_all_users(s7i, pc);
 			else
-				sccp_scmg_rx_mtp_pause(sccp, pc);
+				mtp_pause_ind_up_to_all_users(s7i, pc);
 		} else {
 			/* we have to send one MTP primitive for each individual point
 			 * code within that mask */
@@ -157,9 +158,9 @@ static void xua_snm_pc_available_to_sccp(struct osmo_sccp_instance *sccp,
 			uint32_t fullpc;
 			for (fullpc = (pc & ~maskbits); fullpc <= (pc | maskbits); fullpc++) {
 				if (available)
-					sccp_scmg_rx_mtp_resume(sccp, fullpc);
+					mtp_resume_ind_up_to_all_users(s7i, fullpc);
 				else
-					sccp_scmg_rx_mtp_pause(sccp, fullpc);
+					mtp_pause_ind_up_to_all_users(s7i, fullpc);
 			}
 		}
 	}
@@ -231,8 +232,7 @@ void xua_snm_pc_available(struct osmo_ss7_as *as, const uint32_t *aff_pc,
 
 
 	/* inform local users via a MTP-{PAUSE, RESUME} primitive */
-	if (s7i->sccp)
-		xua_snm_pc_available_to_sccp(s7i->sccp, aff_pc, num_aff_pc, available);
+	xua_snm_pc_available_to_mtp_users(s7i, aff_pc, num_aff_pc, available);
 
 	/* inform remote ASPs via DUNA/DAVA */
 	llist_for_each_entry(asp, &s7i->asp_list, list) {
