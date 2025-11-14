@@ -246,9 +246,6 @@ static int ipa_rx_msg_sccp(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t s
 	OSMO_ASSERT(sls <= 0xf);
 	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_SLS_0 + sls);
 
-	/* pull the IPA header */
-	msgb_pull_to_l2(msg);
-
 	/* We have received an IPA-encapsulated SCCP message, without
 	 * any MTP routing label.  Furthermore, the SCCP Called/Calling
 	 * Party are SSN-only, with no GT or PC.  This means we have no
@@ -311,10 +308,10 @@ static int ipa_rx_msg_sccp(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t s
 			LOGPASP(asp, DLSS7, LOGL_ERROR, "Unable to patch PC into SCCP message; dropping\n");
 			return -1;
 		}
-		xua = m3ua_xfer_from_data(&data_hdr, msgb_l2(msg_patched), msgb_l2len(msg_patched));
+		xua = m3ua_xfer_from_data(&data_hdr, msgb_data(msg_patched), msgb_length(msg_patched));
 		msgb_free(msg_patched);
 	} else {
-		xua = m3ua_xfer_from_data(&data_hdr, msgb_l2(msg), msgb_l2len(msg));
+		xua = m3ua_xfer_from_data(&data_hdr, msgb_data(msg), msgb_length(msg));
 	}
 
 	/* Update xua->mtp with values from data_hdr */
@@ -333,16 +330,15 @@ static int ipa_rx_msg_sccp(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t s
  *  \returns 0 on success; negative on error */
 int ipa_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t sls)
 {
-	struct ipaccess_head *hh;
 	int rc;
 
 	OSMO_ASSERT(asp->cfg.proto == OSMO_SS7_ASP_PROT_IPA);
 
-	/* osmo_ipa_process_msg() will already have verified length
-	 * consistency and set up l2h pointer */
-	hh = (struct ipaccess_head *) msg->l1h;
+	/* Here IPA headers have already been validated and were stored in
+	 * osmo_ipa_msgb_cb_proto(_ext)(), and msgb_data() and msgb_l2() both
+	 * point to IPA payload. */
 
-	switch (hh->proto) {
+	switch (osmo_ipa_msgb_cb_proto(msg)) {
 	case IPAC_PROTO_IPACCESS:
 		rc = ipa_rx_msg_ccm(asp, msg);
 		break;
@@ -350,7 +346,7 @@ int ipa_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t sls)
 		rc = ipa_rx_msg_sccp(asp, msg, sls);
 		break;
 	default:
-		rc = ss7_asp_rx_unknown(asp, hh->proto, msg);
+		rc = ss7_asp_rx_unknown(asp, osmo_ipa_msgb_cb_proto(msg), msg);
 	}
 
 	return rc;
