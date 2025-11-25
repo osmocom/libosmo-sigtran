@@ -397,11 +397,13 @@ void ss7_xua_server_destroy(struct osmo_xua_server *xs)
 	if (xs->server) {
 		osmo_stream_srv_link_close(xs->server);
 		osmo_stream_srv_link_destroy(xs->server);
+		xs->server = NULL;
 	}
-	/* iterate and close all connections established in relation
-	 * with this server */
+
+	/* iterate and close all connections established in relation with this server.
+	 * Dynamic ASPs in SCTP=server are destroyed when connection is closed. */
 	llist_for_each_entry_safe(asp, asp2, &xs->asp_list, siblings)
-		osmo_ss7_asp_destroy(asp);
+		ss7_asp_disconnect_stream(asp);
 
 	llist_del(&xs->list);
 	talloc_free(xs);
