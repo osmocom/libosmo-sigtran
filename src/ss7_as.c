@@ -193,10 +193,13 @@ int osmo_ss7_as_add_asp(struct osmo_ss7_as *as, const char *asp_name)
 /*! \brief Delete given ASP from given AS
  *  \param[in] as Application Server from which \ref asp is deleted
  *  \param[in] asp Application Server Process to delete from \ref as
- *  \returns 0 on success; negative in case of error */
+ *  \returns 0 on success; negative in case of error
+ *
+ * \ref as may be freed during the function call. */
 int ss7_as_del_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp)
 {
 	unsigned int i;
+	bool found = false;
 
 	LOGPAS(as, DLSS7, LOGL_INFO, "Removing ASP %s from AS\n", asp->cfg.name);
 
@@ -211,11 +214,20 @@ int ss7_as_del_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp)
 	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
 		if (as->cfg.asps[i] == asp) {
 			as->cfg.asps[i] = NULL;
-			return 0;
+			found = true;
+			break;
 		}
 	}
 
-	return -EINVAL;
+	/* RKM-dynamically allocated AS: If there are no other ASPs, destroy the AS.
+	 * RFC 4666 4.4.2: "If a Deregistration results in no more ASPs in an
+	 * Application Server, an SG MAY delete the Routing Key data."
+	 */
+	if (as->rkm_dyn_allocated && osmo_ss7_as_count_asp(as) == 0)
+		osmo_ss7_as_destroy(as);
+
+
+	return found ? 0 : -EINVAL;
 }
 
 /*! \brief Delete given ASP from given AS

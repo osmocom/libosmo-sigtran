@@ -514,6 +514,13 @@ static void xua_asp_fsm_down_onenter(struct osmo_fsm_inst *fi, uint32_t prev_sta
 	struct osmo_ss7_asp *asp = xafp->asp;
 	xua_t_beat_stop(fi);
 	dispatch_to_all_as(fi, XUA_ASPAS_ASP_DOWN_IND, asp);
+	/* RFC 4666 4.4.2: "An ASP SHOULD deregister from all Application Servers of which it is a
+	 * member before attempting to move to the ASP-Down state [...]
+	 * If a Deregistration results in no more ASPs in an Application Server, an SG MAY delete
+	 * the Routing Key data."
+	 * In case it didn't deregsitrer explicitly, make sure to implicitly deregister it:
+	 */
+	xua_rkm_cleanup_dyn_as_for_asp(asp);
 }
 
 static void xua_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -1101,6 +1108,13 @@ static void ipa_asp_fsm_down_onenter(struct osmo_fsm_inst *fi, uint32_t prev_sta
 	struct osmo_ss7_asp *asp = xafp->asp;
 	ipa_t_beat_stop(fi);
 	dispatch_to_all_as(fi, XUA_ASPAS_ASP_DOWN_IND, asp);
+	/* RFC 4666 4.4.2: "An ASP SHOULD deregister from all Application Servers of which it is a
+	 * member before attempting to move to the ASP-Down state [...]
+	 * If a Deregistration results in no more ASPs in an Application Server, an SG MAY delete
+	 * the Routing Key data."
+	 * In case it didn't deregsitrer explicitly, make sure to implicitly deregister it:
+	 */
+	xua_rkm_cleanup_dyn_as_for_asp(asp);
 }
 
 static void ipa_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *data)

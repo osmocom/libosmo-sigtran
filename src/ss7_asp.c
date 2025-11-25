@@ -745,7 +745,7 @@ struct osmo_ss7_asp *ss7_asp_alloc(struct osmo_ss7_instance *inst, const char *n
 
 void osmo_ss7_asp_destroy(struct osmo_ss7_asp *asp)
 {
-	struct osmo_ss7_as *as;
+	struct osmo_ss7_as *as, *as2;
 
 	OSMO_ASSERT(ss7_initialized);
 	LOGPASP(asp, DLSS7, LOGL_INFO, "Destroying ASP\n");
@@ -757,8 +757,9 @@ void osmo_ss7_asp_destroy(struct osmo_ss7_asp *asp)
 	if (asp->fi)
 		osmo_fsm_inst_term(asp->fi, OSMO_FSM_TERM_REQUEST, NULL);
 
-	/* unlink from all ASs we are part of */
-	llist_for_each_entry(as, &asp->inst->as_list, list)
+	/* Unlink from all ASs we are part of.
+	 * Some RKM-dynamically allocated ASs may be freed as a result from this: */
+	llist_for_each_entry_safe(as, as2, &asp->inst->as_list, list)
 		ss7_as_del_asp(as, asp);
 
 	/* unlink from ss7_instance */
@@ -1350,9 +1351,6 @@ int ss7_asp_xua_srv_conn_closed_cb(struct osmo_stream_srv *srv)
 
 	/* notify ASP FSM and everyone else */
 	osmo_fsm_inst_dispatch(asp->fi, XUA_ASP_E_SCTP_COMM_DOWN_IND, NULL);
-
-	/* delete any RKM-dynamically allocated ASs for this ASP */
-	xua_rkm_cleanup_dyn_as_for_asp(asp);
 
 	/* send M-SCTP_RELEASE.ind to Layer Manager */
 	xua_asp_send_xlm_prim_simple(asp, OSMO_XLM_PRIM_M_SCTP_RELEASE, PRIM_OP_INDICATION);
