@@ -760,13 +760,9 @@ void osmo_ss7_asp_destroy(struct osmo_ss7_asp *asp)
 		llist_del(&asp->siblings);
 
 	/* unlink from all ASs we are part of */
-	llist_for_each_entry(as, &asp->inst->as_list, list) {
-		unsigned int i;
-		for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-			if (as->cfg.asps[i] == asp)
-				as->cfg.asps[i] = NULL;
-		}
-	}
+	llist_for_each_entry(as, &asp->inst->as_list, list)
+		ss7_as_del_asp(as, asp);
+
 	/* unlink from ss7_instance */
 	asp->inst = NULL;
 	llist_del(&asp->list);
