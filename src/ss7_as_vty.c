@@ -75,7 +75,6 @@ DEFUN_ATTR(cs7_as, cs7_as_cmd,
 		return CMD_WARNING;
 	}
 
-	as->cfg.name = talloc_strdup(as, name);
 
 	vty->node = L_CS7_AS_NODE;
 	vty->index = as;
