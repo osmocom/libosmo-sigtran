@@ -71,10 +71,14 @@ DEFUN_ATTR(cs7_as, cs7_as_cmd,
 
 	as = osmo_ss7_as_find_or_create(inst, name, protocol);
 	if (!as) {
-		vty_out(vty, "cannot create AS '%s'%s", name, VTY_NEWLINE);
+		vty_out(vty, "Cannot create AS '%s'%s", name, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
+	if (as->rkm_dyn_allocated) {
+		vty_out(vty, "Cannot configure RKM-dynamically allocated AS '%s'%s", name, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
 
 	vty->node = L_CS7_AS_NODE;
 	vty->index = as;
