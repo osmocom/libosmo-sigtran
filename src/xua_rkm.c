@@ -428,13 +428,10 @@ static int handle_rkey_dereg(struct osmo_ss7_asp *asp, uint32_t rctx,
 	 * we should refuse RKM DEREG if the ASP is still ACTIVE */
 	osmo_fsm_inst_dispatch(as->fi, XUA_ASPAS_ASP_DOWN_IND, asp);
 
-	/* if we were dynamically allocated, release the associated
-	 * route and destroy the AS */
-	if (as->rkm_dyn_allocated) {
-		/* remove route + AS definition */
-		ss7_route_destroy(rt);
-		osmo_ss7_as_destroy(as);
-	}
+	/* Release the associated route and destroy the dynamically allocated AS */
+	ss7_route_destroy(rt);
+	osmo_ss7_as_destroy(as);
+
 	/* report success */
 	msgb_append_dereg_res(resp, M3UA_RKM_DEREG_SUCCESS, rctx);
 
