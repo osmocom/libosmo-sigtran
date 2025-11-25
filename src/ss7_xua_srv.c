@@ -75,13 +75,23 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
 	LOGP(DLSS7, LOGL_INFO, "%s: New %s connection accepted\n", sock_name, proto_name);
 
 	asp = ss7_asp_find_by_socket_addr(fd, oxs->cfg.trans_proto);
-	if (asp && asp->cfg.adm_state == OSMO_SS7_ASP_ADM_S_SHUTDOWN) {
-		LOGPASP(asp, DLSS7, LOGL_NOTICE,
-			"Reject incoming new connection from %s for ASP in adm state %s\n",
-			sock_name, get_value_string(osmo_ss7_asp_admin_state_names, asp->cfg.adm_state));
-		close(fd);
-		talloc_free(sock_name);
-		return 0;
+	if (asp) {
+		if (!asp->cfg.is_server) {
+			LOGPASP(asp, DLSS7, LOGL_NOTICE,
+				"Reject incoming new connection from %s for ASP configured as 'transport-role client'\n",
+				sock_name);
+			close(fd);
+			talloc_free(sock_name);
+			return 0;
+		}
+		if (asp->cfg.adm_state == OSMO_SS7_ASP_ADM_S_SHUTDOWN) {
+			LOGPASP(asp, DLSS7, LOGL_NOTICE,
+				"Reject incoming new connection from %s for ASP in adm state %s\n",
+				sock_name, get_value_string(osmo_ss7_asp_admin_state_names, asp->cfg.adm_state));
+			close(fd);
+			talloc_free(sock_name);
+			return 0;
+		}
 	}
 
 	srv = osmo_stream_srv_create2(oxs, link, fd, NULL);
