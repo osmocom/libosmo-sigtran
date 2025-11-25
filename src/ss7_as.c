@@ -194,15 +194,9 @@ int osmo_ss7_as_add_asp(struct osmo_ss7_as *as, const char *asp_name)
  *  \param[in] as Application Server from which \ref asp is deleted
  *  \param[in] asp Application Server Process to delete from \ref as
  *  \returns 0 on success; negative in case of error */
-int osmo_ss7_as_del_asp(struct osmo_ss7_as *as, const char *asp_name)
+int ss7_as_del_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp)
 {
-	struct osmo_ss7_asp *asp;
 	unsigned int i;
-
-	OSMO_ASSERT(ss7_initialized);
-	asp = osmo_ss7_asp_find_by_name(as->inst, asp_name);
-	if (!asp)
-		return -ENODEV;
 
 	LOGPAS(as, DLSS7, LOGL_INFO, "Removing ASP %s from AS\n", asp->cfg.name);
 
@@ -222,6 +216,22 @@ int osmo_ss7_as_del_asp(struct osmo_ss7_as *as, const char *asp_name)
 	}
 
 	return -EINVAL;
+}
+
+/*! \brief Delete given ASP from given AS
+ *  \param[in] as Application Server from which \ref asp is deleted
+ *  \param[in] asp_name Name of the Application Server Process to delete from \ref as
+ *  \returns 0 on success; negative in case of error */
+int osmo_ss7_as_del_asp(struct osmo_ss7_as *as, const char *asp_name)
+{
+	struct osmo_ss7_asp *asp;
+
+	OSMO_ASSERT(ss7_initialized);
+	asp = osmo_ss7_asp_find_by_name(as->inst, asp_name);
+	if (!asp)
+		return -ENODEV;
+
+	return ss7_as_del_asp(as, asp);
 }
 
 /*! \brief Destroy given Application Server

@@ -423,7 +423,7 @@ static int handle_rkey_dereg(struct osmo_ss7_asp *asp, uint32_t rctx,
 		rctx, osmo_ss7_pointcode_print(inst, as->cfg.routing_key.pc));
 
 	/* remove ASP from AS */
-	osmo_ss7_as_del_asp(as, asp->cfg.name);
+	ss7_as_del_asp(as, asp);
 	/* FIXME: Rather than spoofing teh ASP-DOWN.ind to the AS here,
 	 * we should refuse RKM DEREG if the ASP is still ACTIVE */
 	osmo_fsm_inst_dispatch(as->fi, XUA_ASPAS_ASP_DOWN_IND, asp);
