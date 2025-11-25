@@ -756,8 +756,6 @@ void osmo_ss7_asp_destroy(struct osmo_ss7_asp *asp)
 		osmo_stream_cli_destroy(asp->client);
 	if (asp->fi)
 		osmo_fsm_inst_term(asp->fi, OSMO_FSM_TERM_REQUEST, NULL);
-	if (asp->xua_server)
-		llist_del(&asp->siblings);
 
 	/* unlink from all ASs we are part of */
 	llist_for_each_entry(as, &asp->inst->as_list, list)
@@ -1360,6 +1358,10 @@ int ss7_asp_xua_srv_conn_closed_cb(struct osmo_stream_srv *srv)
 	xua_asp_send_xlm_prim_simple(asp, OSMO_XLM_PRIM_M_SCTP_RELEASE, PRIM_OP_INDICATION);
 
 	asp->server = NULL;
+	if (asp->xua_server) {
+		llist_del(&asp->siblings);
+		asp->xua_server = NULL;
+	}
 
 	/* if we were dynamically allocated at accept_cb() time, let's
 	 * self-destruct now.  A new connection will re-create the ASP. */

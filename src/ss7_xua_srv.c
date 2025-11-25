@@ -76,6 +76,7 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
 
 	asp = ss7_asp_find_by_socket_addr(fd, oxs->cfg.trans_proto);
 	if (asp) {
+		LOGP(DLSS7, LOGL_INFO, "%s: matched connection to ASP %s\n", sock_name, asp->cfg.name);
 		if (!asp->cfg.is_server) {
 			LOGPASP(asp, DLSS7, LOGL_NOTICE,
 				"Reject incoming new connection from %s for ASP configured as 'transport-role client'\n",
@@ -92,6 +93,26 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
 			talloc_free(sock_name);
 			return 0;
 		}
+		/* we need to check if we already have a socket associated, and close it.  Otherwise it might
+		 * happen that both the listen-fd for this accept() and the old socket are marked 'readable'
+		 * during the same scheduling interval, and we're processing them in the "wrong" order, i.e.
+		 * we first see the accept of the new fd before we see the close on the old fd */
+		if (asp->server) {
+			LOGPASP(asp, DLSS7, LOGL_FATAL, "accept of new connection from %s before old was closed "
+				"-> close old one\n", sock_name);
+			ss7_asp_disconnect_stream(asp);
+			/* Dynamic ASPs (transport-role=server) may be destroyed as a consequence, re-fetch the ASP: */
+			asp = ss7_asp_find_by_socket_addr(fd, oxs->cfg.trans_proto);
+		}
+	}
+
+	if (!asp && !oxs->cfg.accept_dyn_reg) {
+		LOGP(DLSS7, LOGL_NOTICE, "%s: %s connection without matching "
+			"ASP definition and no dynamic registration enabled, terminating\n",
+			sock_name, proto_name);
+		close(fd);
+		talloc_free(sock_name);
+		return -1;
 	}
 
 	srv = osmo_stream_srv_create2(oxs, link, fd, NULL);
@@ -127,71 +148,50 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
 	}
 	osmo_stream_srv_set_closed_cb(srv, ss7_asp_xua_srv_conn_closed_cb);
 
-	if (asp) {
-		LOGP(DLSS7, LOGL_INFO, "%s: matched connection to ASP %s\n",
-			sock_name, asp->cfg.name);
-		/* we need to check if we already have a socket associated, and close it.  Otherwise it might
-		 * happen that both the listen-fd for this accept() and the old socket are marked 'readable'
-		 * during the same scheduling interval, and we're processing them in the "wrong" order, i.e.
-		 * we first see the accept of the new fd before we see the close on the old fd */
-		if (asp->server) {
-			LOGPASP(asp, DLSS7, LOGL_FATAL, "accept of new connection from %s before old was closed "
-				"-> close old one\n", sock_name);
-			osmo_stream_srv_set_data(asp->server, NULL);
-			osmo_stream_srv_destroy(asp->server);
-			asp->server = NULL;
-		}
-	} else {
-		if (!oxs->cfg.accept_dyn_reg) {
-			LOGP(DLSS7, LOGL_NOTICE, "%s: %s connection without matching "
-			     "ASP definition and no dynamic registration enabled, terminating\n",
-			     sock_name, proto_name);
-		} else {
-			char namebuf[32];
-			static uint32_t dyn_asp_num = 0;
-			snprintf(namebuf, sizeof(namebuf), "asp-dyn-%u", dyn_asp_num++);
-			asp = osmo_ss7_asp_find_or_create2(oxs->inst, namebuf, 0, 0,
-							   oxs->cfg.trans_proto,
-							   oxs->cfg.proto);
-			if (asp) {
-				char hostbuf[INET6_ADDRSTRLEN];
-				const char *hostbuf_ptr = &hostbuf[0];
-				char portbuf[16];
-
-				osmo_sock_get_ip_and_port(fd, hostbuf, sizeof(hostbuf), portbuf, sizeof(portbuf), false);
-				LOGP(DLSS7, LOGL_INFO, "%s: created dynamic ASP %s\n",
-					sock_name, asp->cfg.name);
-				asp->cfg.is_server = true;
-				asp->cfg.role = OSMO_SS7_ASP_ROLE_SG;
-				asp->cfg.local.port = oxs->cfg.local.port;
-				asp->cfg.remote.port = atoi(portbuf);
-				asp->dyn_allocated = true;
-				asp->server = srv;
-				ss7_asp_peer_set_hosts(&asp->cfg.local, asp,
-							    (const char * const*)oxs->cfg.local.host,
-							    oxs->cfg.local.host_cnt);
-				ss7_asp_peer_set_hosts(&asp->cfg.remote, asp,
-							    &hostbuf_ptr, 1);
-				if ((rc = xua_asp_fsm_start(asp, asp->cfg.role, LOGL_DEBUG)) < 0) {
-					talloc_free(sock_name);
-					osmo_ss7_asp_destroy(asp);
-					return rc;
-				}
-				OSMO_ASSERT(asp->fi);
-			}
-		}
+	if (!asp) {
+		/* Dynamic registration: */
+		char namebuf[32];
+		char hostbuf[INET6_ADDRSTRLEN];
+		const char *hostbuf_ptr = &hostbuf[0];
+		char portbuf[16];
+		static uint32_t dyn_asp_num = 0;
+		snprintf(namebuf, sizeof(namebuf), "asp-dyn-%u", dyn_asp_num++);
+		asp = osmo_ss7_asp_find_or_create2(oxs->inst, namebuf, 0, 0,
+						   oxs->cfg.trans_proto,
+						   oxs->cfg.proto);
 		if (!asp) {
 			osmo_stream_srv_destroy(srv);
 			talloc_free(sock_name);
 			return -1;
 		}
-		llist_add_tail(&asp->siblings, &oxs->asp_list);
+
+		osmo_sock_get_ip_and_port(fd, hostbuf, sizeof(hostbuf), portbuf, sizeof(portbuf), false);
+		LOGP(DLSS7, LOGL_INFO, "%s: created dynamic ASP %s\n", sock_name, asp->cfg.name);
+		asp->cfg.is_server = true;
+		asp->cfg.role = OSMO_SS7_ASP_ROLE_SG;
+		asp->cfg.local.port = oxs->cfg.local.port;
+		asp->cfg.remote.port = atoi(portbuf);
+		asp->dyn_allocated = true;
+		asp->server = srv;
+		ss7_asp_peer_set_hosts(&asp->cfg.local, asp,
+						(const char * const*)oxs->cfg.local.host,
+						oxs->cfg.local.host_cnt);
+		ss7_asp_peer_set_hosts(&asp->cfg.remote, asp,
+						&hostbuf_ptr, 1);
+		if ((rc = xua_asp_fsm_start(asp, asp->cfg.role, LOGL_DEBUG)) < 0) {
+			talloc_free(sock_name);
+			osmo_ss7_asp_destroy(asp);
+			return rc;
+		}
+		OSMO_ASSERT(asp->fi);
 	}
+	OSMO_ASSERT(asp);
 
 	/* update the ASP reference back to the server over which the
 	 * connection came in */
 	asp->server = srv;
 	asp->xua_server = oxs;
+	llist_add_tail(&asp->siblings, &oxs->asp_list);
 
 	/* update the ASP socket name */
 	talloc_free(asp->sock_name);
