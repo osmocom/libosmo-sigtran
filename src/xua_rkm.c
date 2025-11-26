@@ -623,18 +623,3 @@ int osmo_xlm_sap_down(struct osmo_ss7_asp *asp, struct osmo_prim_hdr *oph)
 	msgb_free(prim->oph.msg);
 	return 0;
 }
-
-/* clean-up any dynamically created ASs + routes */
-void xua_rkm_cleanup_dyn_as_for_asp(struct osmo_ss7_asp *asp)
-{
-	struct osmo_ss7_instance *inst = asp->inst;
-	struct osmo_ss7_as *as, *as2;
-
-	llist_for_each_entry_safe(as, as2, &inst->as_list, list) {
-		if (!as->rkm_dyn_allocated)
-			continue;
-		if (!osmo_ss7_as_has_asp(as, asp))
-			continue;
-		ss7_as_del_asp(as, asp);
-	}
-}
