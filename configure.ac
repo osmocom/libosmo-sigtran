@@ -41,6 +41,9 @@ PKG_CHECK_MODULES(LIBOSMOVTY, libosmovty >= 1.11.0)
 PKG_CHECK_MODULES(LIBOSMOGSM, libosmogsm >= 1.11.0)
 PKG_CHECK_MODULES(LIBOSMONETIF, libosmo-netif >= 1.6.0)
 
+dnl Generate the output
+AC_CONFIG_HEADER(config.h)
+
 # TCAP loadsharing
 AC_ARG_ENABLE([tcap-loadsharing], [AS_HELP_STRING([--enable-tcap-loadsharing], [Build with TCAP loadsharing. Requires libosmo-asn1-tcap [default=no]])],
 	[osmo_ac_tcap="$enableval"],[osmo_ac_tcap="no"])

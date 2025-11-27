@@ -9,6 +9,8 @@
  * osmo-ss7.git
  */
 
+#include "config.h"
+
 #include <errno.h>
 
 #include <osmocom/core/fsm.h>

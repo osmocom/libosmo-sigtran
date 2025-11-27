@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "../src/ss7_as.h"
 #include "../src/ss7_asp.h"
 #include "../src/ss7_link.h"

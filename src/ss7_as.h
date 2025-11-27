@@ -1,5 +1,7 @@
 #pragma once
 
+#include "config.h"
+
 #include <stdint.h>
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/fsm.h>

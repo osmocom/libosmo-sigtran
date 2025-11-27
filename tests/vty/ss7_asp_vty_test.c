@@ -17,6 +17,8 @@
  *
  */
 
+#include "config.h"
+
 #define _GNU_SOURCE
 #include <getopt.h>
 
