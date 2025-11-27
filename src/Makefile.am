@@ -26,6 +26,7 @@ noinst_HEADERS = \
 	ss7_vty.h \
 	ss7_xua_srv.h \
 	tcap_as_loadshare.h \
+	tcap_as_loadshare_vty.h \
 	tcap_trans_tracking.h \
 	xua_asp_fsm.h \
 	xua_as_fsm.h \
@@ -110,6 +111,7 @@ if BUILD_WITH_TCAP_LOADSHARING
 libosmo_sigtran_la_SOURCES += \
 	tcap_trans_tracking.c \
 	tcap_as_loadshare.c \
+	tcap_as_loadshare_vty.c \
 	$(NULL)
 
 AM_CFLAGS += \

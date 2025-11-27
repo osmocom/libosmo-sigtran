@@ -1,4 +1,16 @@
+OsmoSTP> list
+...
+  show cs7 instance <0-15> as name AS_NAME tcap-ranges
+  show cs7 instance <0-15> as name AS_NAME tcap-ranges tid TID
+...
+
 OsmoSTP> enable
+OsmoSTP# list
+...
+  show cs7 instance <0-15> as name AS_NAME tcap-ranges
+  show cs7 instance <0-15> as name AS_NAME tcap-ranges tid TID
+...
+
 OsmoSTP# configure terminal
 OsmoSTP(config)# cs7 instance 0
 

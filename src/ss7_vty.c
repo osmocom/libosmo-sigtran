@@ -48,6 +48,9 @@
 #include "ss7_user.h"
 #include "ss7_vty.h"
 #include "ss7_xua_srv.h"
+#ifdef WITH_TCAP_LOADSHARING
+#include "tcap_as_loadshare_vty.h"
+#endif /* WITH_TCAP_LOADSHARING */
 
 #define ROUTE_PRIO_RANGE_STR "<1-9>"
 #define ROUTE_PRIO_RANGE_HELP_STR "Priority\n"
@@ -1556,6 +1559,9 @@ void osmo_ss7_vty_init_sg(void *ctx)
 	gen_cs7_timer_xua_cmd_strs(&cs7_timer_xua_cmd);
 	install_lib_element(L_CS7_NODE, &cs7_timer_xua_cmd);
 
+#ifdef WITH_TCAP_LOADSHARING
+	tcap_as_vty_init();
+#endif /* WITH_TCAP_LOADSHARING */
 	install_node(&rtable_node, NULL);
 	install_lib_element(L_CS7_NODE, &cs7_route_table_cmd);
 	install_lib_element(L_CS7_RTABLE_NODE, &cfg_description_cmd);
