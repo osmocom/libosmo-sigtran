@@ -344,47 +344,7 @@ static struct xua_msg *gen_ret_msg(struct osmo_sccp_instance *inst,
 				   const struct xua_msg *xua_in,
 				   uint32_t ret_cause)
 {
-	struct xua_msg *xua_out = xua_msg_alloc();
-	struct osmo_sccp_addr called;
-
-	xua_out->hdr = XUA_HDR(SUA_MSGC_CL, SUA_CL_CLDR);
-	xua_msg_add_u32(xua_out, SUA_IEI_ROUTE_CTX, inst->route_ctx);
-	xua_msg_add_u32(xua_out, SUA_IEI_CAUSE,
-			SUA_CAUSE_T_RETURN | ret_cause);
-	/* Swap Calling and Called Party */
-	xua_msg_copy_part(xua_out, SUA_IEI_SRC_ADDR, xua_in, SUA_IEI_DEST_ADDR);
-	xua_msg_copy_part(xua_out, SUA_IEI_DEST_ADDR, xua_in, SUA_IEI_SRC_ADDR);
-	/* TODO: Optional: Hop Count */
-	/* Optional: Importance */
-	xua_msg_copy_part(xua_out, SUA_IEI_IMPORTANCE,
-			  xua_in, SUA_IEI_IMPORTANCE);
-	/* Optional: Message Priority */
-	xua_msg_copy_part(xua_out, SUA_IEI_MSG_PRIO, xua_in, SUA_IEI_MSG_PRIO);
-	/* Optional: Correlation ID */
-	xua_msg_copy_part(xua_out, SUA_IEI_CORR_ID, xua_in, SUA_IEI_CORR_ID);
-	/* Optional: Segmentation */
-	xua_msg_copy_part(xua_out, SUA_IEI_SEGMENTATION,
-			  xua_in, SUA_IEI_SEGMENTATION);
-	/* Optional: Data */
-	xua_msg_copy_part(xua_out, SUA_IEI_DATA, xua_in, SUA_IEI_DATA);
-
-	OSMO_ASSERT(sua_addr_parse(&called, xua_out, SUA_IEI_DEST_ADDR) == 0);
-
-	/* Route on PC + SSN ? */
-	if (called.ri == OSMO_SCCP_RI_SSN_PC) {
-		/* if no PC, copy OPC into called addr */
-		if (!(called.presence & OSMO_SCCP_ADDR_T_PC)) {
-			struct osmo_sccp_addr calling;
-			OSMO_ASSERT(sua_addr_parse(&calling, xua_out, SUA_IEI_SRC_ADDR) == 0);
-			called.presence |= OSMO_SCCP_ADDR_T_PC;
-			called.pc = calling.pc;
-			/* Re-encode / replace called address */
-			xua_msg_free_tag(xua_out, SUA_IEI_DEST_ADDR);
-			xua_msg_add_sccp_addr(xua_out, SUA_IEI_DEST_ADDR,
-					      &called);
-		}
-	}
-	return xua_out;
+	return sua_gen_cldr(xua_in, inst->route_ctx, ret_cause);
 }
 
 /*! \brief SCRC -> SCLC (Routing Failure

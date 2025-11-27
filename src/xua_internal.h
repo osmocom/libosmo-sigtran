@@ -37,6 +37,8 @@ void sua_tx_snm_daud(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned in
 void sua_tx_dupu(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int num_rctx,
 		 uint32_t dpc, uint16_t user, uint16_t cause, const char *info_str);
 
+struct xua_msg *sua_gen_cldr(const struct xua_msg *xua_in, uint32_t route_ctx, uint32_t ret_cause);
+
 int m3ua_hmdc_rx_from_l2(struct osmo_ss7_instance *inst, struct xua_msg *xua);
 struct msgb *m3ua_to_msg(struct xua_msg *xua);
 int m3ua_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua);
