@@ -77,7 +77,7 @@ static int parse_tcap(struct osmo_ss7_as *as, const uint8_t *data, size_t len, s
 
 	asn_rc = ber_decode(0, &asn_DEF_TCAP_TCMessage, (void **)&tcapmsg, data, len);
 	if (asn_rc.code != RC_OK) {
-		LOGPAS(as, DLSS7, LOGL_DEBUG, "Error decoding TCAP message rc: %d, message: %s\n",
+		LOGPAS(as, DLTCAP, LOGL_DEBUG, "Error decoding TCAP message rc: %d, message: %s\n",
 		       asn_rc.code, osmo_hexdump(data, len));
 		rc = -EINVAL;
 		goto free_asn;
@@ -288,7 +288,7 @@ int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32
 	int rc;
 	struct xua_msg *sua = osmo_sccp_to_xua(sccp_msg);
 	if (!sua) {
-		LOGPAS(as, DLSS7, LOGL_ERROR, "Unable to parse SCCP message\n");
+		LOGPAS(as, DLTCAP, LOGL_ERROR, "Unable to parse SCCP message\n");
 		return -1;
 	}
 
@@ -298,14 +298,14 @@ int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32
 
 	rc = sua_addr_parse(&calling_addr, sua, SUA_IEI_SRC_ADDR);
 	if (rc < 0) {
-		LOGPAS(as, DLSS7, LOGL_ERROR, "Unable to parse SCCP Destination Address\n");
+		LOGPAS(as, DLTCAP, LOGL_ERROR, "Unable to parse SCCP Destination Address\n");
 		return -3;
 	}
 
 	/* retrieve + decode destination address */
 	rc = sua_addr_parse(&called_addr, sua, SUA_IEI_DEST_ADDR);
 	if (rc < 0) {
-		LOGPAS(as, DLSS7, LOGL_ERROR, "Unable to parse SCCP Destination Address\n");
+		LOGPAS(as, DLTCAP, LOGL_ERROR, "Unable to parse SCCP Destination Address\n");
 		return -4;
 	}
 
@@ -333,11 +333,11 @@ int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32
 
 	rc = parse_tcap(as, ie_data->dat, ie_data->len, &parsed);
 	if (rc <= 0) {
-		LOGPAS(as, DLSS7, LOGL_ERROR, "TCAP: failed get otid/dtid.\n");
+		LOGPAS(as, DLTCAP, LOGL_ERROR, "Failed get TCAP otid/dtid.\n");
 		return -7;
 	}
 
-	LOGPAS(as, DLSS7, LOGL_INFO, "TCAP: Looking up transaction for type 0x%02x, otid=%u dtid=%u\n", parsed.present, parsed.otid, parsed.dtid);
+	LOGPAS(as, DLTCAP, LOGL_INFO, "Looking up transaction for type 0x%02x, otid=%u dtid=%u\n", parsed.present, parsed.otid, parsed.dtid);
 	/* TCAP messages towards the IPAC nodes */
 	switch (parsed.present) {
 	case TCAP_TCMessage_PR_begin:
@@ -415,7 +415,7 @@ static int send_back_udts(struct osmo_ss7_as *as,
 	if (!sua)
 		return -ENOMEM;
 
-	LOGPAS(as, DLSS7, LOGL_INFO, "TCAP: Tx UDTS: %s\n", xua_msg_dump(sua, &xua_dialect_sua));
+	LOGPAS(as, DLTCAP, LOGL_INFO, "Tx UDTS: %s\n", xua_msg_dump(sua, &xua_dialect_sua));
 
 	msg = osmo_sua_to_sccp(sua);
 	if (!msg) {
@@ -459,7 +459,7 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 	/* decode SCCP and convert to a SUA/xUA representation */
 	sua = osmo_sccp_to_xua(sccp_msg);
 	if (!sua) {
-		LOGPAS(as, DLSS7, LOGL_ERROR, "Unable to parse SCCP message\n");
+		LOGPAS(as, DLTCAP, LOGL_ERROR, "Unable to parse SCCP message\n");
 		rc = -EPROTONOSUPPORT;
 		goto out_free_msgb;
 	}
@@ -473,13 +473,13 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 
 	rc = sua_addr_parse(&calling_addr, sua, SUA_IEI_SRC_ADDR);
 	if (rc < 0) {
-		LOGPAS(as, DLSS7, LOGL_ERROR, "Unable to parse SCCP Source Address\n");
+		LOGPAS(as, DLTCAP, LOGL_ERROR, "Unable to parse SCCP Source Address\n");
 		goto out_free_sua;
 	}
 
 	rc = sua_addr_parse(&called_addr, sua, SUA_IEI_DEST_ADDR);
 	if (rc < 0) {
-		LOGPAS(as, DLSS7, LOGL_ERROR, "Unable to parse SCCP Destination Address\n");
+		LOGPAS(as, DLTCAP, LOGL_ERROR, "Unable to parse SCCP Destination Address\n");
 		goto out_free_sua;
 	}
 
@@ -509,11 +509,11 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 	}
 
 	rc = parse_tcap(as, ie_data->dat, ie_data->len, &parsed);
-	LOGPAS(as, DLSS7, LOGL_DEBUG, "TCAP: decoded rc=%d otid=%u dtid=%u\n", rc, parsed.otid, parsed.dtid);
+	LOGPAS(as, DLTCAP, LOGL_DEBUG, "TCAP decoded rc=%d otid=%u dtid=%u\n", rc, parsed.otid, parsed.dtid);
 
 	if (rc <= 0) {
 		rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_TCAP_FAILED);
-		LOGPAS(as, DLSS7, LOGL_ERROR, "TCAP: failed get otid/dtid.\n");
+		LOGPAS(as, DLTCAP, LOGL_ERROR, "Failed get TCAP otid/dtid.\n");
 		rc = -EINVAL;
 		goto out_free_sua;
 	}
@@ -540,7 +540,7 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 			else {
 				/* couldn't find a suitable canditate for OTID */
 				rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_FAILED);
-				LOGPAS(as, DLSS7, LOGL_DEBUG, "TCAP: couldn't find a suitable canditate for otid %u\n", parsed.otid);
+				LOGPAS(as, DLTCAP, LOGL_DEBUG, "Couldn't find a suitable canditate for otid %u\n", parsed.otid);
 				rc = -ENOKEY;
 				goto out_free_sua;
 			}
@@ -621,13 +621,13 @@ int tcap_as_select_asp_loadshare(struct osmo_ss7_asp **asp, struct osmo_ss7_as *
 	 * extract the SCCP payload and convert to a msgb */
 	m3ua_data_ie = xua_msg_find_tag(xua, M3UA_IEI_PROT_DATA);
 	if (!m3ua_data_ie) {
-		LOGPAS(as, DLSS7, LOGL_ERROR, "Couldn't find M3UA protocol data\n");
+		LOGPAS(as, DLTCAP, LOGL_ERROR, "Couldn't find M3UA protocol data\n");
 		return -EPROTONOSUPPORT;
 	}
 
 	sccp_msg = msgb_alloc(m3ua_data_ie->len, "loadshare_tcap");
 	if (!sccp_msg) {
-		LOGPAS(as, DLSS7, LOGL_ERROR, "Unable to allocate SCCP message buffer\n");
+		LOGPAS(as, DLTCAP, LOGL_ERROR, "Unable to allocate SCCP message buffer\n");
 		return -ENOMEM;
 	}
 	cur = msgb_put(sccp_msg, m3ua_data_ie->len);
@@ -718,7 +718,7 @@ int ipa_rx_msg_osmo_ext_tcap_routing(struct osmo_ss7_asp *asp, struct msgb *msg)
 	enum ipa_tcap_routing_msg_types routing_msg;
 
 	if (!as) {
-		LOGPASP(asp, DLSS7, LOGL_ERROR, "Rx message for IPA ASP without AS?!\n");
+		LOGPASP(asp, DLTCAP, LOGL_ERROR, "Rx message for IPA ASP without AS?!\n");
 		rc = -ENOENT;
 		goto out;
 	}
@@ -726,7 +726,7 @@ int ipa_rx_msg_osmo_ext_tcap_routing(struct osmo_ss7_asp *asp, struct msgb *msg)
 	/* pull the IPA and OSMO_EXT header */
 	hdr = (struct ipa_tcap_routing_hdr *) msgb_data(msg);
 	if (msgb_length(msg) < sizeof(struct ipa_tcap_routing_hdr)) {
-		LOGPASP(asp, DLSS7, LOGL_ERROR, "TCAP routing message too short\n");
+		LOGPASP(asp, DLTCAP, LOGL_ERROR, "TCAP routing message too short\n");
 		rc = -EINVAL;
 		goto out;
 	}
@@ -738,10 +738,10 @@ int ipa_rx_msg_osmo_ext_tcap_routing(struct osmo_ss7_asp *asp, struct msgb *msg)
 		struct ipa_tcap_routing_add_range tcar = {};
 
 		if (!as->cfg.loadshare.tcap.enabled || as->cfg.mode != OSMO_SS7_AS_TMOD_LOADSHARE)
-			LOGPASP(asp, DLSS7, LOGL_NOTICE, "Wrong traffic mode %s on AS %s will not use TCAP Ranges\n", osmo_ss7_as_traffic_mode_name(as->cfg.mode), as->cfg.name);
+			LOGPASP(asp, DLTCAP, LOGL_NOTICE, "Wrong traffic mode %s on AS %s will not use TCAP Ranges\n", osmo_ss7_as_traffic_mode_name(as->cfg.mode), as->cfg.name);
 
 		if (msgb_length(msg) < sizeof(*hdr) + sizeof(struct ipa_tcap_routing_add_range)) {
-			LOGPASP(asp, DLSS7, LOGL_ERROR, "TCAP routing message is too small\n");
+			LOGPASP(asp, DLTCAP, LOGL_ERROR, "TCAP routing message is too small\n");
 			rc = -EINVAL;
 			goto out;
 		}
@@ -753,11 +753,11 @@ int ipa_rx_msg_osmo_ext_tcap_routing(struct osmo_ss7_asp *asp, struct msgb *msg)
 		tcar.pc = msgb_pull_u32(msg);
 		tcar.ssn = msgb_pull_u8(msg);
 
-		LOGPASP(asp, DLSS7, LOGL_INFO, "Rx: TCAP Add Range command: seq: %u pc: %u ssn: %u [%u-%u]\n", osmo_ntohl(hdr->seq), tcar.pc, tcar.ssn, tcar.tid_start, tcar.tid_end);
+		LOGPASP(asp, DLTCAP, LOGL_INFO, "Rx: TCAP Add Range command: seq: %u pc: %u ssn: %u [%u-%u]\n", osmo_ntohl(hdr->seq), tcar.pc, tcar.ssn, tcar.tid_start, tcar.tid_end);
 
 		tcrng = tcap_overlap_tid(as, tcar.pc, tcar.ssn, tcar.tid_start, tcar.tid_end);
 		if (tcrng) {
-			LOGPASP(asp, DLSS7, LOGL_ERROR, "New TCAP Range overlaps with existing range to ASP %s [%u-%u]. Rejecting Add Range Command seq: %u pc: %u ssn: %u [%u-%u]\n",
+			LOGPASP(asp, DLTCAP, LOGL_ERROR, "New TCAP Range overlaps with existing range to ASP %s [%u-%u]. Rejecting Add Range Command seq: %u pc: %u ssn: %u [%u-%u]\n",
 				tcrng->asp->cfg.name, tcrng->tid_start, tcrng->tid_end, osmo_ntohl(hdr->seq), tcar.pc, tcar.ssn, tcar.tid_start, tcar.tid_end);
 			rc = ipa_tx_tcap_routing_nack(asp, osmo_ntohl(hdr->seq), NACK_ERR_EALREADY);
 			goto out;
@@ -765,7 +765,7 @@ int ipa_rx_msg_osmo_ext_tcap_routing(struct osmo_ss7_asp *asp, struct msgb *msg)
 
 		tcrng = tcap_range_alloc(as, asp, tcar.tid_start, tcar.tid_end, tcar.pc, tcar.ssn);
 		if (!tcrng) {
-			LOGPASP(asp, DLSS7, LOGL_ERROR, "TCAP Add Range: failed to allocate memory\n");
+			LOGPASP(asp, DLTCAP, LOGL_ERROR, "TCAP Add Range: failed to allocate memory\n");
 			rc = ipa_tx_tcap_routing_nack(asp, osmo_ntohl(hdr->seq), NACK_ERR_SYS_FAILURE);
 			goto out;
 		}

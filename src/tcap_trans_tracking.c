@@ -121,7 +121,7 @@ struct tcap_trans_track_entry *tcap_trans_track_entry_create(
 	/* TODO: optimisation: add a llist to asp to allow cleaning it up easier */
 
 
-	LOGPASP(entry->asp, DLSS7, LOGL_DEBUG, "Creating tcap cache, entry (own) pc/ssn/tid %s/%u/%u -> %s/%u/%u\n",
+	LOGPASP(entry->asp, DLTCAP, LOGL_DEBUG, "Creating tcap cache, entry (own) pc/ssn/tid %s/%u/%u -> %s/%u/%u\n",
 		osmo_ss7_pointcode_print_buf(own_pc, sizeof(own_pc), as->inst, entry->own_addr->pc),
 		entry->own_addr->ssn, entry->own_tid.tid,
 		osmo_ss7_pointcode_print_buf(peer_pc, sizeof(peer_pc), as->inst, entry->peer_addr->pc),
@@ -318,7 +318,7 @@ int tcap_trans_track_garbage_collect(struct osmo_ss7_as *as)
 	hash_for_each_safe(as->tcap.trans_track_own, i, tmp, entry, own_tid.list) {
 		if (entry->tstamp < expiry) {
 			count++;
-			LOGPASP(entry->asp, DLSS7, LOGL_DEBUG, "Remove Cache entry for tcap own tid %u (expired)\n", entry->own_tid.tid);
+			LOGPASP(entry->asp, DLTCAP, LOGL_DEBUG, "Remove Cache entry for tcap own tid %u (expired)\n", entry->own_tid.tid);
 			tcap_trans_track_entry_free(entry);
 		}
 	}
@@ -326,7 +326,7 @@ int tcap_trans_track_garbage_collect(struct osmo_ss7_as *as)
 	hash_for_each_safe(as->tcap.trans_track_peer, i, tmp, entry, peer_tid.list) {
 		if (entry->tstamp < expiry) {
 			count++;
-			LOGPASP(entry->asp, DLSS7, LOGL_DEBUG, "Remove Cache entry for tcap peer tid %u (expired)\n", entry->peer_tid.tid);
+			LOGPASP(entry->asp, DLTCAP, LOGL_DEBUG, "Remove Cache entry for tcap peer tid %u (expired)\n", entry->peer_tid.tid);
 			tcap_trans_track_entry_free(entry);
 		}
 	}
@@ -340,7 +340,7 @@ static void tcap_trans_track_garbage_collect_cb(void *data)
 	int counts = tcap_trans_track_garbage_collect(as);
 
 	if (counts)
-		LOGPAS(as, DLSS7, LOGL_DEBUG, "Removed %d cache entry (expired)", counts);
+		LOGPAS(as, DLTCAP, LOGL_DEBUG, "Removed %d cache entry (expired)", counts);
 
 	osmo_timer_schedule(&as->tcap.gc_timer, as->cfg.loadshare.tcap.timeout_s, 0);
 }
@@ -366,7 +366,7 @@ int tcap_trans_track_entries_free_by_asp(struct osmo_ss7_as *as, struct osmo_ss7
 	hash_for_each_safe(as->tcap.trans_track_own, i, tmp, entry, own_tid.list) {
 		if (entry->asp == asp) {
 			count++;
-			LOGPASP(entry->asp, DLSS7, LOGL_DEBUG, "Remove Cache entry for tcap own tid %u (asp removed)", entry->own_tid.tid);
+			LOGPASP(entry->asp, DLTCAP, LOGL_DEBUG, "Remove Cache entry for tcap own tid %u (asp removed)", entry->own_tid.tid);
 			tcap_trans_track_entry_free(entry);
 		}
 	}
@@ -374,7 +374,7 @@ int tcap_trans_track_entries_free_by_asp(struct osmo_ss7_as *as, struct osmo_ss7
 	hash_for_each_safe(as->tcap.trans_track_peer, i, tmp, entry, peer_tid.list) {
 		if (entry->asp == asp) {
 			count++;
-			LOGPASP(entry->asp, DLSS7, LOGL_DEBUG, "Remove Cache entry for tcap own tid %u (asp removed)", entry->peer_tid.tid);
+			LOGPASP(entry->asp, DLTCAP, LOGL_DEBUG, "Remove Cache entry for tcap own tid %u (asp removed)", entry->peer_tid.tid);
 			tcap_trans_track_entry_free(entry);
 		}
 	}
@@ -390,13 +390,13 @@ int tcap_trans_track_entries_free_all(struct osmo_ss7_as *as)
 
 	hash_for_each_safe(as->tcap.trans_track_own, i, tmp, entry, own_tid.list) {
 		count++;
-		LOGPASP(entry->asp, DLSS7, LOGL_DEBUG, "Remove Cache entry for tcap own tid %u (as removed)", entry->own_tid.tid);
+		LOGPASP(entry->asp, DLTCAP, LOGL_DEBUG, "Remove Cache entry for tcap own tid %u (as removed)", entry->own_tid.tid);
 		tcap_trans_track_entry_free(entry);
 	}
 
 	hash_for_each_safe(as->tcap.trans_track_peer, i, tmp, entry, peer_tid.list) {
 		count++;
-		LOGPASP(entry->asp, DLSS7, LOGL_DEBUG, "Remove Cache entry for tcap own tid %u (as removed)", entry->peer_tid.tid);
+		LOGPASP(entry->asp, DLTCAP, LOGL_DEBUG, "Remove Cache entry for tcap own tid %u (as removed)", entry->peer_tid.tid);
 		tcap_trans_track_entry_free(entry);
 	}
 

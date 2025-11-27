@@ -14,3 +14,4 @@ libosmo-sigtran add   osmo_ss7_user_mtp_sap_prim_down()
 libosmo-sigtran add   osmo_mtp_prim_xfer_req_prepend()
 libosmo-sigtran add   osmo_ss7_user_find_by_si()
 libosmo-sigtran add   MTP_SI_NI11_OSMO_IPA
+libosmocore  >1.11.3  DLTCAP
