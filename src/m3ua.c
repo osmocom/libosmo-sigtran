@@ -33,7 +33,6 @@
 #include <osmocom/core/socket.h>
 
 #include <osmocom/netif/stream.h>
-#include "xua_msg.h"
 
 #include <osmocom/sigtran/mtp_sap.h>
 #include <osmocom/sigtran/sccp_sap.h>
@@ -41,12 +40,14 @@
 #include <osmocom/sigtran/protocol/m3ua.h>
 #include <osmocom/sigtran/protocol/sua.h>
 
+#include "mtp3_hmdc.h"
 #include "xua_as_fsm.h"
 #include "xua_asp_fsm.h"
 #include "xua_internal.h"
 #include "ss7_as.h"
 #include "ss7_asp.h"
 #include "ss7_internal.h"
+#include "xua_msg.h"
 
 #define M3UA_MSGB_SIZE 1500
 
@@ -667,7 +668,7 @@ static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	}
 
 	/* xua ownership is passed here: */
-	return m3ua_hmdc_rx_from_l2(asp->inst, xua);
+	return mtp3_hmdc_rx_from_l2(asp->inst, xua);
 
 ret_free:
 	xua_msg_free(xua);

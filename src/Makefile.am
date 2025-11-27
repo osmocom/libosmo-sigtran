@@ -3,6 +3,9 @@ AM_CFLAGS=-Wall $(LIBOSMOCORE_CFLAGS) $(LIBOSMOGSM_CFLAGS) $(LIBOSMOVTY_CFLAGS) 
 		$(LIBOSMONETIF_CFLAGS)
 
 noinst_HEADERS = \
+	mtp3_hmdc.h \
+	mtp3_hmdt.h \
+	mtp3_hmrt.h \
 	sccp_connection.h \
 	sccp_scoc_fsm.h \
 	sccp_instance.h \
@@ -47,6 +50,9 @@ libosmo_sigtran_la_SOURCES = \
 	ipa.c \
 	m3ua.c \
 	mtp_sap.c \
+	mtp3_hmdc.c \
+	mtp3_hmdt.c \
+	mtp3_hmrt.c \
 	sccp2sua.c \
 	sccp_connection.c \
 	sccp_helpers.c \
@@ -68,7 +74,6 @@ libosmo_sigtran_la_SOURCES = \
 	ss7_asp_vty.c \
 	ss7_asp_peer.c \
 	ss7_combined_linkset.c \
-	ss7_hmrt.c \
 	ss7_instance.c \
 	ss7_link.c \
 	ss7_linkset.c \

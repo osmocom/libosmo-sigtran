@@ -37,7 +37,6 @@
 
 //#include <osmocom/netif/stream.h>
 #include <osmocom/netif/ipa.h>
-#include "xua_msg.h"
 
 #include <osmocom/sigtran/mtp_sap.h>
 #include <osmocom/sigtran/sccp_sap.h>
@@ -46,11 +45,13 @@
 #include <osmocom/sigtran/protocol/sua.h>
 #include <osmocom/sigtran/protocol/mtp.h>
 
-#include "xua_internal.h"
+#include "mtp3_hmdc.h"
 #include "ss7_as.h"
 #include "ss7_asp.h"
 #include "ss7_internal.h"
 #include "xua_asp_fsm.h"
+#include "xua_internal.h"
+#include "xua_msg.h"
 
 /* generate a msgb containing an IPA CCM PING message */
 struct msgb *ipa_gen_ping(void)
@@ -344,7 +345,7 @@ static int ipa_rx_msg_up(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t sls
 
 	/* Pass on as if we had received it from an M3UA ASP.
 	 * xua ownership is passed here: */
-	rc = m3ua_hmdc_rx_from_l2(asp->inst, xua);
+	rc = mtp3_hmdc_rx_from_l2(asp->inst, xua);
 	return rc;
 }
 

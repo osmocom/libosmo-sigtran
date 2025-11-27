@@ -27,6 +27,7 @@
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <osmocom/sigtran/mtp_sap.h>
 
+#include "mtp3_hmrt.h"
 #include "ss7_user.h"
 #include "ss7_internal.h"
 #include "xua_internal.h"
@@ -220,8 +221,8 @@ int osmo_ss7_user_mtp_sap_prim_down(struct osmo_ss7_user *osu, struct osmo_mtp_p
 
 	switch (OSMO_PRIM_HDR(&omp->oph)) {
 	case OSMO_PRIM(OSMO_MTP_PRIM_TRANSFER, PRIM_OP_REQUEST):
-		rc = hmrt_mtp_xfer_request_l4_to_l3(osu->inst, &omp->u.transfer,
-						    msgb_l2(msg), msgb_l2len(msg));
+		rc = mtp3_hmrt_mtp_xfer_request_l4_to_l3(osu->inst, &omp->u.transfer,
+							 msgb_l2(msg), msgb_l2len(msg));
 		break;
 	default:
 		LOGPSS7U(osu, LOGL_ERROR, "Ignoring unknown primitive %u:%u\n",

@@ -39,7 +39,6 @@ void sua_tx_dupu(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int nu
 
 struct xua_msg *sua_gen_cldr(const struct xua_msg *xua_in, uint32_t route_ctx, uint32_t ret_cause);
 
-int m3ua_hmdc_rx_from_l2(struct osmo_ss7_instance *inst, struct xua_msg *xua);
 struct msgb *m3ua_to_msg(struct xua_msg *xua);
 int m3ua_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua);
 void m3ua_tx_snm_available(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int num_rctx,
@@ -73,9 +72,6 @@ void m3ua_dh_to_xfer_param(struct osmo_mtp_transfer_param *param,
 			   const struct m3ua_data_hdr *mdh);
 void mtp_xfer_param_to_m3ua_dh(struct m3ua_data_hdr *mdh,
 				const struct osmo_mtp_transfer_param *param);
-int hmrt_mtp_xfer_request_l4_to_l3(struct osmo_ss7_instance *inst,
-				   const struct osmo_mtp_transfer_param *param,
-				   uint8_t *user_data, size_t user_data_len);
 
 
 extern const struct xua_msg_class m3ua_msg_class_mgmt;
