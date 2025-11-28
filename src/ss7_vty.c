@@ -279,6 +279,61 @@ DEFUN_ATTR(cs7_sls_shift, cs7_sls_shift_cmd,
 	return CMD_SUCCESS;
 }
 
+/* timer xua <name> <1-999999>
+ * (cmdstr and doc are dynamically generated from ss7_instance_xua_timer_names.) */
+DEFUN_ATTR(cs7_timer_xua, cs7_timer_xua_cmd,
+	   NULL, NULL, CMD_ATTR_IMMEDIATE)
+{
+	struct osmo_ss7_instance *inst = vty->index;
+	enum ss7_instance_xua_timer timer = get_string_value(ss7_instance_xua_timer_names, argv[0]);
+
+	if (timer <= 0 || timer >= SS7_INST_XUA_TIMERS_LEN) {
+		vty_out(vty, "%% Invalid timer: %s%s", argv[0], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	osmo_tdef_set(inst->cfg.T_defs_xua, timer, atoi(argv[1]), OSMO_TDEF_S);
+	return CMD_SUCCESS;
+}
+
+static void gen_cs7_timer_xua_cmd_strs(struct cmd_element *cmd)
+{
+	int i;
+	char *cmd_str = NULL;
+	char *doc_str = NULL;
+
+	OSMO_ASSERT(cmd->string == NULL);
+	OSMO_ASSERT(cmd->doc == NULL);
+
+	osmo_talloc_asprintf(tall_vty_ctx, cmd_str, "timer xua (");
+	osmo_talloc_asprintf(tall_vty_ctx, doc_str,
+			     "Configure CS7 Instance default timer values\n"
+			     "Configure CS7 Instance default xua timer values\n");
+
+	for (i = 0; ss7_instance_xua_timer_names[i].str; i++) {
+		const struct osmo_tdef *def;
+		enum ss7_asp_xua_timer timer;
+
+		timer = ss7_instance_xua_timer_names[i].value;
+		def = osmo_tdef_get_entry((struct osmo_tdef *)&ss7_instance_xua_timer_defaults, timer);
+		OSMO_ASSERT(def);
+
+		osmo_talloc_asprintf(tall_vty_ctx, cmd_str, "%s%s",
+				     i ? "|" : "",
+				     ss7_instance_xua_timer_names[i].str);
+		osmo_talloc_asprintf(tall_vty_ctx, doc_str, "%s (default: %lu)\n",
+				     def->desc,
+				     def->default_val);
+	}
+
+	osmo_talloc_asprintf(tall_vty_ctx, cmd_str, ") <1-999999>");
+	osmo_talloc_asprintf(tall_vty_ctx, doc_str,
+			     "Timer value, in seconds\n");
+
+	cmd->string = cmd_str;
+	cmd->doc = doc_str;
+}
+
 static void write_one_cs7(struct vty *vty, struct osmo_ss7_instance *inst, bool show_dyn_config);
 
 static int write_all_cs7(struct vty *vty, bool show_dyn_config)
@@ -1276,6 +1331,20 @@ DEFUN_ATTR(cs7_sccpaddr_gt_digits, cs7_sccpaddr_gt_digits_cmd,
  * Common
  ***********************************************************************/
 
+static void write_cs7_timers_xua(struct vty *vty, const char *indent,
+				 struct osmo_ss7_instance *inst)
+{
+	for (unsigned int i = 0; ss7_instance_xua_timer_names[i].str; i++) {
+		const struct osmo_tdef *tdef = osmo_tdef_get_entry(inst->cfg.T_defs_xua, ss7_instance_xua_timer_names[i].value);
+		if (!tdef)
+			continue;
+		if (tdef->val == tdef->default_val)
+			continue;
+		vty_out(vty, "%stimer xua %s %lu%s", indent, ss7_instance_xua_timer_names[i].str,
+			tdef->val, VTY_NEWLINE);
+	}
+}
+
 static void write_one_cs7(struct vty *vty, struct osmo_ss7_instance *inst, bool show_dyn_config)
 {
 	struct osmo_ss7_asp *asp;
@@ -1324,6 +1393,8 @@ static void write_one_cs7(struct vty *vty, struct osmo_ss7_instance *inst, bool 
 
 	if (inst->cfg.sls_shift != 0)
 		vty_out(vty, " sls-shift %u%s", inst->cfg.sls_shift, VTY_NEWLINE);
+
+	write_cs7_timers_xua(vty, " ", inst);
 
 	/* first dump ASPs, as ASs reference them */
 	llist_for_each_entry(asp, &inst->asp_list, list)
@@ -1481,6 +1552,9 @@ void osmo_ss7_vty_init_sg(void *ctx)
 {
 	cs7_role = CS7_ROLE_SG;
 	vty_init_shared(ctx);
+
+	gen_cs7_timer_xua_cmd_strs(&cs7_timer_xua_cmd);
+	install_lib_element(L_CS7_NODE, &cs7_timer_xua_cmd);
 
 	install_node(&rtable_node, NULL);
 	install_lib_element(L_CS7_NODE, &cs7_route_table_cmd);

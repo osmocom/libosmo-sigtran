@@ -63,6 +63,25 @@ static const struct rate_ctr_group_desc ss7_inst_rcgd = {
 	.ctr_desc = ss7_inst_rcd,
 };
 
+const struct osmo_tdef ss7_instance_xua_timer_defaults[SS7_INST_XUA_TIMERS_LEN] = {
+	{ .T = SS7_INST_XUA_T8,	.default_val = SS7_INST_XUA_DEFAULT_T8_MSEC,	.unit = OSMO_TDEF_MS,
+	  .desc = "T8 - Transfer prohibited inhibition timer (transient solution) (ms)",
+	  .min_val = 800, .max_val = 1200},
+	{}
+};
+
+/* ITU Q.704 16.8 Timers and timer values */
+const struct value_string ss7_instance_xua_timer_names[] = {
+	{ SS7_INST_XUA_T8, "T8" },
+	{}
+};
+
+osmo_static_assert(ARRAY_SIZE(ss7_instance_xua_timer_defaults) == (SS7_INST_XUA_TIMERS_LEN) &&
+		   ARRAY_SIZE(ss7_instance_xua_timer_names) == (SS7_INST_XUA_TIMERS_LEN),
+		   assert_ss7_instance_xua_timer_count);
+
+static void t8_inaccessible_sp_timer_cb(void *_inst);
+
 struct osmo_ss7_instance *
 ss7_instance_alloc(void *ctx, uint32_t id)
 {
@@ -84,6 +103,13 @@ ss7_instance_alloc(void *ctx, uint32_t id)
 	INIT_LLIST_HEAD(&inst->asp_list);
 	INIT_LLIST_HEAD(&inst->rtable_list);
 	INIT_LLIST_HEAD(&inst->xua_servers);
+	INIT_LLIST_HEAD(&inst->t8_inaccessible_sp.list);
+
+	osmo_timer_setup(&inst->t8_inaccessible_sp.timer, t8_inaccessible_sp_timer_cb, inst);
+
+	inst->cfg.T_defs_xua = talloc_memdup(inst, ss7_instance_xua_timer_defaults,
+					    sizeof(ss7_instance_xua_timer_defaults));
+	osmo_tdefs_reset(inst->cfg.T_defs_xua);
 
 	inst->ctrg = rate_ctr_group_alloc(inst, &ss7_inst_rcgd, id);
 	if (!inst->ctrg) {
@@ -123,6 +149,9 @@ void osmo_ss7_instance_destroy(struct osmo_ss7_instance *inst)
 
 	llist_for_each_entry_safe(lset, lset2, &inst->linksets, list)
 		ss7_linkset_destroy(lset);
+
+	osmo_timer_del(&inst->t8_inaccessible_sp.timer);
+	/* Talloc takes care of freeing inst->t8_inaccessible_sp.list and its entries */
 
 	rate_ctr_group_free(inst->ctrg);
 	llist_del(&inst->list);
@@ -802,4 +831,62 @@ const char *osmo_sccp_name_by_addr(const struct osmo_sccp_addr *addr)
 	}
 
 	return NULL;
+}
+
+
+static void t8_inaccessible_sp_timer_cb(void *_inst)
+{
+	struct osmo_ss7_instance *inst = _inst;
+	struct t8_inaccessible_sp_entry *it;
+	struct timespec ts_now, ts_t8;
+	char buf_dpc[MAX_PC_STR_LEN];
+
+	unsigned int t8_msec = osmo_tdef_get(inst->cfg.T_defs_xua, SS7_INST_XUA_T8, OSMO_TDEF_MS, -1);
+	ts_t8.tv_sec = (t8_msec/1000);
+	ts_t8.tv_nsec = (t8_msec%1000)*1000*1000;
+	osmo_clock_gettime(CLOCK_MONOTONIC, &ts_now);
+
+	while ((it = llist_first_entry_or_null(&inst->t8_inaccessible_sp.list, struct t8_inaccessible_sp_entry, entry))) {
+		struct timespec ts_expire;
+		timespecadd(&it->ts_started, &ts_t8, &ts_expire);
+		if (timespeccmp(&ts_expire, &ts_now, >)) {
+			struct timespec ts_diff;
+			timespecsub(&ts_expire, &ts_now, &ts_diff);
+			osmo_timer_schedule(&inst->t8_inaccessible_sp.timer, ts_diff.tv_sec, ts_diff.tv_nsec / 1000);
+			break;
+		}
+		LOGSS7(inst, LOGL_DEBUG, "T8: SP %u=%s: Timeout\n", it->dpc, osmo_ss7_pointcode_print_buf(buf_dpc, sizeof(buf_dpc), inst, it->dpc));
+		llist_del(&it->entry);
+		talloc_free(it);
+	}
+}
+
+bool ss7_instance_t8_inaccessible_sp_running(const struct osmo_ss7_instance *inst, uint32_t dpc)
+{
+	struct t8_inaccessible_sp_entry *it;
+	llist_for_each_entry(it, &inst->t8_inaccessible_sp.list, entry) {
+		if (it->dpc == dpc)
+			return true;
+	}
+	return false;
+}
+
+void ss7_instance_t8_inaccessible_sp_start(struct osmo_ss7_instance *inst, uint32_t dpc)
+{
+	struct t8_inaccessible_sp_entry *it;
+	char buf_dpc[MAX_PC_STR_LEN];
+
+	LOGSS7(inst, LOGL_DEBUG, "T8: SP %u=%s: Start\n",
+	       dpc, osmo_ss7_pointcode_print_buf(buf_dpc, sizeof(buf_dpc), inst, dpc));
+
+	OSMO_ASSERT(!ss7_instance_t8_inaccessible_sp_running(inst, dpc));
+
+	it = talloc_zero(inst, struct t8_inaccessible_sp_entry);
+	it->dpc = dpc;
+	osmo_clock_gettime(CLOCK_MONOTONIC, &it->ts_started);
+	if (llist_empty(&inst->t8_inaccessible_sp.list)) {
+		unsigned int timeout_msec = osmo_tdef_get(inst->cfg.T_defs_xua, SS7_INST_XUA_T8, OSMO_TDEF_MS, -1);
+		osmo_timer_schedule(&inst->t8_inaccessible_sp.timer, (timeout_msec/1000), ((timeout_msec%1000)*10));
+	}
+	llist_add_tail(&it->entry, &inst->t8_inaccessible_sp.list);
 }

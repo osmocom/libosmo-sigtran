@@ -68,7 +68,15 @@ int mtp3_rtpc_rx_msg_for_inaccessible_sp(struct osmo_ss7_instance *inst, const s
 	struct osmo_ss7_route_label rtlabel;
 	struct osmo_ss7_route *rt;
 
-	/* TODO: Start T8 */
+	/* Start T8 */
+	if (ss7_instance_t8_inaccessible_sp_running(inst, orig_xua->mtp.dpc)) {
+		/* T8 is running for this SP, inhibit Tx of transfer prohibited */
+		LOGSS7(inst, LOGL_DEBUG, "Tx TFP (DUNA) inaccessible SP %u=%s to concerned SP %u=%s: inhibit due to T8\n",
+		       orig_xua->mtp.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.dpc),
+		       orig_xua->mtp.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.opc));
+		return 0;
+	}
+	ss7_instance_t8_inaccessible_sp_start(inst, orig_xua->mtp.dpc);
 
 	/* "transfer prohibited RTPC -> HMRT", "To concerned SP or STP".
 	 * See also Q.704 13.2 Transfer-prohibited. */

@@ -130,6 +130,7 @@ OsmoSTP(config-cs7)# list
   no as NAME
   sccp-address NAME
   no sccp-address NAME
+  timer xua (T8) <1-999999>
   route-table system
   listen (sua|m3ua|ipa) <0-65534> [(sctp|tcp)]
   no listen (sua|m3ua|ipa) <0-65534> [(sctp|tcp)]
@@ -149,6 +150,7 @@ OsmoSTP(config-cs7)# ?
   no                 Negate a command or set its defaults
   as                 Configure an Application Server
   sccp-address       Create/Modify an SCCP addressbook entry
+  timer              Configure CS7 Instance default timer values
   route-table        Specify the name of the route table
   listen             Configure/Enable xUA Listener
   sccp-timer         Configure SCCP timer values, see ITU-T Q.714

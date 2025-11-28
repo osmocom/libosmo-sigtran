@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <osmocom/core/linuxlist.h>
+#include <osmocom/core/tdef.h>
+#include <osmocom/core/timer.h>
+#include <osmocom/core/timer_compat.h>
 #include <osmocom/core/rate_ctr.h>
 
 #include <osmocom/sigtran/protocol/mtp.h>
@@ -15,6 +18,17 @@ struct osmo_ss7_user;
 struct osmo_ss7_route_table;
 struct osmo_ss7_route_label;
 struct osmo_sccp_instance;
+
+enum ss7_instance_xua_timer {
+	/* 0 kept unused on purpose since it's handled specially by osmo_fsm */
+	SS7_INST_XUA_T8 = 1, /* Q.704 T8 */
+	/* This must remain the last item: */
+	SS7_INST_XUA_TIMERS_LEN
+};
+extern const struct value_string ss7_instance_xua_timer_names[];
+extern const struct osmo_tdef ss7_instance_xua_timer_defaults[SS7_INST_XUA_TIMERS_LEN];
+/* According to SUA RFC3868 Section 8, M3UA RFC4666 Section 4.3.4.1 */
+#define SS7_INST_XUA_DEFAULT_T8_MSEC	1000
 
 enum ss7_instance_ctr {
 	SS7_INST_CTR_PKT_RX_TOTAL,
@@ -51,6 +65,13 @@ struct osmo_ss7_instance {
 
 	struct rate_ctr_group *ctrg;
 
+	/* Q.704 Figure 44 and section 13.2: List to store remote PCs with T8 started */
+	struct {
+		/* list of struct t8_inaccessible_sp_entry, sorted by entry->ts_started */
+		struct llist_head list;
+		struct osmo_timer_list timer;
+	} t8_inaccessible_sp;
+
 	struct {
 		uint32_t id;
 		char *name;
@@ -71,6 +92,9 @@ struct osmo_ss7_instance {
 		 * to skip for routing decisions.
 		 * range 0-3, defaults to 0, which means take all 4 bits. */
 		uint8_t sls_shift;
+
+		/* T_defs defined at instance level: */
+		struct osmo_tdef *T_defs_xua;
 	} cfg;
 };
 
@@ -85,3 +109,15 @@ ss7_instance_lookup_route(struct osmo_ss7_instance *inst, const struct osmo_ss7_
 	LOGP(subsys, level, "%u: " fmt, inst ? (inst)->cfg.id : 0, ## args)
 #define LOGSS7(inst, level, fmt, args ...) \
 	_LOGSS7(inst, DLSS7, level, fmt, ## args)
+
+
+/***********************************************************************
+ * ITUQ.704 13.2.2: Timer T8 concerning one SP
+ ***********************************************************************/
+struct t8_inaccessible_sp_entry {
+	struct llist_head entry; /* item in (struct osmo_ss7_instance)->t8_inaccessible_sp.list */
+	uint32_t dpc; /* SP inaccessible */
+	struct timespec ts_started; /* Timestamp T8 was started for this SP */
+};
+bool ss7_instance_t8_inaccessible_sp_running(const struct osmo_ss7_instance *inst, uint32_t dpc);
+void ss7_instance_t8_inaccessible_sp_start(struct osmo_ss7_instance *inst, uint32_t dpc);
