@@ -36,6 +36,7 @@
 #include <osmocom/sigtran/protocol/m3ua.h>
 
 #include "mtp3_hmdc.h"
+#include "mtp3_rtpc.h"
 #include "xua_internal.h"
 #include "ss7_as.h"
 #include "ss7_asp.h"
@@ -111,8 +112,9 @@ int mtp3_hmrt_message_for_routing(struct osmo_ss7_instance *inst, struct xua_msg
 	} else {
 		LOGSS7(inst, LOGL_ERROR, "MTP-TRANSFER.req for dpc=%u=%s: no route!\n",
 		       dpc, osmo_ss7_pointcode_print(inst, dpc));
-		/* DPC unknown HMRT -> MGMT */
-		/* Message Received for inaccesible SP HMRT ->RTPC */
+		/* "Message received for unknown SP HMRT -> MGMT"*/
+		/* "Message received for inaccessible SP HMRT -> RTPC" */
+		mtp3_rtpc_rx_msg_for_inaccessible_sp(inst, xua);
 		/* Discard Message */
 	}
 	xua_msg_free(xua);

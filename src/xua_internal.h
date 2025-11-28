@@ -53,6 +53,10 @@ void m3ua_tx_snm_daud(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned i
 void m3ua_tx_dupu(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int num_rctx,
 		  uint32_t dpc, uint16_t user, uint16_t cause, const char *info_str);
 
+struct xua_msg *m3ua_encode_duna(const uint32_t *rctx, unsigned int num_rctx,
+				 const uint32_t *aff_pc, unsigned int num_aff_pc,
+				 const char *info_string);
+
 void xua_tx_snm_available(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int num_rctx,
 			  const uint32_t *aff_pc, unsigned int num_aff_pc,
 			  const char *info_str, bool available);

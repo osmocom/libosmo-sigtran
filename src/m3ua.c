@@ -864,9 +864,9 @@ out:
  ***********************************************************************/
 
 /* 3.4.1 Destination Unavailable (DUNA) */
-static struct xua_msg *m3ua_encode_duna(const uint32_t *rctx, unsigned int num_rctx,
-					const uint32_t *aff_pc, unsigned int num_aff_pc,
-					const char *info_string)
+struct xua_msg *m3ua_encode_duna(const uint32_t *rctx, unsigned int num_rctx,
+				 const uint32_t *aff_pc, unsigned int num_aff_pc,
+				 const char *info_string)
 {
 	struct xua_msg *xua = xua_msg_alloc();
 

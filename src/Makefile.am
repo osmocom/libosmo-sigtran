@@ -6,6 +6,7 @@ noinst_HEADERS = \
 	mtp3_hmdc.h \
 	mtp3_hmdt.h \
 	mtp3_hmrt.h \
+	mtp3_rtpc.h \
 	sccp_connection.h \
 	sccp_scoc_fsm.h \
 	sccp_instance.h \
@@ -53,6 +54,7 @@ libosmo_sigtran_la_SOURCES = \
 	mtp3_hmdc.c \
 	mtp3_hmdt.c \
 	mtp3_hmrt.c \
+	mtp3_rtpc.c \
 	sccp2sua.c \
 	sccp_connection.c \
 	sccp_helpers.c \
