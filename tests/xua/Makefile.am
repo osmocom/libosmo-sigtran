@@ -1,9 +1,12 @@
 AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include
 AM_CFLAGS=-Wall $(LIBOSMONETIF_CFLAGS) $(LIBOSMOCORE_CFLAGS) $(LIBOSMOVTY_CFLAGS)
 
-AM_LDFLAGS = -static -no-install
-LDADD = $(top_builddir)/src/libosmo-sigtran.la \
-	$(LIBOSMOCORE_LIBS) $(LIBOSMOVTY_LIBS) $(LIBOSMONETIF_LIBS) $(LIBSCTP_LIBS)
+AM_LDFLAGS = -no-install
+LDADD = $(top_builddir)/src/.libs/libosmo-sigtran.a \
+	$(LIBOSMOCORE_LIBS) $(LIBOSMOGSM_LIBS) $(LIBOSMOVTY_LIBS) $(LIBOSMONETIF_LIBS) $(LIBSCTP_LIBS)
+if BUILD_WITH_TCAP_LOADSHARING
+LDADD += $(LIBOSMOASN1TCAP_LIBS)
+endif
 
 EXTRA_DIST = xua_test.ok xua_test.err
 
