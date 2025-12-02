@@ -228,7 +228,7 @@ static void tcap_trans_track_test_gc(void)
 	uint32_t hlr_tids[] = { 24, 25, 26};
 	uint32_t vlr_tids[] = { 44, 45, 46};
 
-	struct tcap_trans_track_entry *entry;
+	struct tcap_trans_track_entry *entry = NULL;
 
 	printf("GC test\n");
 
@@ -239,6 +239,7 @@ static void tcap_trans_track_test_gc(void)
 						&gvlr, &vlr_tids[i]);
 		OSMO_ASSERT(entry);
 	}
+	OSMO_ASSERT(entry);
 
 	OSMO_ASSERT(count_unique_hash_entries(as) == 3);
 	/* No entries should be GC'ed, because all entries should be within 10 secs */
