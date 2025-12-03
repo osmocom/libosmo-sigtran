@@ -7,11 +7,3 @@
 # If any interfaces have been added since the last public release: c:r:a + 1.
 # If any interfaces have been removed or changed since the last public release: c:r:0.
 #library	what			description / commit summary line
-libosmo-netif >1.6.0  stream OSMO_STREAM_{CLI,SRV}_TCP_SOCKOPT_KEEP*
-libosmo-sigtran add   enum mtp_network_indicator, mtp_network_indicator_vals
-libosmo-sigtran add   osmo_ss7_instance_get_network_indicator()
-libosmo-sigtran add   osmo_ss7_user_mtp_sap_prim_down()
-libosmo-sigtran add   osmo_mtp_prim_xfer_req_prepend()
-libosmo-sigtran add   osmo_ss7_user_find_by_si()
-libosmo-sigtran add   MTP_SI_NI11_OSMO_IPA
-libosmocore  >1.11.3  DLTCAP

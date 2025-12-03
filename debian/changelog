@@ -1,3 +1,230 @@
+libosmo-sigtran (2.2.0) unstable; urgency=medium
+
+  [ Pau Espin Pedrol ]
+  * Move osmo_ss7_route_name() to osmo_ss7_route.c
+  * vty: Add cmd to look up route
+  * vty: show cs7 route: display qos-class configured value
+  * vty: Allow filtering by DPC in show cs7 instance route
+  * vty: Improve route status display in show cs7 instance route
+  * snm: Fix generating wrong format in 'affected PCs' log string
+  * xua_rkm: Fix dynamic AS destroyed when multiple ASPs are associated
+  * asp: Log close&reconnect triggered from stream
+  * asp: Make sure asp->fi is set to NULL when freeing the object
+  * asp: Refactor osmo_ss7_asp_restart() into smaller chunks
+  * Fix setting traffic-mode 'roundrobin' over VTY
+  * ipa: Fix asp_id/SLS unset in tcp-server mode
+  * Improve docuemntation of enum osmo_ss7_as_traffic_mode
+  * Fix osmo_ss7_tmode_to_xua(OSMO_SS7_AS_TMOD_ROUNDROBIN)
+  * default_lm_fsm: Trigger ASP restart by disconnecting the stream
+  * Use default_layer_manager for all ASPs in SCTP-mode=client & m3ua-mode=ASP
+  * m3ua: Log Tx NOTIFY msg
+  * xua_rkm: Make sure existing AS gets added in list to receive ASP-INACTIVE.ind event
+  * Make sure to NOTIFY current state to peer after ASP UP ACK / REG RESP
+  * Improve format of logline prefix in LOGAS(P) macro
+  * asp: Add debug log when transmitting on ASP
+  * sccp_user: Fix dynamic ASP not associated to AS
+  * Log DPC with configured pointcode format upon routing failure
+  * sccp_user: Move lookup to helper function to simplify code
+  * as: Introduce internal ss7_as_add_asp() to avoid unnecessary asp lookup
+  * sccp_user: Fix ASP not restarted after associating a new AS to it
+  * Drop use of deprecated vty is_config_node() cb
+  * xua_asp_fsm: Avoid sending NOTIFY in ASP role
+  * AS loadsharing: Introduce combined_linkset
+  * AS loadsharing: Initial routing implementation based on extended-SLS
+  * AS loadsharing: Implement AS loadshare, skip unavailable AS/lset when choosing
+  * AS loadsharing: Introduce AS rate_ctr rx:msu:sls:*
+  * AS loadsharing: Introduce AS rate_ctr tx:msu:sls:*
+  * ASP loadsharing: Pass ownership of Tx xua_msg down the stack [1/2]
+  * ASP loadsharing: Pass ownership of Rx xua_msg up the stack [2/2]
+  * ASP loadsharing: Pass xua_msg down to xua_as_transmit_msg
+  * ASP loadsharing: Implement based on VTY configuration
+  * sccp: Apply SLS on locally-originated transmitted Connection-Oriented messages
+  * sccp: Allow marking UNIT-DATA.req Sequence Control param non-presence, set SLS
+  * AS loadsharing: Log routing lookup logic
+  * sccp_scrc: Improve logging of route lookup failure
+  * ASP loadsharing: Normal ASP distribution regardless of active state
+  * AS loadsharing: Normal route distribution regardless of active state
+  * route: osmo_ss7_route_name(): Use osmo_ss7_pointcode_print_buf()
+  * vty: Add cmd 'show cs7 instance <0-15> as name AS_NAME'
+  * ASP loadsharing: vty: Add cmd 'show cs7 instance <0-15> as binding-table name AS_NAME'
+  * AS loadsharing: show cs7 instance <0-15> route binding-table [POINT_CODE]
+  * sccp: Use protoClass 0 to transmit SSA
+  * m3ua: Fix fsm dispatch failure not generating tx ERR msg to peer
+  * vty: Describe lower route priority value means higher priority
+  * tests/vty: Test adding routes with smaller bitmask len to routing table
+  * vty: Introduce AS node cmd 'binding-table reset'
+  * AS loadsharing: Pick 1st ASP upon 1st roundrobin assignment
+  * ipa: Use pseudo-random number for SLS in TCP-client too
+  * cosmetic: Fix typo in API comment description
+  * ipa: Try picking unused asp_id in AS to use as SLS
+  * ipa: Store ASP IPA SLS into its own field
+  * asp: Rename and clarify asp_id field
+  * asp: Document misisng Optional ASP Identifier in Tx ASPUP ACK
+  * asp: Expect optional ASP Identifier in Rx ASPUP ACK
+  * xua_as_fsm: Remove unneeded double call to fill_notify_statchg_pars()
+  * Unify amount of supported rctx items in IE to 128
+  * asp: Rework s/get_all_rctx_for_asp/ss7_asp_get_all_rctx_be/g
+  * cosmetic: osmo_sccp_user_bind() clarify prim_cb msgb ownership in documentation
+  * asp: Make sure asp->{client,server} is nulled before destroy callback
+  * asp: Make sure previous stream_srv is immediatelly destroyed when requested
+  * Tx multiple Routing Contexts in NOTIFY on ASPs serving multiple AS
+  * xua_asp_fsm: Reuse ss7_asp_get_all_rctx_be() in xua_msg_add_asp_rctx()
+  * Implement ASP adm state shutdown
+  * asp: Avoid accessing dyn sctp-server ASP after closing conn during restart
+  * xua_default_lm_fsm: Avoid accessing asp after restart
+  * xua: Guard against osmo_fsm_inst_alloc() failures
+  * combined_linkset: Improve logging
+  * sccp: Introduce LOGPSCI() log macro
+  * sccp: Introduce LOGPSCU() log macro
+  * sccp: Introduce LOGPSCC() log macro
+  * osmo_ss7_hmrt.c: Use LOGSS7()
+  * Use osmo_ss7_pointcode_print_buf() instead of static buffer API
+  * m3ua: Log SLS of incoming data header
+  * sccp_sclc.c: Fix potential memory leak
+  * sccp: Implement dpc_accessible()
+  * sccp: Improve spec references in code documentation
+  * sccp: Validate SUA address parsing succeeds [1/3]
+  * sccp: SCOC -> SCRC: Delay called addr lookup until needed [2/3]
+  * sccp: SCOC -> SCRC: Use DPC provided from conn info in msg_type != CR [3/3]
+  * Rename files in src: s/osmo_ss7/ss7/g
+  * m3ua: Discard rx MSUs for non-active AS
+  * sccp_scoc.c: validate success of sua_addr_parse()
+  * sccp: sccp_addr_to_str_buf(): Use osmo_ss7_pointcode_print_buf()
+  * sccp: Log remote PC in LOGPSCC
+  * sccp_scoc.c: Log SCRC Routing Failure return cause
+  * sccp_scoc: Match local conn by src_ref, not dest_ref
+  * sccp_demo_use: Log rx N-PCSTATE.ind
+  * asp: Avoid double-free of received msg if conn is teared down
+  * Split AS/ASP/XUA_SRV VTY code to its own files
+  * ss7_as: Improve description of recovery-timeout VTY cmd
+  * ss7_asp: Improve spec references of T(ack)
+  * asp: Introduce VTY configurations 'timer xua (ack|beat)'
+  * ipa: Implement ASP Hearbeat procedure
+  * m3ua/sua: Implement ASP Hearbeat procedure
+  * asp,xua_srv: Apply SCTP sockopts only on SCTP osckets
+  * asp: Introduce support to configure and enable TCP keep-alive
+  * xua_snm.c: Fix wrong PC value passed in MTP-{PAUSE,RESUME} towards SCCP
+  * xua_snm.c: Handle DAUD with aff_pc containing wildcards
+  * cosmetic: sua: Fix API documentation typo
+  * Move sccp_address_book logic out of vty.c
+  * asp: Support setting TCP_USER_TIMEOUT over VTY
+  * as_vty: Remove old TODO in comment
+  * osmo_ss7_route_print(): Use osmo_ss7_pointcode_print_buf()
+  * as_vty: Fix 'traffic-mode loadshare' output in 'show running-config'
+  * Differentiate between dynamic and static routes
+  * xua_asp_fsm: Drop code branch never called in xUA ASP
+  * ss7_vty: Improve VTY output of vty_dump_rtable()
+  * Fix combined linkset lookup when inserting route
+  * combined_linkset: Improve comment explaining ordering
+  * route: Print priority in osmo_ss7_route_name()
+  * route: Introduce LOGPRT macro to improve logging
+  * Move ss7_as_alloc() to correct header
+  * Introduce initial route status support
+  * Fix static str buf in osmo_ss7_route_print() too small
+  * xua_snm: Add fully qualified dynamic routes to track announced PCs
+  * route_table: Constify args of serveral APIs
+  * route_table: Introduce ss7_route_table_dpc_is_accessible() API
+  * Make sure MTP-PAUSE.ind is sent to SCCP when AS goes down
+  * sccp_sap.h: Add APIs to insert and update addresses in address book
+  * Indicate PC (un)availability from address-book when AS goes up/down
+  * Send DUNA during ASP ACT time
+  * Improve error log when adding >16 ASPs to an AS
+  * xua_rkm: Simplify handle_rkey_reg() with early return path
+  * xua_rkm: Improve handling of newly_assigned_as array
+  * xua_rkm: Reply RKM RKEY REG with err insufficient resources
+  * ipa: tear down conn trying to add >16th ASP to AS
+  * cosmetic: Fix typo in comment
+  * ss7_vty: Avoid adding route to local PC in role ASP
+  * as: Avoid adding dyn route when IPA AS becomes active
+  * sccp: Split sccp_scoc into multiple files
+  * sccp: Split sccp_instance code from sccp_user.c to its own file
+  * sccp: Free connections of sccp_user when unbinding it
+  * Make helper function available as internal ss7_as API
+  * vty: Make sure user doesn't configure AS in ASP role with a non-local PC as routing-key
+  * vty: Introduce missing cmd 'point-code override opc'
+  * Improve logging receiving Routing Failure
+  * sccp_scoc_fsm: Fix double free of xua msg
+  * Use xua_msg_free() everywhere to free xua_msg
+  * xua_msg: Constify ptr args in multiple APIs
+  * Submit SCRC Routing Failure indications asynchronously
+  * xua_snm: Tx DUNA/DAVA to ASPs with single AS and no coordinated rctx
+  * xua_asp_fsm: Log rx ASPAC with unknown rctx
+  * xua: Introduce internal APIs to transmit DAUD
+  * asp: Support Tx DAUD when ASP becomes activated
+  * vty: Introduce cmd 'cs7 instance <0-15> asp NAME audit point-code POINT_CODE'
+  * sccp: MTP-TRANSFER.req: Set OPC before route lookup
+  * sccp: MTP-TRANSFER.req: Allow dpc 0.0.0
+  * sccp: MTP-TRANSFER.req: Trigger Routing Failure if no route available
+  * xua_as_fsm: Fix wrong pointer cast during XUA_ASPAS_ASP_DOWN_IND
+  * xua_asp_fsm: Move helper function to ss7_asp internal API
+  * xua_default_lm_fsm: Activate all ASPs in tmode broadcast/loadshare/roundrobin
+  * sccp_sclc: Remove SCCP cause mask in N-NOTICE.ind 'Reason for return' field
+  * sccp: Allow osmo_sccp_instance_destroy(NULL)
+  * m3ua: Fix memleak in m3ua_rx_snm_sg() and some paths of m3ua_rx_snm()
+  * m3ua: Forward SCON messages in SG role
+  * Propagate rx M3UA SCON -> MTP-STATUS.ind -> N-PCSTATE.ind
+  * ipa: Improve logging for AS not found with ipa-unit-name
+  * constify msgb param in osmo_sccp_to_xua()/osmo_sua_to_sccp()
+  * ipa: Clarify msgb_free in ipa_rx_msg()
+  * xua,tcp-m3ua: Unify Rx code paths to deduplicate code
+  * cosmetic: mtp.h: improve and fix wrong spec reference
+  * mtp: Improve Network Indicator definitions
+  * vty: Always write network-indicator
+  * mtp_sap.h: Protect MTP_SIO macro params with parenthesis
+  * xua_rx_msg: fill xua->mtp.sio with configured network indicator
+  * ss7_instance: Introduce API osmo_ss7_instance_get_network_indicator()
+  * Add per ss7 instance rate_ctr_group
+  * m3ua: Drop rx packets with unexpected Network Indicator
+  * mtp: Implement already defined osmo_mtp_prim_name()
+  * mtp: Improve mtp_sap/ss7_user APIs
+  * mtp: Introduce mtp_prim_* API helpers
+  * mtp: Submit MTP-RESUME/PAUSE.ind up over MTP SAP
+  * mtp: Submit MTP-STATUS.ind up over MTP SAP
+  * ipa: Adapt handling logic of rx msg from osmo_ipa_segmentation_cb()
+  * mtp: Introduce osmo_ss7_user_find_by_si() public API
+  * mtp: Support MTP-TRANSFER.req/ind of raw IPA messages
+  * xua_rkm: Avoid unnecesary ASP lookup by name
+  * ss7_asp: Do AS-eSLS table cleanup during osmo_ss7_asp_destroy()
+  * ss7_xua_server_destroy(): Disconnect streams properly
+  * ss7_xua_srv: Make sure we don't accept conns for ASPs configured as transport-role client
+  * ss7_xua_srv: Refactor xua_accept_cb()
+  * ss7_as_vty: Fix memleak of AS name
+  * ss7_as_vty: Forbid configuring RKM-dynamically allocated AS
+  * xua_rkm: remove unneeded check rkm_dyn_allocated
+  * Destroy rkm_dyn_allocated AS automatically when running out of ASPs
+  * xua_asp_fsm: Move common ipa/xua ASP_DOWN onenter code to helper function
+  * Split code to sua_gen_cldr() helper function
+  * Split ss7_hmrt.c into mtp3_hm{dc,dt,rt}.c
+  * mtp3: Implement RTPC transfer prohibited to concerned SP or STP
+  * Implement ITU Q.704 timer T8
+
+  [ Oliver Smith ]
+  * Generate a version.h file
+  * debian: build with --enable-tcap-loadsharing
+
+  [ Neels Janosch Hofmeyr ]
+  * fix SCCP_MAX_OPTIONAL_DATA 128
+
+  [ Alexander Couzens ]
+  * xua_msg_copy(): add missing check if xua_msg_alloc() fails
+  * ipa: fix a minor memleak when receiving invalid IPA CCM messages
+  * ipa: fix a minor memleak for unknown IPA packets
+  * build-system: depend on libosmo-asn1-tcap
+
+  [ Daniel Willmann ]
+  * ss7_as_select_asp: Pass xua_msg instead of osmo_mtp_transfer_param
+  * Constify xua_msg in data_hdr_from_m3ua()
+  * Add TCAP based loadsharing/routing
+  * Add rate counters for loadshare-tcap
+  * Add VTY command to list TCAP ranges for an AS
+  * Use config.h with AC_CONFIG_HEADER for defines
+  * Use DLTCAP for TCAP log messages
+  * Improve tests
+  * Fix warning in tcap_transaction_tracking_test
+  * tcap_as_loadshare_vty: Avoid possible NULL pointer dereference
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Wed, 03 Dec 2025 18:23:48 +0100
+
 libosmo-sigtran (2.1.0) unstable; urgency=medium
 
   [ Andreas Eversberg ]

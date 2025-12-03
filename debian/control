@@ -5,7 +5,7 @@ Priority: optional
 Build-Depends: debhelper (>= 10),
                autotools-dev,
                pkg-config,
-               libosmocore-dev (>= 1.11.0),
+               libosmocore-dev (>= 1.12.0),
                autoconf,
                automake,
                libtool,
@@ -13,16 +13,16 @@ Build-Depends: debhelper (>= 10),
                git,
                doxygen,
                libdpkg-perl,
-               libosmo-asn1-tcap-dev,
-               libosmo-netif-dev (>= 1.6.0),
+               libosmo-asn1-tcap-dev (>= 0.2.0),
+               libosmo-netif-dev (>= 1.7.0),
                libsctp-dev,
-               osmo-gsm-manuals-dev (>= 1.6.0)
+               osmo-gsm-manuals-dev (>= 1.7.0)
 Standards-Version: 3.9.7
 Vcs-Git: https://gitea.osmocom.org/osmocom/libosmo-sigtran
 Vcs-Browser: https://gitea.osmocom.org/osmocom/libosmo-sigtran
 Homepage: https://projects.osmocom.org/projects/libosmo-sccp
 
-Package: libosmo-sigtran11
+Package: libosmo-sigtran12
 Section: libs
 Architecture: any
 Multi-Arch: same
@@ -41,7 +41,7 @@ Package: libosmo-sigtran-dbg
 Architecture: any
 Section: debug
 Multi-Arch: same
-Depends: libosmo-sigtran11 (= ${binary:Version}),
+Depends: libosmo-sigtran12 (= ${binary:Version}),
          ${misc:Depends}
 Description: Documentation for the Osmocom SIGTRAN library
   libosmo-sigtran is a shared library containing SS7/SIGTRAN related functionality,
@@ -56,7 +56,7 @@ Package: libosmo-sigtran-doc
 Architecture: all
 Section: doc
 Depends: ${misc:Depends},
-         libosmo-sigtran11 (= ${binary:Version}),
+         libosmo-sigtran12 (= ${binary:Version}),
          libjs-jquery
 Description: Documentation for the Osmocom SIGTRAN library
   libosmo-sigtran is a shared library containing SS7/SIGTRAN related functionality,
@@ -71,7 +71,7 @@ Architecture: any
 Multi-Arch: same
 Section: libdevel
 Depends: ${misc:Depends},
-         libosmo-sigtran11 (= ${binary:Version}),
+         libosmo-sigtran12 (= ${binary:Version}),
          libosmocore-dev,
          libosmo-asn1-tcap-dev,
          libosmo-netif-dev
@@ -87,7 +87,7 @@ Package: osmo-stp
 Architecture: any
 Multi-Arch: same
 Section: net
-Depends: libosmo-sigtran11,
+Depends: libosmo-sigtran12,
          ${shlibs:Depends},
          ${misc:Depends}
 Description: Osmocom SIGTRAN STP (Signaling Transfer Point)
