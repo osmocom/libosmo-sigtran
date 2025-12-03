@@ -13,6 +13,7 @@ Build-Depends: debhelper (>= 10),
                git,
                doxygen,
                libdpkg-perl,
+               libosmo-asn1-tcap-dev,
                libosmo-netif-dev (>= 1.6.0),
                libsctp-dev,
                osmo-gsm-manuals-dev (>= 1.6.0)
@@ -72,6 +73,7 @@ Section: libdevel
 Depends: ${misc:Depends},
          libosmo-sigtran11 (= ${binary:Version}),
          libosmocore-dev,
+         libosmo-asn1-tcap-dev,
          libosmo-netif-dev
 Description: Development headers for the Osmocom SIGTRAN library
   libosmo-sigtran is a shared library containing SS7/SIGTRAN related functionality,
