@@ -66,12 +66,10 @@ DEFUN(show_cs7_as_tcapranges_name, show_cs7_as_name_tcapranges_cmd,
 		return CMD_WARNING;
 	}
 
-	if (as_name) {
-		as = osmo_ss7_as_find_by_name(inst, as_name);
-		if (!as) {
-			vty_out(vty, "No AS %s found%s", as_name, VTY_NEWLINE);
-			return CMD_WARNING;
-		}
+	as = osmo_ss7_as_find_by_name(inst, as_name);
+	if (!as) {
+		vty_out(vty, "No AS %s found%s", as_name, VTY_NEWLINE);
+		return CMD_WARNING;
 	}
 
 	vty_out(vty, "Tid Min Tid Max SSN PC            ASP Name    %s", VTY_NEWLINE);
@@ -108,12 +106,10 @@ DEFUN(show_cs7_as_tcaproute_name, show_cs7_as_name_tcapranges_tid_cmd,
 		return CMD_WARNING;
 	}
 
-	if (as_name) {
-		as = osmo_ss7_as_find_by_name(inst, as_name);
-		if (!as) {
-			vty_out(vty, "No AS %s found%s", as_name, VTY_NEWLINE);
-			return CMD_WARNING;
-		}
+	as = osmo_ss7_as_find_by_name(inst, as_name);
+	if (!as) {
+		vty_out(vty, "No AS %s found%s", as_name, VTY_NEWLINE);
+		return CMD_WARNING;
 	}
 
 	vty_out(vty, "Tid Min Tid Max SSN PC            ASP Name    %s", VTY_NEWLINE);
