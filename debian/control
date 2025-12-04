@@ -13,7 +13,7 @@ Build-Depends: debhelper (>= 10),
                git,
                doxygen,
                libdpkg-perl,
-               libosmo-asn1-tcap-dev (>= 0.2.0),
+               libosmo-asn1-tcap-dev (>= 0.2.1),
                libosmo-netif-dev (>= 1.7.0),
                libsctp-dev,
                osmo-gsm-manuals-dev (>= 1.7.0)
