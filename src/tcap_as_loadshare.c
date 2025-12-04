@@ -39,6 +39,7 @@
 #include <osmocom/sigtran/sccp_sap.h>
 #include <osmocom/tcap/OCTET_STRING.h>
 #include <osmocom/tcap/TCAP_TCMessage.h>
+#include <osmocom/tcap/tcap.h>
 
 #include "mtp3_hmrt.h"
 #include "ss7_as.h"
@@ -68,18 +69,16 @@ static inline uint32_t tcap_id_from_octet_str(const OCTET_STRING_t *src)
 /* returns negative on error, mask with any/both OTID_SET|DTID_SET on success */
 static int parse_tcap(struct osmo_ss7_as *as, const uint8_t *data, size_t len, struct tcap_parsed *ids)
 {
-	int rc = 0;
-	asn_dec_rval_t asn_rc;
-	struct TCAP_TCMessage tcap = { 0 };
+	int rc;
+	struct TCAP_TCMessage tcap;
 	struct TCAP_TCMessage *tcapmsg = &tcap;
 
 	OSMO_ASSERT(ids);
 
-	asn_rc = ber_decode(0, &asn_DEF_TCAP_TCMessage, (void **)&tcapmsg, data, len);
-	if (asn_rc.code != RC_OK) {
+	rc = osmo_asn1_tcap_decode(tcapmsg, data, len);
+	if (rc < 0) {
 		LOGPAS(as, DLTCAP, LOGL_DEBUG, "Error decoding TCAP message rc: %d, message: %s\n",
-		       asn_rc.code, osmo_hexdump(data, len));
-		rc = -EINVAL;
+		       rc, osmo_hexdump(data, len));
 		goto free_asn;
 	}
 
@@ -124,13 +123,8 @@ static int parse_tcap(struct osmo_ss7_as *as, const uint8_t *data, size_t len, s
 		break;
 	}
 
-	/* Only asn_fprint is available, but no asn_sprint:
-	 * asn_fprint(stdout, &asn_DEF_TCAP_TCMessage, tcapmsg);
-	 */
-
 free_asn:
-	ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_TCAP_TCMessage, tcapmsg);
-
+	osmo_asn1_tcap_TCMessage_free_contents(tcapmsg);
 	return rc;
 }
 
