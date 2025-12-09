@@ -701,7 +701,7 @@ static int ipa_tx_tcap_routing_nack(struct osmo_ss7_asp *asp, uint32_t seq_nr, u
 /** Entrypoint for IPA TCAP Routing messages, parses and handles those
  *
  * @param asp
- * @param msg the message buffer. Callee takes ownership!
+ * @param msg the message buffer. It is kept owned by the caller.
  * @return 0 on success
  */
 int ipa_rx_msg_osmo_ext_tcap_routing(struct osmo_ss7_asp *asp, struct msgb *msg)
