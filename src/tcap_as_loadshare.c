@@ -46,6 +46,7 @@
 #include "sccp_internal.h"
 #include "ss7_asp.h"
 #include "ss7_internal.h"
+#include "ss7_vty.h"
 #include "tcap_as_loadshare.h"
 #include "tcap_trans_tracking.h"
 #include "xua_internal.h"
@@ -707,10 +708,18 @@ static int ipa_tx_tcap_routing_nack(struct osmo_ss7_asp *asp, uint32_t seq_nr, u
 int ipa_rx_msg_osmo_ext_tcap_routing(struct osmo_ss7_asp *asp, struct msgb *msg)
 {
 	int rc = 0;
-	struct osmo_ss7_as *as = ipa_find_as_for_asp(asp);
+	struct osmo_ss7_as *as;
 	struct ipa_tcap_routing_hdr *hdr;
 	enum ipa_tcap_routing_msg_types routing_msg;
 
+	if (cs7_role != CS7_ROLE_SG) {
+		LOGPASP(asp, DLTCAP, LOGL_ERROR,
+			"Rx unexpected OSMO IPA EXT TCAP ROUTING msg in role != CS7_ROLE_SG!\n");
+		rc = -ENOENT;
+		goto out;
+	}
+
+	as = ipa_find_as_for_asp(asp);
 	if (!as) {
 		LOGPASP(asp, DLTCAP, LOGL_ERROR, "Rx message for IPA ASP without AS?!\n");
 		rc = -ENOENT;

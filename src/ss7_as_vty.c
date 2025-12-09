@@ -709,8 +709,10 @@ void ss7_vty_init_node_as(void)
 	install_lib_element(L_CS7_AS_NODE, &as_no_traf_mode_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_sls_shift_cmd);
 #ifdef WITH_TCAP_LOADSHARING
-	install_lib_element(L_CS7_AS_NODE, &as_tcap_routing_cmd);
-	install_lib_element(L_CS7_AS_NODE, &as_no_tcap_routing_cmd);
+	if (cs7_role == CS7_ROLE_SG) {
+		install_lib_element(L_CS7_AS_NODE, &as_tcap_routing_cmd);
+		install_lib_element(L_CS7_AS_NODE, &as_no_tcap_routing_cmd);
+	}
 #endif /* WITH_TCAP_LOADSHARING */
 	install_lib_element(L_CS7_AS_NODE, &as_bindingtable_reset_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_recov_tout_cmd);
