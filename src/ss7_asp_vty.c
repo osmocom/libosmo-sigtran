@@ -232,12 +232,23 @@ DEFUN_ATTR(no_cs7_asp, no_cs7_asp_cmd,
 	struct osmo_ss7_instance *inst = vty->index;
 	const char *name = argv[0];
 	struct osmo_ss7_asp *asp;
+	struct osmo_ss7_as *as;
 
 	asp = osmo_ss7_asp_find_by_name(inst, name);
 	if (!asp) {
 		vty_out(vty, "No ASP named '%s' found%s", name, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
+
+	llist_for_each_entry(as, &inst->as_list, list) {
+		if (osmo_ss7_as_has_asp(as, asp)) {
+			vty_out(vty, "%% ASP '%s' currently configured in AS '%s'. "
+				"You must first remove the ASP from the AS configuration%s",
+				name, as->cfg.name, VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+	}
+
 	osmo_ss7_asp_destroy(asp);
 	return CMD_SUCCESS;
 }
