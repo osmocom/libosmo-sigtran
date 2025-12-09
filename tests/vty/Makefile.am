@@ -62,7 +62,7 @@ vty-transcript-test-asp: ss7_asp_vty_test
 #   make vty-test U=-u
 vty-transcript-test:
 	$(MAKE) vty-transcript-test-stp
-#	$(MAKE) vty-transcript-test-asp
+	$(MAKE) vty-transcript-test-asp
 
 # don't run multiple tests concurrently so that the ports don't conflict
 vty-test:
