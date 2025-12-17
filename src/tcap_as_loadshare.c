@@ -230,15 +230,19 @@ static struct tcap_range *tcap_overlap_tid(struct osmo_ss7_as *as, uint32_t pc, 
 
 static struct osmo_ss7_asp *find_asp_no_tcap_range(struct osmo_ss7_as *as)
 {
-	struct osmo_ss7_asp *asp = NULL;
+	struct osmo_ss7_asp *asp;
+	unsigned int i;
+	unsigned int first_idx;
 
-	for (int i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
+	first_idx = (as->cfg.loadshare.tcap.last_asp_idx_sent + 1) % ARRAY_SIZE(as->cfg.asps);
+	i = first_idx;
+	do {
 		asp = as->cfg.asps[i];
-		if (!asp)
-			continue;
-		if (!asp->tcap.enabled)
-			return asp;
-	}
+		if (asp && osmo_ss7_asp_active(asp) && asp->tcap.enabled)
+			break;
+		i = (i + 1) % ARRAY_SIZE(as->cfg.asps);
+	} while (i != first_idx);
+	as->cfg.loadshare.tcap.last_asp_idx_sent = i;
 
 	return asp;
 }
