@@ -159,6 +159,7 @@ struct osmo_ss7_as {
 			struct {
 				bool enabled;
 				unsigned int timeout_s;
+				uint8_t last_asp_idx_sent;
 			} tcap;
 #endif /* WITH_TCAP_LOADSHARING */
 		} loadshare;
