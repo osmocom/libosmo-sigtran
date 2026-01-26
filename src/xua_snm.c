@@ -321,7 +321,7 @@ static void xua_snm_upu(struct osmo_ss7_as *as, uint32_t dpc, uint16_t user, uin
 		if (!osmo_ss7_asp_active(asp))
 			continue;
 
-		/* only send DAVA/DUNA if we locally are the SG and the remote is ASP */
+		/* only send DUPU if we locally are the SG and the remote is ASP */
 		if (asp->cfg.role != OSMO_SS7_ASP_ROLE_SG)
 			continue;
 
