@@ -886,9 +886,9 @@ static struct xua_msg *sua_encode_daud(const uint32_t *rctx, unsigned int num_rc
 }
 
 /* 3.4.5 Destination User Part Unavailable (DUPU) */
-static struct xua_msg *sua_encode_dupu(const uint32_t *rctx, unsigned int num_rctx,
-					uint32_t dpc, uint16_t user, uint16_t cause,
-					const char *info_string)
+struct xua_msg *sua_encode_dupu(const uint32_t *rctx, unsigned int num_rctx,
+				uint32_t dpc, uint16_t user, uint16_t cause,
+				const char *info_string)
 {
 	struct xua_msg *xua = xua_msg_alloc();
 	uint32_t user_cause = (user << 16) | cause;
