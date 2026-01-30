@@ -371,8 +371,9 @@ static int scrc_node_6(struct osmo_sccp_instance *inst,
 	/* Is subsystem equipped? */
 	if (!scu) {
 		/* Error: unequipped user */
-		LOGPSCI(inst, LOGL_NOTICE, "Unable to find user for SSN=%u PC=%s\n",
-			called->ssn, osmo_ss7_pointcode_print(inst->ss7, called->pc));
+		LOGPSCI(inst, LOGL_NOTICE, "Unable to find user for SSN=%u=%s PC=%u=%s\n",
+			called->ssn, osmo_sccp_ssn_name(called->ssn),
+			called->pc, osmo_ss7_pointcode_print(inst->ss7, called->pc));
 		return scrc_node_4(inst, xua,
 				   SCCP_RETURN_CAUSE_UNEQUIPPED_USER);
 	}
