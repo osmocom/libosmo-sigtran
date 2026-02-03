@@ -310,8 +310,10 @@ static bool check_any_other_asp_in_active(struct osmo_ss7_as *as, struct osmo_ss
 	return false;
 }
 
-/* Tell other previously-active ASPs that a new ASP has been activated and mark
-   them as inactive. Used in override mode when an ASP becomes active. */
+/* RFC4666 4.3.4.3 "Alternate ASP_Active":
+ * Tell other previously-active ASPs that a new ASP has been activated and mark
+ * them as inactive. Used in override mode when an ASP becomes active."
+ * */
 static void notify_any_other_active_asp_as_inactive(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp_cmp)
 {
 	unsigned int i;
@@ -612,7 +614,7 @@ static void xua_as_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *da
 		break;
 	case XUA_ASPAS_ASP_ACTIVE_IND:
 		asp = data;
-		/* RFC466 sec 4.3.4.3 ASP Active Procedures*/
+		/* RFC466 sec 4.3.4.3 ASP Active Procedures */
 		if (xafp->as->cfg.mode == OSMO_SS7_AS_TMOD_OVERRIDE)
 			notify_any_other_active_asp_as_inactive(xafp->as, asp);
 		/* SG role: No need to send DUNA for unknown destinations here
