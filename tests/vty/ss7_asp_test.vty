@@ -131,6 +131,8 @@ ss7_asp_vty_test(config-cs7)# list
   sccp-address NAME
   no sccp-address NAME
   timer xua (T8) <1-999999>
+  listen (sua|m3ua|ipa) <0-65534> [(sctp|tcp)]
+  no listen (sua|m3ua|ipa) <0-65534> [(sctp|tcp)]
   sccp-timer (conn_est|ias|iar|rel|repeat_rel|int|guard|reset|reassembly) <1-999999>
   sccp max-optional-data (<0-999999>|standard)
 
@@ -148,6 +150,7 @@ ss7_asp_vty_test(config-cs7)# ?
   as                 Configure an Application Server
   sccp-address       Create/Modify an SCCP addressbook entry
   timer              Configure CS7 Instance default timer values
+  listen             Configure/Enable xUA Listener
   sccp-timer         Configure SCCP timer values, see ITU-T Q.714
   sccp               Configure SCCP behavior
 
@@ -214,6 +217,7 @@ ss7_asp_vty_test(config-cs7)# no ?
   asp           Disable Application Server Process
   as            Disable Application Server
   sccp-address  Delete an SCCP addressbook entry
+  listen        Disable xUA Listener on given port
 ss7_asp_vty_test(config-cs7)# no asp ?
   NAME  Name of ASP
 ss7_asp_vty_test(config-cs7)# no as ?
