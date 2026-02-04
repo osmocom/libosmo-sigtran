@@ -135,6 +135,7 @@ static inline const char *ss7_asp_lm_timer_name(enum ss7_asp_lm_timer val)
 extern struct osmo_fsm xua_default_lm_fsm;
 extern const struct value_string m3ua_rkm_reg_status_vals[];
 extern const struct value_string m3ua_rkm_dereg_status_vals[];
+extern const struct value_string m3ua_rkm_msgt_names[];
 
 int xua_as_transmit_msg(struct osmo_ss7_as *as, struct xua_msg *xua);
 

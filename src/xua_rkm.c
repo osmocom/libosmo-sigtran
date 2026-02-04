@@ -561,6 +561,30 @@ static int m3ua_rx_rkm_dereg_rsp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	return 0;
 }
 
+#define ENSURE_ASP_OR_IPSP(asp, xua)								\
+	do {											\
+		if (asp->cfg.role != OSMO_SS7_ASP_ROLE_ASP &&					\
+		    asp->cfg.role != OSMO_SS7_ASP_ROLE_IPSP) {					\
+			LOGPASP(asp, DLSS7, LOGL_ERROR, "Rx %s not permitted in role %s\n",	\
+				 get_value_string(m3ua_rkm_msgt_names, xua->hdr.msg_type),	\
+				 get_value_string(osmo_ss7_asp_role_names, asp->cfg.role));	\
+			xua_msg_free(xua);							\
+			return -1;								\
+		}										\
+	} while (0)
+
+#define ENSURE_SG_OR_IPSP(asp, xua)								\
+	do {											\
+		if (asp->cfg.role != OSMO_SS7_ASP_ROLE_SG &&					\
+		    asp->cfg.role != OSMO_SS7_ASP_ROLE_IPSP) {					\
+			LOGPASP(asp, DLSS7, LOGL_ERROR, "Rx %s not permitted in role %s\n",	\
+				 get_value_string(m3ua_rkm_msgt_names, xua->hdr.msg_type),	\
+				 get_value_string(osmo_ss7_asp_role_names, asp->cfg.role));	\
+			xua_msg_free(xua);							\
+			return -1;								\
+		}										\
+	} while (0)
+
 /* process an incoming RKM message in xua format
  * This function takes ownership of xua msg passed to it. */
 int m3ua_rx_rkm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
@@ -570,20 +594,20 @@ int m3ua_rx_rkm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	switch (xua->hdr.msg_type) {
 	/* SG Side */
 	case M3UA_RKM_REG_REQ:
-		/* TOOD: ensure we are role SG */
+		ENSURE_SG_OR_IPSP(asp, xua);
 		rc = m3ua_rx_rkm_reg_req(asp, xua);
 		break;
 	case M3UA_RKM_DEREG_REQ:
-		/* TOOD: ensure we are role SG */
+		ENSURE_SG_OR_IPSP(asp, xua);
 		rc = m3ua_rx_rkm_dereg_req(asp, xua);
 		break;
 	/* ASP Side */
 	case M3UA_RKM_REG_RSP:
-		/* TOOD: ensure we are role ASP */
+		ENSURE_ASP_OR_IPSP(asp, xua);
 		rc = m3ua_rx_rkm_reg_rsp(asp, xua);
 		break;
 	case M3UA_RKM_DEREG_RSP:
-		/* TOOD: ensure we are role ASP */
+		ENSURE_ASP_OR_IPSP(asp, xua);
 		rc = m3ua_rx_rkm_dereg_rsp(asp, xua);
 		break;
 	default:

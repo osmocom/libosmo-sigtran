@@ -266,7 +266,7 @@ static const uint16_t dereg_req_ies[] = {
 static const uint16_t dereg_rsp_ies[] = {
 	M3UA_IEI_DEREG_RESULT, 0
 };
-static const struct value_string m3ua_rkm_msgt_names[] = {
+const struct value_string m3ua_rkm_msgt_names[] = {
 	{ M3UA_RKM_REG_REQ,	"REG-REQ" },
 	{ M3UA_RKM_REG_RSP,	"REG-RESP" },
 	{ M3UA_RKM_DEREG_REQ,	"DEREG-REQ" },
