@@ -130,6 +130,7 @@ ss7_asp_vty_test(config-cs7)# list
   no as NAME
   sccp-address NAME
   no sccp-address NAME
+  timer xua (T8) <1-999999>
   sccp-timer (conn_est|ias|iar|rel|repeat_rel|int|guard|reset|reassembly) <1-999999>
   sccp max-optional-data (<0-999999>|standard)
 
@@ -146,6 +147,7 @@ ss7_asp_vty_test(config-cs7)# ?
   no                 Negate a command or set its defaults
   as                 Configure an Application Server
   sccp-address       Create/Modify an SCCP addressbook entry
+  timer              Configure CS7 Instance default timer values
   sccp-timer         Configure SCCP timer values, see ITU-T Q.714
   sccp               Configure SCCP behavior
 
