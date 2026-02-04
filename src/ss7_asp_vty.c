@@ -423,6 +423,11 @@ DEFUN_ATTR(asp_role, asp_role_cmd,
 			vty_out(vty, "IPSP role can't be used in an SG node since they are point-to-point%s", VTY_NEWLINE);
 			return CMD_WARNING;
 		}
+		if (asp->cfg.proto == OSMO_SS7_ASP_PROT_IPA) {
+			/* There's no definition yet on how IPA ASPs should behave in IPSP role... */
+			vty_out(vty, "IPSP role is not supported in ASP protol 'ipa'%s", VTY_NEWLINE);
+			return CMD_WARNING;
+		}
 		asp->cfg.role = OSMO_SS7_ASP_ROLE_IPSP;
 	} else {
 		OSMO_ASSERT(0);
