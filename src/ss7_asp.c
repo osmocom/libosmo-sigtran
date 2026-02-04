@@ -915,7 +915,7 @@ int osmo_ss7_asp_restart(struct osmo_ss7_asp *asp)
 		osmo_ss7_asp_remove_default_lm(asp);
 	}
 
-	if ((rc = xua_asp_fsm_start(asp, asp->cfg.role, LOGL_DEBUG)) < 0)
+	if ((rc = xua_asp_fsm_start(asp, LOGL_DEBUG)) < 0)
 		return rc;
 	OSMO_ASSERT(asp->fi);
 

@@ -86,8 +86,6 @@ static const struct value_string xua_asp_event_names[] = {
 struct xua_asp_fsm_priv {
 	/* pointer back to ASP to which we belong */
 	struct osmo_ss7_asp *asp;
-	/* Role (ASP/SG/IPSP) */
-	enum osmo_ss7_asp_role role;
 
 	/* routing context[s]: list of 32bit integers */
 	/* ACTIVE: traffic mode type, tid label, drn label ? */
@@ -515,12 +513,13 @@ static void common_asp_fsm_down_onenter(struct osmo_ss7_asp *asp)
 #define ENSURE_ASP_OR_IPSP(fi, event) 					\
 	do {								\
 		struct xua_asp_fsm_priv *_xafp = fi->priv;		\
-		if (_xafp->role != OSMO_SS7_ASP_ROLE_ASP &&		\
-		    _xafp->role != OSMO_SS7_ASP_ROLE_IPSP) {		\
+		enum osmo_ss7_asp_role _role = _xafp->asp->cfg.role;	\
+		if (_role != OSMO_SS7_ASP_ROLE_ASP &&		\
+		    _role != OSMO_SS7_ASP_ROLE_IPSP) {		\
 			LOGPFSML(fi, LOGL_ERROR, "event %s not permitted " \
 				 "in role %s\n",			\
 				 osmo_fsm_event_name(fi->fsm, event),	\
-				 get_value_string(osmo_ss7_asp_role_names, _xafp->role));\
+				 get_value_string(osmo_ss7_asp_role_names, _role));\
 			return;						\
 		}							\
 	} while(0)
@@ -528,12 +527,13 @@ static void common_asp_fsm_down_onenter(struct osmo_ss7_asp *asp)
 #define ENSURE_SG_OR_IPSP(fi, event) 					\
 	do {								\
 		struct xua_asp_fsm_priv *_xafp = fi->priv;		\
-		if (_xafp->role != OSMO_SS7_ASP_ROLE_SG &&		\
-		    _xafp->role != OSMO_SS7_ASP_ROLE_IPSP) {		\
+		enum osmo_ss7_asp_role _role = _xafp->asp->cfg.role;	\
+		if (_role != OSMO_SS7_ASP_ROLE_SG &&		\
+		    _role != OSMO_SS7_ASP_ROLE_IPSP) {		\
 			LOGPFSML(fi, LOGL_ERROR, "event %s not permitted " \
 				 "in role %s\n",			\
 				 osmo_fsm_event_name(fi->fsm, event),	\
-				 get_value_string(osmo_ss7_asp_role_names, _xafp->role));\
+				 get_value_string(osmo_ss7_asp_role_names, _role));\
 			return;						\
 		}							\
 	} while(0)
@@ -959,22 +959,19 @@ struct osmo_fsm xua_asp_fsm = {
 	.cleanup = xua_asp_fsm_cleanup,
 };
 
-static int ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
-			     enum osmo_ss7_asp_role role, int log_level);
+static int ipa_asp_fsm_start(struct osmo_ss7_asp *asp, int log_level);
 
 /*! \brief Start a new ASP finite state machine for given ASP (stored in asp->fi)
  *  \param[in] asp Application Server Process for which to start FSM
- *  \param[in] role Role (ASP, SG, IPSP) of this FSM
  *  \param[in] log_level Logging Level for ASP FSM logging
  *  \returns 0 on success; negative on error */
-int xua_asp_fsm_start(struct osmo_ss7_asp *asp,
-		      enum osmo_ss7_asp_role role, int log_level)
+int xua_asp_fsm_start(struct osmo_ss7_asp *asp, int log_level)
 {
 	struct osmo_fsm_inst *fi;
 	struct xua_asp_fsm_priv *xafp;
 
 	if (asp->cfg.proto == OSMO_SS7_ASP_PROT_IPA)
-		return ipa_asp_fsm_start(asp, role, log_level);
+		return ipa_asp_fsm_start(asp, log_level);
 
 	/* allocate as child of AS? */
 	fi = osmo_fsm_inst_alloc(&xua_asp_fsm, asp, NULL, log_level, asp->cfg.name);
@@ -986,7 +983,6 @@ int xua_asp_fsm_start(struct osmo_ss7_asp *asp,
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_ERROR, NULL);
 		return -ENOMEM;
 	}
-	xafp->role = role;
 	xafp->asp = asp;
 
 	osmo_timer_setup(&xafp->t_beat.timer, xua_t_beat_cb, fi);
@@ -1026,8 +1022,6 @@ enum ipa_asp_state {
 struct ipa_asp_fsm_priv {
 	/* pointer back to ASP to which we belong */
 	struct osmo_ss7_asp *asp;
-	/* Role (ASP/SG/IPSP) */
-	enum osmo_ss7_asp_role role;
 
 	/* Structure holding parsed data of the IPA CCM ID exchange */
 	struct ipaccess_unit *ipa_unit;
@@ -1146,7 +1140,7 @@ static void ipa_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	switch (event) {
 	case XUA_ASP_E_M_ASP_UP_REQ:
 	case XUA_ASP_E_SCTP_EST_IND:
-		if (iafp->role == OSMO_SS7_ASP_ROLE_SG) {
+		if (iafp->asp->cfg.role == OSMO_SS7_ASP_ROLE_SG) {
 			/* Server: Transmit IPA ID GET + Wait for Response */
 			if (fd >= 0) {
 				ipa_ccm_send_id_req(fd);
@@ -1407,7 +1401,7 @@ static void ipa_asp_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		 * It will be applied to PDUs received from the IPA socket. */
 		_ipa_asp_pick_unused_sls(iafp->asp, as);
 		/* Now that the AS is known, start the client side: */
-		if (iafp->role == OSMO_SS7_ASP_ROLE_ASP && fi->state == IPA_ASP_S_DOWN) {
+		if (iafp->asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP && fi->state == IPA_ASP_S_DOWN) {
 			LOGPFSML(fi, LOGL_NOTICE, "Bringing up ASP now once it has been assigned to an AS\n");
 			osmo_fsm_inst_dispatch(fi, XUA_ASP_E_M_ASP_UP_REQ, NULL);
 		}
@@ -1522,11 +1516,9 @@ struct osmo_fsm ipa_asp_fsm = {
 
 /*! \brief Start a new ASP finite state machine for given ASP (stored on asp->fi)
  *  \param[in] asp Application Server Process for which to start FSM
- *  \param[in] role Role (ASP, SG, IPSP) of this FSM
  *  \param[in] log_level Logging Level for ASP FSM logging
  *  \returns 0 on success; negative on error */
-static int ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
-			     enum osmo_ss7_asp_role role, int log_level)
+static int ipa_asp_fsm_start(struct osmo_ss7_asp *asp, int log_level)
 {
 	struct osmo_fsm_inst *fi;
 	struct ipa_asp_fsm_priv *iafp;
@@ -1557,7 +1549,7 @@ static int ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
 	} else {
 		/* ASP in client mode will be brought up when this ASP is added
 		 * to an AS, see XUA_ASP_E_AS_ASSIGNED. */
-		if (role == OSMO_SS7_ASP_ROLE_ASP) {
+		if (asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP) {
 			LOGPFSML(fi, LOGL_NOTICE, "ASP is not assigned to any AS. ASP bring up delayed\n");
 			can_start = false;
 		}
@@ -1565,7 +1557,6 @@ static int ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
 		/* asp->ipa.sls will be assigned together with AS unit_name during XUA_ASP_E_AS_ASSIGNED. */
 	}
 
-	iafp->role = role;
 	iafp->asp = asp;
 	iafp->ipa_unit = talloc_zero(iafp, struct ipaccess_unit);
 	iafp->ipa_unit->unit_name = talloc_strdup(iafp->ipa_unit, unit_name);
@@ -1576,7 +1567,7 @@ static int ipa_asp_fsm_start(struct osmo_ss7_asp *asp,
 	/* Attach FSM to ASP: */
 	asp->fi = fi;
 
-	if (can_start && role == OSMO_SS7_ASP_ROLE_ASP)
+	if (can_start && asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP)
 		osmo_fsm_inst_dispatch(fi, XUA_ASP_E_M_ASP_UP_REQ, NULL);
 
 	return 0;
