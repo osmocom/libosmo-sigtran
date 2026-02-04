@@ -1545,6 +1545,9 @@ static void vty_init_shared(void *ctx)
 	install_lib_element_ve(&show_cs7_route_lookup_cmd);
 
 	vty_init_addr();
+
+	gen_cs7_timer_xua_cmd_strs(&cs7_timer_xua_cmd);
+	install_lib_element(L_CS7_NODE, &cs7_timer_xua_cmd);
 }
 
 void osmo_ss7_vty_init_asp(void *ctx)
@@ -1557,9 +1560,6 @@ void osmo_ss7_vty_init_sg(void *ctx)
 {
 	cs7_role = CS7_ROLE_SG;
 	vty_init_shared(ctx);
-
-	gen_cs7_timer_xua_cmd_strs(&cs7_timer_xua_cmd);
-	install_lib_element(L_CS7_NODE, &cs7_timer_xua_cmd);
 
 #ifdef WITH_TCAP_LOADSHARING
 	tcap_as_vty_init();
