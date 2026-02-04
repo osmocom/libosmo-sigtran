@@ -308,7 +308,10 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 		}
 	}
 
-	/* Success: Add just-create AS to connected ASP + report success */
+	/* Make sure ASP is associated to AS:
+	 * - If AS was just created
+	 * - If we just learned through RKM that this ASP is serving this AS (rctx)
+	 */
 	if (ss7_as_add_asp(as, asp) < 0) {
 		LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: Cannot associate ASP to AS %s\n", as->cfg.name);
 		msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_INSUFF_RESRC, 0);
