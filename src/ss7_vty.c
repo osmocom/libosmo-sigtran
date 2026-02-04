@@ -1548,6 +1548,8 @@ static void vty_init_shared(void *ctx)
 
 	gen_cs7_timer_xua_cmd_strs(&cs7_timer_xua_cmd);
 	install_lib_element(L_CS7_NODE, &cs7_timer_xua_cmd);
+
+	ss7_vty_init_node_oxs();
 }
 
 void osmo_ss7_vty_init_asp(void *ctx)
@@ -1569,6 +1571,4 @@ void osmo_ss7_vty_init_sg(void *ctx)
 	install_lib_element(L_CS7_RTABLE_NODE, &cfg_description_cmd);
 	install_lib_element(L_CS7_RTABLE_NODE, &cs7_rt_upd_cmd);
 	install_lib_element(L_CS7_RTABLE_NODE, &cs7_rt_rem_cmd);
-
-	ss7_vty_init_node_oxs();
 }
