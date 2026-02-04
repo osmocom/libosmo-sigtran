@@ -684,6 +684,7 @@ int ss7_vty_node_as_go_parent(struct vty *vty)
 					"'point-code override dpc PC' configured in its routing-key. Fix your config!%s",
 					 as->cfg.name, VTY_NEWLINE);
 		}
+	} else {
 #ifdef WITH_TCAP_LOADSHARING
 		if (as->cfg.loadshare.tcap.enabled && as->cfg.mode != OSMO_SS7_AS_TMOD_LOADSHARE)
 			vty_out(vty, "%% AS '%s' TCAP routing is enabled, but only works in traffic-mode loadshare!%s",
