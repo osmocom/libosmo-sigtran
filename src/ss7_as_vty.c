@@ -667,9 +667,9 @@ int ss7_vty_node_as_go_parent(struct vty *vty)
 		* then announce using RKM.
 		* Still, allow STPs to have AS(P) configured in an ASP mode to talk to a
 		* peer STP by announcing remote PCs. */
-		if (as_role == OSMO_SS7_ASP_ROLE_ASP &&
+		if ((as_role == OSMO_SS7_ASP_ROLE_ASP || as_role == OSMO_SS7_ASP_ROLE_IPSP) &&
 		    !osmo_ss7_pc_is_local(as->inst, as->cfg.routing_key.pc))
-			vty_out(vty, "%% AS '%s' with local role ASP should have a local PC configured in its "
+			vty_out(vty, "%% AS '%s' with local role ASP/IPSP should have a local PC configured in its "
 				"routing-key. Fix your config!%s", as->cfg.name, VTY_NEWLINE);
 
 		if (as->cfg.proto == OSMO_SS7_ASP_PROT_IPA) {

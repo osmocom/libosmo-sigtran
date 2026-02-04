@@ -219,16 +219,15 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 		rctx, osmo_ss7_pointcode_print(asp->inst, dpc));
 
 	/* We have two cases here:
-	 * a) pre-configured routing context on both ASP and SG: We will
-	 *    find the AS based on the RCTX send by the client, check if
-	 *    the routing key matches, associated AS with ASP and return
-	 *    success.
-	 * b) no routing context set on ASP, no pre-existing AS
-	 *    definition on SG.  We have to create the AS, set the RK,
+	 * a) pre-configured routing context on both ASP and SG (or IPSP peers):
+	 *    We will find the AS based on the RCTX send by the client, check if
+	 *    the routing key matches, associated AS with ASP and return success.
+	 * b) no routing context set on peer (ASP/IPSP), no pre-existing local AS
+	 *    definition (SG/IPSP).  We have to create the AS, set the RK,
 	 *    allocate the RCTX and return that RCTX to the client. This
 	 *    is a slightly non-standard interpretation of M3UA RKM
-	 *    which requires the SG to not have a-priori-knowledge of
-	 *    all AS/RK in situations where the ASP are trusted.
+	 *    which requires the SG/IPSP to not have a-priori-knowledge of
+	 *    all AS/RK in situations where the peers are trusted.
 	 */
 
 	/* check if there is already an AS for this routing key */
@@ -255,7 +254,9 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 	if (as) {
 		LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: Found existing AS for RCTX %u\n", rctx);
 
-		if (as->cfg.routing_key.pc != dpc) {
+		/* In IPSP we expect in fact to have the local PC configured in routing-key. */
+		if (asp->cfg.role == OSMO_SS7_ASP_ROLE_SG &&
+		    as->cfg.routing_key.pc != dpc) {
 			LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: DPC doesn't match, rejecting AS (%u != %u)\n",
 				as->cfg.routing_key.pc, dpc);
 			msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_INVAL_RKEY, 0);
