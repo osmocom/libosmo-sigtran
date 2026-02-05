@@ -113,9 +113,9 @@ static int msgb_append_dereg_res(struct msgb *msg,
 }
 
 /* ASP: send a RKM Registration Request message for a single routing key */
-static void xua_rkm_send_reg_req(struct osmo_ss7_asp *asp,
-				 const struct osmo_ss7_routing_key *rkey,
-				 enum osmo_ss7_as_traffic_mode traf_mode)
+void xua_rkm_send_reg_req(struct osmo_ss7_asp *asp,
+			  const struct osmo_ss7_routing_key *rkey,
+			  enum osmo_ss7_as_traffic_mode traf_mode)
 {
 	struct msgb *msg = m3ua_msgb_alloc(__func__);
 	int tmod = osmo_ss7_tmode_to_xua(traf_mode);
@@ -135,7 +135,7 @@ static void xua_rkm_send_reg_req(struct osmo_ss7_asp *asp,
 }
 
 /* ASP: send a RKM De-Registration Request message for a single routing context */
-static void xua_rkm_send_dereg_req(struct osmo_ss7_asp *asp, uint32_t route_ctx)
+void xua_rkm_send_dereg_req(struct osmo_ss7_asp *asp, uint32_t route_ctx)
 {
 	struct msgb *msg = m3ua_msgb_alloc(__func__);
 
@@ -622,31 +622,4 @@ int m3ua_rx_rkm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 
 	xua_msg_free(xua);
 	return rc;
-}
-
-/* process a primitive from the xUA Layer Manager (LM) */
-int osmo_xlm_sap_down(struct osmo_ss7_asp *asp, struct osmo_prim_hdr *oph)
-{
-	struct osmo_xlm_prim *prim = (struct osmo_xlm_prim *) oph;
-
-	LOGPASP(asp, DLSS7, LOGL_DEBUG, "Received XUA Layer Manager Primitive: %s)\n",
-		osmo_xlm_prim_name(&prim->oph));
-
-	switch (OSMO_PRIM_HDR(&prim->oph)) {
-	case OSMO_PRIM(OSMO_XLM_PRIM_M_RK_REG, PRIM_OP_REQUEST):
-		/* Layer Manager asks us to send a Routing Key Reg Request */
-		xua_rkm_send_reg_req(asp, &prim->u.rk_reg.key, prim->u.rk_reg.traf_mode);
-		break;
-	case OSMO_PRIM(OSMO_XLM_PRIM_M_RK_DEREG, PRIM_OP_REQUEST):
-		/* Layer Manager asks us to send a Routing Key De-Reg Request */
-		xua_rkm_send_dereg_req(asp, prim->u.rk_dereg.route_ctx);
-		break;
-	default:
-		LOGPASP(asp, DLSS7, LOGL_ERROR, "Unknown XUA Layer Manager Primitive: %s\n",
-			osmo_xlm_prim_name(&prim->oph));
-		break;
-	}
-
-	msgb_free(prim->oph.msg);
-	return 0;
 }
