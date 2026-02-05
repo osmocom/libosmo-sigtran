@@ -167,9 +167,11 @@ static void lm_idle(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 
 	switch (event) {
 	case LM_E_SCTP_EST_IND:
-		/* Try to transition to ASP-UP, wait to receive message for a few seconds */
-		lm_fsm_state_chg(fi, S_WAIT_ASP_UP);
-		osmo_fsm_inst_dispatch(lmp->asp->fi, XUA_ASP_E_M_ASP_UP_REQ, NULL);
+		if (lmp->asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP) {
+			/* Try to transition to ASP-UP, wait to receive message for a few seconds */
+			lm_fsm_state_chg(fi, S_WAIT_ASP_UP);
+			osmo_fsm_inst_dispatch(lmp->asp->fi, XUA_ASP_E_M_ASP_UP_REQ, NULL);
+		}
 		break;
 	}
 }
