@@ -19,7 +19,10 @@
  ***********************************************************************/
 
 struct osmo_ss7_instance;
-struct osmo_xua_layer_manager;
+
+struct osmo_xua_layer_manager {
+	osmo_prim_cb prim_cb;
+};
 
 enum ss7_asp_xua_timer {
 	/* 0 kept unused on purpose since it's handled specially by osmo_fsm */
