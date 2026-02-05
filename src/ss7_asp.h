@@ -21,6 +21,9 @@
 struct osmo_ss7_instance;
 
 struct osmo_xua_layer_manager {
+	/* oph: {sap: XUA_SAP_LM, prim: enum osmo_xlm_prim_type},
+	 * cb_data: (struct osmo_ss7_asp *)
+	 */
 	osmo_prim_cb prim_cb;
 };
 
