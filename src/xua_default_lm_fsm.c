@@ -185,58 +185,6 @@ static void lm_wait_asp_up(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	}
 }
 
-
-static int lm_timer_cb(struct osmo_fsm_inst *fi)
-{
-	struct xua_layer_manager_default_priv *lmp = fi->priv;
-	struct osmo_xlm_prim *prim;
-	struct osmo_ss7_as *as;
-
-	switch (fi->T) {
-	case SS7_ASP_LM_T_WAIT_ASP_UP:
-		/* we have been waiting for the ASP to come up, but it
-		 * failed to do so */
-		LOGPFSML(fi, LOGL_NOTICE, "Peer didn't send any ASP_UP in time! Restarting ASP\n");
-		ss7_asp_disconnect_stream(lmp->asp);
-		break;
-	case SS7_ASP_LM_T_WAIT_NOTIFY:
-		if (lmp->asp->cfg.quirks & OSMO_SS7_ASP_QUIRK_NO_NOTIFY) {
-			/* some implementations don't send the NOTIFY which they SHOULD
-			 * according to RFC4666 (see OS#5145) */
-			LOGPFSM(fi, "quirk no_notify active; locally emulate AS-INACTIVE.ind\n");
-			osmo_fsm_inst_dispatch(fi, LM_E_AS_INACTIVE_IND, NULL);
-			break;
-		}
-		/* No AS has reported via NOTIFY that is was
-		 * (statically) configured at the SG for this ASP, so
-		 * let's dynamically register */
-		lm_fsm_state_chg(fi, S_RKM_REG);
-		prim = xua_xlm_prim_alloc(OSMO_XLM_PRIM_M_RK_REG, PRIM_OP_REQUEST);
-		OSMO_ASSERT(prim);
-		as = find_first_as_in_asp(lmp->asp);
-		if (!as) {
-			LOGPFSML(fi, LOGL_ERROR, "Unable to find AS!\n");
-			ss7_asp_disconnect_stream(lmp->asp);
-			return 0;
-		}
-		/* Fill in settings from first AS (TODO: multiple AS support) */
-		prim->u.rk_reg.key = as->cfg.routing_key;
-		prim->u.rk_reg.traf_mode = as->cfg.mode;
-		osmo_xlm_sap_down(lmp->asp, &prim->oph);
-		break;
-	case SS7_ASP_LM_T_WAIT_NOTIY_RKM:
-		/* No AS has reported via NOTIFY even after dynamic RKM
-		 * configuration */
-		ss7_asp_disconnect_stream(lmp->asp);
-		break;
-	case SS7_ASP_LM_T_WAIT_RK_REG_RESP:
-		/* timeout of registration of routing key */
-		ss7_asp_disconnect_stream(lmp->asp);
-		break;
-	}
-	return 0;
-}
-
 static void lm_wait_notify(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct xua_layer_manager_default_priv *lmp = fi->priv;
@@ -325,6 +273,57 @@ static void lm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		lm_fsm_state_chg(fi, S_IDLE);
 		break;
 	}
+}
+
+static int lm_timer_cb(struct osmo_fsm_inst *fi)
+{
+	struct xua_layer_manager_default_priv *lmp = fi->priv;
+	struct osmo_xlm_prim *prim;
+	struct osmo_ss7_as *as;
+
+	switch (fi->T) {
+	case SS7_ASP_LM_T_WAIT_ASP_UP:
+		/* we have been waiting for the ASP to come up, but it
+		 * failed to do so */
+		LOGPFSML(fi, LOGL_NOTICE, "Peer didn't send any ASP_UP in time! Restarting ASP\n");
+		ss7_asp_disconnect_stream(lmp->asp);
+		break;
+	case SS7_ASP_LM_T_WAIT_NOTIFY:
+		if (lmp->asp->cfg.quirks & OSMO_SS7_ASP_QUIRK_NO_NOTIFY) {
+			/* some implementations don't send the NOTIFY which they SHOULD
+			 * according to RFC4666 (see OS#5145) */
+			LOGPFSM(fi, "quirk no_notify active; locally emulate AS-INACTIVE.ind\n");
+			osmo_fsm_inst_dispatch(fi, LM_E_AS_INACTIVE_IND, NULL);
+			break;
+		}
+		/* No AS has reported via NOTIFY that is was
+		 * (statically) configured at the SG for this ASP, so
+		 * let's dynamically register */
+		lm_fsm_state_chg(fi, S_RKM_REG);
+		prim = xua_xlm_prim_alloc(OSMO_XLM_PRIM_M_RK_REG, PRIM_OP_REQUEST);
+		OSMO_ASSERT(prim);
+		as = find_first_as_in_asp(lmp->asp);
+		if (!as) {
+			LOGPFSML(fi, LOGL_ERROR, "Unable to find AS!\n");
+			ss7_asp_disconnect_stream(lmp->asp);
+			return 0;
+		}
+		/* Fill in settings from first AS (TODO: multiple AS support) */
+		prim->u.rk_reg.key = as->cfg.routing_key;
+		prim->u.rk_reg.traf_mode = as->cfg.mode;
+		osmo_xlm_sap_down(lmp->asp, &prim->oph);
+		break;
+	case SS7_ASP_LM_T_WAIT_NOTIY_RKM:
+		/* No AS has reported via NOTIFY even after dynamic RKM
+		 * configuration */
+		ss7_asp_disconnect_stream(lmp->asp);
+		break;
+	case SS7_ASP_LM_T_WAIT_RK_REG_RESP:
+		/* timeout of registration of routing key */
+		ss7_asp_disconnect_stream(lmp->asp);
+		break;
+	}
+	return 0;
 }
 
 static const struct osmo_fsm_state lm_states[] = {
