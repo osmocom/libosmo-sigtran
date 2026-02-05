@@ -15,10 +15,6 @@
 
 struct osmo_ss7_instance;
 
-struct osmo_xua_layer_manager {
-	osmo_prim_cb prim_cb;
-};
-
 struct osmo_xua_server {
 	struct llist_head list;
 	struct osmo_ss7_instance *inst;
