@@ -155,3 +155,8 @@ int osmo_sccp_addr_parse(struct osmo_sccp_addr *out,
 int osmo_sccp_addr_encode(struct msgb *msg, const struct osmo_sccp_addr *in);
 
 int ss7_asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *msg);
+
+void xua_rkm_send_reg_req(struct osmo_ss7_asp *asp,
+			  const struct osmo_ss7_routing_key *rkey,
+			  enum osmo_ss7_as_traffic_mode traf_mode);
+void xua_rkm_send_dereg_req(struct osmo_ss7_asp *asp, uint32_t route_ctx);
