@@ -21,11 +21,15 @@
 struct osmo_ss7_instance;
 
 struct osmo_xua_layer_manager {
-	/* oph: {sap: XUA_SAP_LM, prim: enum osmo_xlm_prim_type},
+	/* Submit primitives M3UA -> LM:
+	 * oph: {sap: XUA_SAP_LM, prim: enum osmo_xlm_prim_type},
 	 * cb_data: (struct osmo_ss7_asp *)
 	 */
 	osmo_prim_cb prim_cb;
+	void (*free_func)(struct osmo_xua_layer_manager *lm);
+	void *priv;
 };
+struct osmo_xua_layer_manager *xua_layer_manager_default_alloc(struct osmo_ss7_asp *asp);
 
 enum ss7_asp_xua_timer {
 	/* 0 kept unused on purpose since it's handled specially by osmo_fsm */
@@ -77,8 +81,7 @@ struct osmo_ss7_asp {
 	bool remote_asp_id_present;
 
 	/* Layer Manager to which we talk */
-	const struct osmo_xua_layer_manager *lm;
-	void *lm_priv;
+	struct osmo_xua_layer_manager *lm;
 
 	/*! Were we dynamically allocated */
 	bool dyn_allocated;
@@ -180,7 +183,6 @@ int ss7_asp_apply_new_local_address(const struct osmo_ss7_asp *asp, unsigned int
 int ss7_asp_apply_drop_local_address(const struct osmo_ss7_asp *asp, unsigned int loc_idx);
 
 void ss7_asp_restart_after_reconfigure(struct osmo_ss7_asp *asp);
-void osmo_ss7_asp_remove_default_lm(struct osmo_ss7_asp *asp);
 
 unsigned int ss7_asp_get_all_rctx(const struct osmo_ss7_asp *asp, uint32_t *rctx, unsigned int rctx_size,
 				  const struct osmo_ss7_as *excl_as);

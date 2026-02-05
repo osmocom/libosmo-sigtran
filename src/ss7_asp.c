@@ -699,6 +699,29 @@ ss7_asp_find_by_socket_addr(int fd, int trans_proto)
 	return NULL;
 }
 
+static void ss7_asp_xua_layer_manager_start(struct osmo_ss7_asp *asp)
+{
+	OSMO_ASSERT(!asp->lm);
+	if (asp->cfg.proto == OSMO_SS7_ASP_PROT_IPA ||
+	    asp->cfg.role != OSMO_SS7_ASP_ROLE_ASP ||
+	    asp->cfg.is_server)
+		return;
+
+	asp->lm = xua_layer_manager_default_alloc(asp);
+	OSMO_ASSERT(asp->lm);
+}
+
+/* Apply default LM FSM */
+static void ss7_asp_xua_layer_manager_destroy(struct osmo_ss7_asp *asp)
+{
+	if (!asp->lm)
+		return;
+
+	if (asp->lm->free_func)
+		asp->lm->free_func(asp->lm);
+	asp->lm = NULL;
+}
+
 struct osmo_ss7_asp *ss7_asp_alloc(struct osmo_ss7_instance *inst, const char *name,
 				   uint16_t remote_port, uint16_t local_port,
 				   int trans_proto, enum osmo_ss7_asp_protocol proto)
@@ -758,7 +781,7 @@ void osmo_ss7_asp_destroy(struct osmo_ss7_asp *asp)
 		osmo_stream_cli_destroy(asp->client);
 	if (asp->fi)
 		osmo_fsm_inst_term(asp->fi, OSMO_FSM_TERM_REQUEST, NULL);
-	osmo_ss7_asp_remove_default_lm(asp);
+	ss7_asp_xua_layer_manager_destroy(asp);
 
 	/* Unlink from all ASs we are part of.
 	 * Some RKM-dynamically allocated ASs may be freed as a result from this: */
@@ -907,14 +930,9 @@ int osmo_ss7_asp_restart(struct osmo_ss7_asp *asp)
 		OSMO_ASSERT(!asp->fi);
 	}
 
-	/* Apply default LM FSM for client ASP */
-	if (asp->cfg.proto != OSMO_SS7_ASP_PROT_IPA &&
-	    asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP &&
-	    !asp->cfg.is_server) {
-		osmo_ss7_asp_use_default_lm(asp, LOGL_DEBUG);
-	} else {
-		osmo_ss7_asp_remove_default_lm(asp);
-	}
+	/* Restart existing Layer Manager: */
+	ss7_asp_xua_layer_manager_destroy(asp);
+	ss7_asp_xua_layer_manager_start(asp);
 
 	if ((rc = xua_asp_fsm_start(asp, LOGL_DEBUG)) < 0)
 		return rc;
