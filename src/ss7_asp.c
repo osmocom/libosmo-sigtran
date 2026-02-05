@@ -702,8 +702,8 @@ ss7_asp_find_by_socket_addr(int fd, int trans_proto)
 static void ss7_asp_xua_layer_manager_start(struct osmo_ss7_asp *asp)
 {
 	OSMO_ASSERT(!asp->lm);
-	if (asp->cfg.proto == OSMO_SS7_ASP_PROT_IPA ||
-	    asp->cfg.role != OSMO_SS7_ASP_ROLE_ASP)
+	/* No LM in IPA */
+	if (asp->cfg.proto == OSMO_SS7_ASP_PROT_IPA)
 		return;
 
 	asp->lm = xua_layer_manager_default_alloc(asp);
