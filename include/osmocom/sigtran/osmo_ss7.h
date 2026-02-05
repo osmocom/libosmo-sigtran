@@ -295,7 +295,6 @@ void osmo_ss7_asp_disconnect(struct osmo_ss7_asp *asp);
 void osmo_ss7_asp_destroy(struct osmo_ss7_asp *asp);
 int osmo_ss7_asp_send(struct osmo_ss7_asp *asp, struct msgb *msg);
 int osmo_ss7_asp_restart(struct osmo_ss7_asp *asp);
-int osmo_ss7_asp_use_default_lm(struct osmo_ss7_asp *asp, int log_level);
 bool osmo_ss7_asp_active(const struct osmo_ss7_asp *asp);
 int osmo_ss7_asp_get_log_subsys(const struct osmo_ss7_asp *asp);
 const char *osmo_ss7_asp_get_name(const struct osmo_ss7_asp *asp);

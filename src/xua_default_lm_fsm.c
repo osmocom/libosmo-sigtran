@@ -116,14 +116,15 @@ static const struct osmo_tdef_state_timeout lm_fsm_timeouts[32] = {
 	[S_ACTIVE]	= { },
 };
 
-struct lm_fsm_priv {
+struct xua_layer_manager_default_priv {
 	struct osmo_ss7_asp *asp;
+	struct osmo_fsm_inst *fi;
 };
 
 #define lm_fsm_state_chg(fi, NEXT_STATE) \
 	osmo_tdef_fsm_inst_state_chg(fi, NEXT_STATE, \
 				     lm_fsm_timeouts, \
-				    ((struct lm_fsm_priv *)(fi->priv))->asp->cfg.T_defs_lm, \
+				    ((struct xua_layer_manager_default_priv *)(fi->priv))->asp->cfg.T_defs_lm, \
 				     -1)
 
 static struct osmo_ss7_as *find_first_as_in_asp(struct osmo_ss7_asp *asp)
@@ -144,7 +145,7 @@ static struct osmo_ss7_as *find_first_as_in_asp(struct osmo_ss7_asp *asp)
 /* handle an incoming RKM registration response */
 static int handle_reg_conf(struct osmo_fsm_inst *fi, uint32_t l_rk_id, uint32_t rctx)
 {
-	struct lm_fsm_priv *lmp = fi->priv;
+	struct xua_layer_manager_default_priv *lmp = fi->priv;
 	struct osmo_ss7_asp *asp = lmp->asp;
 	struct osmo_ss7_as *as;
 
@@ -162,7 +163,7 @@ static int handle_reg_conf(struct osmo_fsm_inst *fi, uint32_t l_rk_id, uint32_t 
 
 static void lm_idle(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	struct lm_fsm_priv *lmp = fi->priv;
+	struct xua_layer_manager_default_priv *lmp = fi->priv;
 
 	switch (event) {
 	case LM_E_SCTP_EST_IND:
@@ -187,7 +188,7 @@ static void lm_wait_asp_up(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 
 static int lm_timer_cb(struct osmo_fsm_inst *fi)
 {
-	struct lm_fsm_priv *lmp = fi->priv;
+	struct xua_layer_manager_default_priv *lmp = fi->priv;
 	struct osmo_xlm_prim *prim;
 	struct osmo_ss7_as *as;
 
@@ -238,7 +239,7 @@ static int lm_timer_cb(struct osmo_fsm_inst *fi)
 
 static void lm_wait_notify(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	struct lm_fsm_priv *lmp = fi->priv;
+	struct xua_layer_manager_default_priv *lmp = fi->priv;
 	struct osmo_xlm_prim *oxp = data;
 
 	switch (event) {
@@ -271,7 +272,7 @@ static void lm_wait_notify(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 
 static void lm_rkm_reg(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	struct lm_fsm_priv *lmp = fi->priv;
+	struct xua_layer_manager_default_priv *lmp = fi->priv;
 	struct osmo_xlm_prim *oxp;
 	int rc;
 
@@ -298,7 +299,7 @@ static void lm_rkm_reg(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 
 static void lm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	struct lm_fsm_priv *lmp = fi->priv;
+	struct xua_layer_manager_default_priv *lmp = fi->priv;
 	struct osmo_xlm_prim *oxp;
 
 	switch (event) {
@@ -396,7 +397,8 @@ struct osmo_fsm xua_default_lm_fsm = {
 static int default_lm_prim_cb(struct osmo_prim_hdr *oph, void *_asp)
 {
 	struct osmo_ss7_asp *asp = _asp;
-	struct osmo_fsm_inst *fi = asp->lm_priv;
+	struct xua_layer_manager_default_priv *lmp = asp->lm->priv;
+	struct osmo_fsm_inst *fi = lmp->fi;
 	uint32_t event = osmo_event_for_prim(oph, lm_event_map);
 	char *prim_name = osmo_xlm_prim_name(oph);
 
@@ -412,42 +414,39 @@ static int default_lm_prim_cb(struct osmo_prim_hdr *oph, void *_asp)
 	return 0;
 }
 
-static const struct osmo_xua_layer_manager default_layer_manager = {
-	.prim_cb = default_lm_prim_cb,
-};
-
-void osmo_ss7_asp_remove_default_lm(struct osmo_ss7_asp *asp)
+void xua_layer_manager_default_free(struct osmo_xua_layer_manager *lm)
 {
-	if (!asp->lm_priv)
+	if (!lm)
 		return;
-	osmo_fsm_inst_term(asp->lm_priv, OSMO_FSM_TERM_ERROR, NULL);
-	asp->lm_priv = NULL;
+	if (lm->priv) {
+		struct xua_layer_manager_default_priv *lmp = lm->priv;
+		osmo_fsm_inst_term(lmp->fi, OSMO_FSM_TERM_ERROR, NULL);
+		talloc_free(lmp);
+		lm->priv = NULL;
+	}
+	talloc_free(lm);
 }
 
-int osmo_ss7_asp_use_default_lm(struct osmo_ss7_asp *asp, int log_level)
+struct osmo_xua_layer_manager *xua_layer_manager_default_alloc(struct osmo_ss7_asp *asp)
 {
-	struct lm_fsm_priv *lmp;
-	struct osmo_fsm_inst *fi;
+	struct osmo_xua_layer_manager *lm;
+	struct xua_layer_manager_default_priv *lmp;
 
-	if (asp->lm_priv) {
-		osmo_fsm_inst_term(asp->lm_priv, OSMO_FSM_TERM_ERROR, NULL);
-		asp->lm_priv = NULL;
-	}
+	lm = talloc_zero(asp, struct osmo_xua_layer_manager);
+	OSMO_ASSERT(lm);
 
-	fi = osmo_fsm_inst_alloc(&xua_default_lm_fsm, asp, NULL, log_level, asp->cfg.name);
-	if (!fi)
-		return -EINVAL;
-
-	lmp = talloc_zero(fi, struct lm_fsm_priv);
-	if (!lmp) {
-		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_ERROR, NULL);
-		return -ENOMEM;
-	}
+	lmp = talloc_zero(lm, struct xua_layer_manager_default_priv);
+	OSMO_ASSERT(lmp);
 	lmp->asp = asp;
-	fi->priv = lmp;
+	lmp->fi = osmo_fsm_inst_alloc(&xua_default_lm_fsm, lmp, lmp, LOGL_DEBUG, asp->cfg.name);
+	if (!lmp->fi) {
+		talloc_free(lm);
+		return NULL;
+	}
 
-	asp->lm = &default_layer_manager;
-	asp->lm_priv = fi;
+	lm->prim_cb = default_lm_prim_cb;
+	lm->free_func = xua_layer_manager_default_free;
+	lm->priv = lmp;
 
-	return 0;
+	return lm;
 }
