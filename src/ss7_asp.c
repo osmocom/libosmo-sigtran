@@ -758,6 +758,7 @@ void osmo_ss7_asp_destroy(struct osmo_ss7_asp *asp)
 		osmo_stream_cli_destroy(asp->client);
 	if (asp->fi)
 		osmo_fsm_inst_term(asp->fi, OSMO_FSM_TERM_REQUEST, NULL);
+	osmo_ss7_asp_remove_default_lm(asp);
 
 	/* Unlink from all ASs we are part of.
 	 * Some RKM-dynamically allocated ASs may be freed as a result from this: */
