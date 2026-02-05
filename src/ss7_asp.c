@@ -703,8 +703,7 @@ static void ss7_asp_xua_layer_manager_start(struct osmo_ss7_asp *asp)
 {
 	OSMO_ASSERT(!asp->lm);
 	if (asp->cfg.proto == OSMO_SS7_ASP_PROT_IPA ||
-	    asp->cfg.role != OSMO_SS7_ASP_ROLE_ASP ||
-	    asp->cfg.is_server)
+	    asp->cfg.role != OSMO_SS7_ASP_ROLE_ASP)
 		return;
 
 	asp->lm = xua_layer_manager_default_alloc(asp);
