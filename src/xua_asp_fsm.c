@@ -510,33 +510,27 @@ static void common_asp_fsm_down_onenter(struct osmo_ss7_asp *asp)
 	}
 }
 
-#define ENSURE_ASP_OR_IPSP(fi, event) 					\
+#define ENSURE_ROLE_COND(fi, event, cond)				\
 	do {								\
 		struct xua_asp_fsm_priv *_xafp = fi->priv;		\
 		enum osmo_ss7_asp_role _role = _xafp->asp->cfg.role;	\
-		if (_role != OSMO_SS7_ASP_ROLE_ASP &&		\
-		    _role != OSMO_SS7_ASP_ROLE_IPSP) {		\
+		if (!(cond)) {		\
 			LOGPFSML(fi, LOGL_ERROR, "event %s not permitted " \
 				 "in role %s\n",			\
 				 osmo_fsm_event_name(fi->fsm, event),	\
 				 get_value_string(osmo_ss7_asp_role_names, _role));\
 			return;						\
 		}							\
-	} while(0)
+	} while (0)
 
-#define ENSURE_SG_OR_IPSP(fi, event) 					\
-	do {								\
-		struct xua_asp_fsm_priv *_xafp = fi->priv;		\
-		enum osmo_ss7_asp_role _role = _xafp->asp->cfg.role;	\
-		if (_role != OSMO_SS7_ASP_ROLE_SG &&		\
-		    _role != OSMO_SS7_ASP_ROLE_IPSP) {		\
-			LOGPFSML(fi, LOGL_ERROR, "event %s not permitted " \
-				 "in role %s\n",			\
-				 osmo_fsm_event_name(fi->fsm, event),	\
-				 get_value_string(osmo_ss7_asp_role_names, _role));\
-			return;						\
-		}							\
-	} while(0)
+#define ENSURE_IPSP(fi, event) \
+	ENSURE_ROLE_COND(fi, event, _role == OSMO_SS7_ASP_ROLE_IPSP)
+
+#define ENSURE_ASP_OR_IPSP(fi, event) \
+	ENSURE_ROLE_COND(fi, event, _role == OSMO_SS7_ASP_ROLE_ASP || _role == OSMO_SS7_ASP_ROLE_IPSP)
+
+#define ENSURE_SG_OR_IPSP(fi, event) \
+	ENSURE_ROLE_COND(fi, event, _role == OSMO_SS7_ASP_ROLE_SG || _role == OSMO_SS7_ASP_ROLE_IPSP)
 
 
 /***************
@@ -640,6 +634,7 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 	struct xua_asp_fsm_priv *xafp = fi->priv;
 	struct osmo_ss7_asp *asp = xafp->asp;
 	struct osmo_ss7_as *as;
+	struct xua_msg_part *asp_id_ie;
 	struct xua_msg *xua_in;
 	uint32_t traf_mode = 0;
 	struct xua_msg_part *part;
@@ -654,6 +649,17 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 	case XUA_ASP_E_M_ASP_DOWN_REQ:
 		/* send M3UA_MSGT_ASPSM_ASPDN and start t_ack */
 		peer_send_and_start_t_ack(fi, XUA_ASP_E_ASPSM_ASPDN);
+		break;
+	case XUA_ASP_E_ASPSM_ASPUP_ACK:
+		/* This may come in IPSP if we received ASPUP from peer before it answered our ASPUP: */
+		ENSURE_IPSP(fi, event);
+		/* Optional ASP Identifier */
+		if ((asp_id_ie = xua_msg_find_tag(data, SUA_IEI_ASP_ID))) {
+			asp->remote_asp_id = xua_msg_part_get_u32(asp_id_ie);
+			asp->remote_asp_id_present = true;
+		}
+		/* inform layer manager */
+		send_xlm_prim_simple(fi, OSMO_XLM_PRIM_M_ASP_UP, PRIM_OP_CONFIRM);
 		break;
 	case XUA_ASP_E_ASPTM_ASPAC_ACK:
 		/* only in role ASP */
@@ -776,6 +782,11 @@ static void xua_asp_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *d
 	struct xua_msg *xua_in;
 	check_stop_t_ack(fi, event);
 	switch (event) {
+	case XUA_ASP_E_ASPTM_ASPAC_ACK:
+		/* This may come in IPSP if we received ASPAC from peer before it answered our ASPAC: */
+		ENSURE_IPSP(fi, event);
+		send_xlm_prim_simple(fi, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_CONFIRM);
+		break;
 	case XUA_ASP_E_ASPSM_ASPDN_ACK:
 		/* only in role ASP */
 		ENSURE_ASP_OR_IPSP(fi, event);
@@ -913,6 +924,7 @@ static const struct osmo_fsm_state xua_asp_states[] = {
 	[XUA_ASP_S_INACTIVE] = {
 		.in_event_mask = S(XUA_ASP_E_M_ASP_ACTIVE_REQ) |
 				 S(XUA_ASP_E_M_ASP_DOWN_REQ) |
+				 S(XUA_ASP_E_ASPSM_ASPUP_ACK) |
 				 S(XUA_ASP_E_ASPTM_ASPAC) |
 				 S(XUA_ASP_E_ASPTM_ASPAC_ACK) |
 				 S(XUA_ASP_E_ASPTM_ASPIA) |
@@ -929,6 +941,7 @@ static const struct osmo_fsm_state xua_asp_states[] = {
 		.in_event_mask = S(XUA_ASP_E_ASPSM_ASPDN) |
 				 S(XUA_ASP_E_ASPSM_ASPDN_ACK) |
 				 S(XUA_ASP_E_ASPSM_ASPUP) |
+				 S(XUA_ASP_E_ASPTM_ASPAC_ACK) |
 				 S(XUA_ASP_E_ASPTM_ASPIA) |
 				 S(XUA_ASP_E_ASPTM_ASPIA_ACK) |
 				 S(XUA_ASP_E_ASPTM_ASPAC) |
