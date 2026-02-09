@@ -571,10 +571,6 @@ static void xua_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		osmo_fsm_inst_state_chg(fi, XUA_ASP_S_INACTIVE, 0, 0);
 		/* inform layer manager */
 		send_xlm_prim_simple(fi, OSMO_XLM_PRIM_M_ASP_UP, PRIM_OP_CONFIRM);
-		/* This hack should be in layer manager, but let's try
-		 * to be smart in case there is no layer manager */
-		if (!asp->lm)
-			osmo_fsm_inst_dispatch(fi, XUA_ASP_E_M_ASP_ACTIVE_REQ, NULL);
 		break;
 	case XUA_ASP_E_ASPSM_ASPUP:
 		/* only if role SG */
