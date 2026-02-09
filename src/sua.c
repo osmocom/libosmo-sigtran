@@ -1015,6 +1015,8 @@ static int sua_rx_snm_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		xua_snm_rx_dupu(asp, as, xua);
 		break;
 	case SUA_SNM_SCON:
+		xua_snm_rx_scon(asp, as, xua);
+		break;
 	case SUA_SNM_DRST:
 		LOGPASP(asp, DLSUA, LOGL_NOTICE, "Received unsupported SUA SNM message type %u\n",
 			xua->hdr.msg_type);
