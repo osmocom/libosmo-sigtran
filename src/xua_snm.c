@@ -587,7 +587,7 @@ void xua_snm_rx_dupu(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xu
 	xua_snm_upu(as, aff_pc, user, cause, info_str);
 }
 
-/* an incoming SUA/M3UA SCON was received from a remote SG */
+/* an incoming SUA/M3UA SCON was received from a remote ASP/SG/IPSP */
 void xua_snm_rx_scon(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xua_msg *xua)
 {
 	struct xua_msg_part *ie_aff_pc = xua_msg_find_tag(xua, M3UA_IEI_AFFECTED_PC);

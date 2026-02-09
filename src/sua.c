@@ -1068,6 +1068,30 @@ static int sua_rx_snm_sg(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	return rc;
 }
 
+/* received SNM message on IPSP side */
+static int sua_rx_snm_ipsp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
+{
+	struct osmo_ss7_as *as = NULL;
+	struct xua_msg_part *rctx_ie;
+	int rc = 0;
+
+	switch (xua->hdr.msg_type) {
+	case M3UA_SNM_SCON:
+		/* RFC3868 1.5.6: "The SUA layer at an ASP or IPSP MAY indicate local congestion to
+		 * an SUA peer with an SCON message." */
+		rctx_ie = xua_msg_find_tag(xua, SUA_IEI_ROUTE_CTX);
+		rc = xua_find_as_for_asp(&as, asp, rctx_ie);
+		if (rc)
+			return rc;
+		xua_snm_rx_scon(asp, as, xua);
+		break;
+	default:
+		return M3UA_ERR_UNSUPP_MSG_TYPE;
+	}
+
+	return rc;
+}
+
 static int sua_rx_snm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
 	/* SNM only permitted in ACTIVE state */
@@ -1087,6 +1111,8 @@ static int sua_rx_snm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		return sua_rx_snm_sg(asp, xua);
 	case OSMO_SS7_ASP_ROLE_ASP:
 		return sua_rx_snm_asp(asp, xua);
+	case OSMO_SS7_ASP_ROLE_IPSP:
+		return sua_rx_snm_ipsp(asp, xua);
 	default:
 		return SUA_ERR_UNSUPP_MSG_CLASS;
 	}
