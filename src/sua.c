@@ -1044,7 +1044,20 @@ static int sua_rx_snm_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 /* received SNM message on SG side */
 static int sua_rx_snm_sg(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
+	struct osmo_ss7_as *as = NULL;
+	struct xua_msg_part *rctx_ie;
+	int rc = 0;
+
 	switch (xua->hdr.msg_type) {
+	case M3UA_SNM_SCON:
+		/* RFC3868 1.5.6: "The SUA layer at an ASP or IPSP MAY indicate local congestion to
+		 * an SUA peer with an SCON message." */
+		rctx_ie = xua_msg_find_tag(xua, SUA_IEI_ROUTE_CTX);
+		rc = xua_find_as_for_asp(&as, asp, rctx_ie);
+		if (rc)
+			return rc;
+		xua_snm_rx_scon(asp, as, xua);
+		break;
 	case SUA_SNM_DAUD:	/* Audit: ASP inquires about availability of Point Codes */
 		xua_snm_rx_daud(asp, xua);
 		break;
@@ -1052,7 +1065,7 @@ static int sua_rx_snm_sg(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		return SUA_ERR_UNSUPP_MSG_TYPE;
 	}
 
-	return 0;
+	return rc;
 }
 
 static int sua_rx_snm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
