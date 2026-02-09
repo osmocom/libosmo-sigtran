@@ -523,6 +523,7 @@ static void xua_as_fsm_onenter(struct osmo_fsm_inst *fi, uint32_t old_state)
 
 	switch (role) {
 	case OSMO_SS7_ASP_ROLE_ASP:
+	case OSMO_SS7_ASP_ROLE_IPSP:
 		if (s7i->sccp) {
 			if (became_available)
 				as_snm_pc_available(as);
@@ -538,9 +539,6 @@ static void xua_as_fsm_onenter(struct osmo_fsm_inst *fi, uint32_t old_state)
 			uint32_t aff_pc = htonl(as->cfg.routing_key.pc);
 			xua_snm_pc_available(as, &aff_pc, 1, NULL, became_available);
 		}
-		break;
-	case OSMO_SS7_ASP_ROLE_IPSP:
-		/* TODO */
 		break;
 	}
 };
