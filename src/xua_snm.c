@@ -494,9 +494,7 @@ void xua_snm_rx_duna(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xu
 	int log_ss = osmo_ss7_asp_get_log_subsys(asp);
 
 	OSMO_ASSERT(ie_aff_pc);
-
-	if (asp->cfg.role != OSMO_SS7_ASP_ROLE_ASP)
-		return;
+	OSMO_ASSERT(asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP);
 
 	LOGPASP(asp, log_ss, LOGL_NOTICE, "Rx DUNA(%s) for %s\n", info_str ? info_str : "",
 		format_affected_pcs_c(xua, asp->inst, ie_aff_pc));
@@ -529,9 +527,7 @@ void xua_snm_rx_dava(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xu
 	int log_ss = osmo_ss7_asp_get_log_subsys(asp);
 
 	OSMO_ASSERT(ie_aff_pc);
-
-	if (asp->cfg.role != OSMO_SS7_ASP_ROLE_ASP)
-		return;
+	OSMO_ASSERT(asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP);
 
 	LOGPASP(asp, log_ss, LOGL_NOTICE, "Rx DAVA(%s) for %s\n", info_str ? info_str : "",
 		format_affected_pcs_c(xua, asp->inst, ie_aff_pc));
@@ -564,8 +560,7 @@ void xua_snm_rx_dupu(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xu
 	uint32_t cause_user;
 	uint16_t cause, user;
 
-	if (asp->cfg.role != OSMO_SS7_ASP_ROLE_ASP)
-		return;
+	OSMO_ASSERT(asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP);
 
 	switch (asp->cfg.proto) {
 	case OSMO_SS7_ASP_PROT_M3UA:
