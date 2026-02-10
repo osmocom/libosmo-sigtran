@@ -71,7 +71,6 @@ struct osmo_ss7_asp {
 	char *sock_name;
 
 	/* ASP Identifier for ASP-UP + NTFY, as received by the peer.
-	 * (In IPA ASPs it's used internally to hold 4-bit SLS).
 	 * FIXME: This should actually be stored in a AS-ASP relation, since it
 	 *        can be different per AS, see RFC4666 3.5.1
 	 * "The optional ASP Identifier parameter contains a unique value that
