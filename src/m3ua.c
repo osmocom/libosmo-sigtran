@@ -181,7 +181,7 @@ static const uint16_t dupu_mand_ies[] = {
 static const uint16_t drst_mand_ies[] = {
 	M3UA_IEI_AFFECTED_PC, 0
 };
-static const struct value_string m3ua_snm_msgt_names[] = {
+const struct value_string m3ua_snm_msgt_names[] = {
 	{ M3UA_SNM_DUNA,	"DUNA" },
 	{ M3UA_SNM_DAVA,	"DAVA" },
 	{ M3UA_SNM_DAUD,	"DAUD" },
@@ -1060,15 +1060,17 @@ static int m3ua_rx_snm_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		/* RFC states only permitted in ASP->SG direction, not reverse. But some
 		 * equipment still sends it to us as ASP ?!? */
 		if (asp->cfg.quirks & OSMO_SS7_ASP_QUIRK_DAUD_IN_ASP) {
-			LOGPASP(asp, DLM3UA, LOGL_NOTICE, "quirk daud_in_asp active: Accepting DAUD "
+			LOGPASP(asp, DLM3UA, LOGL_INFO, "quirk daud_in_asp active: Accepting DAUD "
 				"despite being in ASP role\n");
 			xua_snm_rx_daud(asp, xua);
 		} else {
-			LOGPASP(asp, DLM3UA, LOGL_ERROR, "DAUD not permitted in ASP role\n");
+			LOGPASP(asp, DLM3UA, LOGL_NOTICE, "DAUD not permitted in ASP role\n");
 			rc = M3UA_ERR_UNSUPP_MSG_TYPE;
 		}
 		break;
 	default:
+		LOGPASP(asp, DLM3UA, LOGL_NOTICE, "Rx %s not permitted in ASP role\n",
+			get_value_string(m3ua_snm_msgt_names, xua->hdr.msg_type));
 		rc = M3UA_ERR_UNSUPP_MSG_TYPE;
 	}
 
@@ -1101,6 +1103,8 @@ static int m3ua_rx_snm_sg(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		xua_snm_rx_daud(asp, xua);
 		break;
 	default:
+		LOGPASP(asp, DLM3UA, LOGL_NOTICE, "Rx %s not permitted in SG role\n",
+			get_value_string(m3ua_snm_msgt_names, xua->hdr.msg_type));
 		return M3UA_ERR_UNSUPP_MSG_TYPE;
 	}
 
@@ -1131,16 +1135,18 @@ static int m3ua_rx_snm_ipsp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		/* RFC states only permitted in ASP->SG direction, not reverse nor IPSP. But some
 		 * equipment still sends it to us as IPSP ?!? */
 		if (asp->cfg.quirks & OSMO_SS7_ASP_QUIRK_DAUD_IN_ASP) {
-			LOGPASP(asp, DLM3UA, LOGL_NOTICE, "quirk daud_in_asp active: Accepting DAUD "
+			LOGPASP(asp, DLM3UA, LOGL_INFO, "quirk daud_in_asp active: Accepting DAUD "
 				"despite being in IPSP role\n");
 			xua_snm_rx_daud(asp, xua);
 		} else {
-			LOGPASP(asp, DLM3UA, LOGL_ERROR, "DAUD not permitted in IPSP role\n");
+			LOGPASP(asp, DLM3UA, LOGL_NOTICE, "DAUD not permitted in IPSP role\n");
 			rc = M3UA_ERR_UNSUPP_MSG_TYPE;
 		}
 		break;
 	default:
 		/* RFC 4666 Section 1.5.2: there is no MTP3 network management status information */
+		LOGPASP(asp, DLM3UA, LOGL_NOTICE, "Rx %s not permitted in IPSP role\n",
+			get_value_string(m3ua_snm_msgt_names, xua->hdr.msg_type));
 		rc = M3UA_ERR_UNSUPP_MSG_TYPE;
 	}
 

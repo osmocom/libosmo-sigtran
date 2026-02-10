@@ -91,6 +91,7 @@ extern const struct xua_msg_class m3ua_msg_class_rkm;
 extern const struct xua_msg_class m3ua_msg_class_aspsm;
 extern const struct xua_msg_class m3ua_msg_class_asptm;
 
+extern const struct value_string m3ua_snm_msgt_names[];
 extern const struct value_string m3ua_err_names[];
 extern const struct value_string m3ua_ntfy_type_names[];
 extern const struct value_string m3ua_ntfy_stchg_names[];
