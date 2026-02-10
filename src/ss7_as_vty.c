@@ -41,6 +41,7 @@
 #ifdef WITH_TCAP_LOADSHARING
 #include "tcap_as_loadshare.h"
 #endif /* WITH_TCAP_LOADSHARING */
+#include "ss7_as.h"
 #include "ss7_asp.h"
 #include "ss7_route.h"
 #include "ss7_route_table.h"
@@ -468,7 +469,7 @@ DEFUN_ATTR(as_pc_patch_sccp, as_pc_patch_sccp_cmd,
 void ss7_vty_write_one_as(struct vty *vty, struct osmo_ss7_as *as, bool show_dyn_config)
 {
 	struct osmo_ss7_routing_key *rkey;
-	unsigned int i;
+	struct ss7_as_asp_assoc *assoc;
 
 	/* skip any dynamically allocated AS definitions */
 	if ((as->rkm_dyn_allocated || as->simple_client_allocated)
@@ -479,8 +480,8 @@ void ss7_vty_write_one_as(struct vty *vty, struct osmo_ss7_as *as, bool show_dyn
 		osmo_ss7_asp_protocol_name(as->cfg.proto), VTY_NEWLINE);
 	if (as->cfg.description)
 		vty_out(vty, "  description %s%s", as->cfg.description, VTY_NEWLINE);
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		struct osmo_ss7_asp *asp = as->cfg.asps[i];
+	llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+		struct osmo_ss7_asp *asp = assoc->asp;
 		if (!asp)
 			continue;
 		/* skip any dynamically created ASPs (e.g. auto-created at connect time) */

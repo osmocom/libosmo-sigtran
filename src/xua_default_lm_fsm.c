@@ -160,9 +160,9 @@ static struct osmo_ss7_as *find_first_as_in_asp(struct osmo_ss7_asp *asp)
 	struct osmo_ss7_as *as;
 
 	llist_for_each_entry(as, &asp->inst->as_list, list) {
-		unsigned int i;
-		for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-			if (as->cfg.asps[i] == asp)
+		struct ss7_as_asp_assoc *assoc;
+		llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+			if (assoc->asp == asp)
 				return as;
 		}
 	}

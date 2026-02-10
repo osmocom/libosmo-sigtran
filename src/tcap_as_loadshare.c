@@ -230,21 +230,13 @@ static struct tcap_range *tcap_overlap_tid(struct osmo_ss7_as *as, uint32_t pc, 
 
 static struct osmo_ss7_asp *find_asp_no_tcap_range(struct osmo_ss7_as *as)
 {
-	struct osmo_ss7_asp *asp;
-	unsigned int i;
-	unsigned int first_idx;
+	struct ss7_as_asp_assoc *assoc;
 
-	first_idx = (as->cfg.loadshare.tcap.last_asp_idx_sent + 1) % ARRAY_SIZE(as->cfg.asps);
-	i = first_idx;
-	do {
-		asp = as->cfg.asps[i];
-		if (asp && osmo_ss7_asp_active(asp) && asp->tcap.enabled) {
-			as->cfg.loadshare.tcap.last_asp_idx_sent = i;
-			return asp;
-		}
-		i = (i + 1) % ARRAY_SIZE(as->cfg.asps);
-	} while (i != first_idx);
-
+	for (unsigned int i = 0; i < as->num_assoc_asps; i++) {
+		assoc = ss7_as_asp_assoc_llist_round_robin(as, &as->cfg.loadshare.tcap.last_asp_idx_sent);
+		if (assoc && osmo_ss7_asp_active(assoc->asp) && assoc->asp->tcap.enabled)
+			return assoc->asp;
+	}
 	return NULL;
 }
 
@@ -923,6 +915,8 @@ void tcap_as_del_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp)
 	if (!asp->tcap.enabled)
 		return;
 
+	/* Update round robin state */
+	ss7_as_del_asp_update_llist_round_robin(as, asp, &as->cfg.loadshare.tcap.last_asp_idx_sent);
 	_tcap_range_asp_down(as, asp);
 	if (as->tcap.contains_pc || as->tcap.contains_ssn)
 		tcap_range_as_update_pc_ssn(as);
@@ -945,6 +939,7 @@ void tcap_disable(struct osmo_ss7_as *as)
 	as->cfg.loadshare.tcap.enabled = false;
 	as->tcap.contains_pc = false;
 	as->tcap.contains_ssn = false;
+	as->cfg.loadshare.tcap.last_asp_idx_sent = NULL;
 	tcap_trans_track_garbage_collect_stop(as);
 	tcap_trans_track_entries_free_all(as);
 }

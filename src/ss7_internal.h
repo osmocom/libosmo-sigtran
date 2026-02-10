@@ -4,6 +4,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
+#include <osmocom/core/linuxlist.h>
 #include <osmocom/netif/stream.h>
 #include <osmocom/sigtran/osmo_ss7.h>
 
@@ -27,6 +29,20 @@ int ss7_asp_m3ua_tcp_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struc
 int ss7_asp_xua_srv_conn_closed_cb(struct osmo_stream_srv *srv);
 
 int xua_tcp_segmentation_cb(struct msgb *msg);
+
+static inline struct llist_head *_ss7_llist_round_robin(struct llist_head *list, void **state)
+{
+	struct llist_head *e = *state;
+	if (!e || e->next == list)
+		e = list;
+	e = e->next;
+	if (e == list)
+		e = NULL;
+	*state = e;
+	return e;
+}
+#define ss7_llist_round_robin(list, state, struct_type, entry_name) \
+	llist_entry(_ss7_llist_round_robin(list, state), struct_type, entry_name)
 
 /* VTY */
 #define XUA_VAR_STR	"(sua|m3ua|ipa)"

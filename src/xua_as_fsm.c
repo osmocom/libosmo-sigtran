@@ -103,8 +103,9 @@ static void as_tx_duna_during_asp_act(struct osmo_ss7_as *as, struct osmo_ss7_as
 static int as_notify_all_asp(struct osmo_ss7_as *as, struct osmo_xlm_prim_notify *npar)
 {
 	struct msgb *msg;
-	unsigned int i, sent = 0;
+	unsigned int sent = 0;
 	const char *type_name, *info_name, *info_str;
+	struct ss7_as_asp_assoc *assoc;
 
 	/* we don't send notify to IPA peers! */
 	if (as->cfg.proto == OSMO_SS7_ASP_PROT_IPA)
@@ -117,11 +118,8 @@ static int as_notify_all_asp(struct osmo_ss7_as *as, struct osmo_xlm_prim_notify
 		type_name, info_name, info_str);
 
 	/* iterate over all non-DOWN ASPs and send them the message */
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		struct osmo_ss7_asp *asp = as->cfg.asps[i];
-
-		if (!asp)
-			continue;
+	llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+		struct osmo_ss7_asp *asp = assoc->asp;
 
 		/* NOTIFY are only sent by SG or IPSP role */
 		if (asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP)
@@ -165,7 +163,7 @@ static struct msgb *xua_as_encode_msg(const struct osmo_ss7_as *as, struct xua_m
 int xua_as_transmit_msg_broadcast(struct osmo_ss7_as *as, struct xua_msg *xua)
 {
 	struct osmo_ss7_asp *asp;
-	unsigned int i;
+	struct ss7_as_asp_assoc *assoc;
 	struct msgb *msg;
 	struct msgb *msg_cpy;
 	bool sent = false;
@@ -173,9 +171,9 @@ int xua_as_transmit_msg_broadcast(struct osmo_ss7_as *as, struct xua_msg *xua)
 	msg = xua_as_encode_msg(as, xua);
 	OSMO_ASSERT(msg);
 
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		asp = as->cfg.asps[i];
-		if (!asp || !osmo_ss7_asp_active(asp))
+	llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+		asp = assoc->asp;
+		if (!osmo_ss7_asp_active(asp))
 			continue;
 		msg_cpy = msgb_copy(msg, "xua_bcast_cpy");
 		if (osmo_ss7_asp_send(asp, msg_cpy) == 0)
@@ -273,13 +271,10 @@ static void fill_notify_statchg_pars(const struct osmo_fsm_inst *fi, struct osmo
 /* is any other ASP in this AS in state != DOWN? */
 static bool check_any_other_asp_not_down(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp_cmp)
 {
-	unsigned int i;
+	struct ss7_as_asp_assoc *assoc;
 
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		struct osmo_ss7_asp *asp = as->cfg.asps[i];
-		if (!asp)
-			continue;
-
+	llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+		struct osmo_ss7_asp *asp = assoc->asp;
 		if (asp_cmp == asp)
 			continue;
 
@@ -293,13 +288,10 @@ static bool check_any_other_asp_not_down(struct osmo_ss7_as *as, struct osmo_ss7
 /* is any other ASP in this AS in state ACTIVE? */
 static bool check_any_other_asp_in_active(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp_cmp)
 {
-	unsigned int i;
+	struct ss7_as_asp_assoc *assoc;
 
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		struct osmo_ss7_asp *asp = as->cfg.asps[i];
-		if (!asp)
-			continue;
-
+	llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+		struct osmo_ss7_asp *asp = assoc->asp;
 		if (asp_cmp == asp)
 			continue;
 
@@ -316,7 +308,7 @@ static bool check_any_other_asp_in_active(struct osmo_ss7_as *as, struct osmo_ss
  * */
 static void notify_any_other_active_asp_as_inactive(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp_cmp)
 {
-	unsigned int i;
+	struct ss7_as_asp_assoc *assoc;
 	struct msgb *msg;
 	struct osmo_xlm_prim_notify npar = {
 		.status_type = M3UA_NOTIFY_T_OTHER,
@@ -326,9 +318,9 @@ static void notify_any_other_active_asp_as_inactive(struct osmo_ss7_as *as, stru
 	if (asp_cmp->remote_asp_id_present)
 		npar.asp_id = asp_cmp->remote_asp_id;
 
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		struct osmo_ss7_asp *asp = as->cfg.asps[i];
-		if (!asp || !osmo_ss7_asp_active(asp))
+	llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+		struct osmo_ss7_asp *asp = assoc->asp;
+		if (!osmo_ss7_asp_active(asp))
 			continue;
 
 		if (asp_cmp == asp)

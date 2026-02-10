@@ -50,20 +50,6 @@
  * link set) or of an alternative link set (combined link set)."
  *****************************************************************************/
 
-static inline struct llist_head *_ss7_llist_round_robin(struct llist_head *list, void **state)
-{
-	struct llist_head *e = *state;
-	if (!e || e->next == list)
-		e = list;
-	e = e->next;
-	if (e == list)
-		e = NULL;
-	*state = e;
-	return e;
-}
-#define ss7_llist_round_robin(list, state, struct_type, entry_name) \
-	llist_entry(_ss7_llist_round_robin(list, state), struct_type, entry_name)
-
 /*! \brief Insert combined_link into its routing table
  *  \param[in] clset Combined link to be inserted into its routing table
  *  \returns 0 on success, negative on error
