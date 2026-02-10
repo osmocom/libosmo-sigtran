@@ -83,6 +83,13 @@ struct osmo_ss7_as_esls_entry {
 	struct osmo_ss7_asp *alt_asp;
 };
 
+struct ss7_as_asp_assoc {
+	/* Entry in (struct osmo_ss7_as*)->assoc_asp_list */
+	struct llist_head as_entry;
+	struct osmo_ss7_as *as; /* backpointer */
+	struct osmo_ss7_asp *asp; /* backpointer */
+};
+
 struct osmo_ss7_as {
 	/*! entry in 'ref osmo_ss7_instance.as_list */
 	struct llist_head list;
@@ -118,6 +125,13 @@ struct osmo_ss7_as {
 	} tcap;
 #endif /* WITH_TCAP_LOADSHARING */
 
+	/* used for load-sharing traffic mode (round robin implementation) */
+	struct ss7_as_asp_assoc *last_asp_idx_assigned;
+	struct ss7_as_asp_assoc *last_asp_idx_sent;
+
+	struct llist_head assoc_asp_list; /* list of struct ss7_as_asp_assoc */
+	unsigned int num_assoc_asps; /* amount of ss7_as_asp_assoc/ss7_asp in assoc_asp_list */
+
 	struct {
 		char *name;
 		char *description;
@@ -138,11 +152,6 @@ struct osmo_ss7_as {
 			enum osmo_ss7_as_patch_sccp_mode sccp_mode;
 		} pc_override;
 
-		struct osmo_ss7_asp *asps[16];
-		/* used for load-sharing traffic mode (round robin implementation) */
-		uint8_t last_asp_idx_assigned;
-		uint8_t last_asp_idx_sent;
-
 		struct {
 			/* How many bits from ITU SLS field (starting from least-significant-bit)
 			* to skip for routing decisions.
@@ -159,7 +168,7 @@ struct osmo_ss7_as {
 			struct {
 				bool enabled;
 				unsigned int timeout_s;
-				uint8_t last_asp_idx_sent;
+				struct ss7_as_asp_assoc *last_asp_idx_sent;
 			} tcap;
 #endif /* WITH_TCAP_LOADSHARING */
 		} loadshare;
@@ -169,11 +178,14 @@ struct osmo_ss7_as *ss7_as_alloc(struct osmo_ss7_instance *inst, const char *nam
 				 enum osmo_ss7_asp_protocol proto);
 struct osmo_ss7_asp *ss7_as_select_asp(struct osmo_ss7_as *as, const struct xua_msg *xua);
 
-unsigned int osmo_ss7_as_count_asp(const struct osmo_ss7_as *as);
 int ss7_as_add_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp);
 int ss7_as_del_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp);
 int ss7_as_get_local_role(const struct osmo_ss7_as *as);
 void ss7_as_loadshare_binding_table_reset(struct osmo_ss7_as *as);
+
+void ss7_as_del_asp_update_llist_round_robin(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, struct ss7_as_asp_assoc **state);
+#define ss7_as_asp_assoc_llist_round_robin(as, state) \
+	ss7_llist_round_robin(&(as)->assoc_asp_list, (void **)state, struct ss7_as_asp_assoc, as_entry)
 
 #define LOGPAS(as, subsys, level, fmt, args ...) \
 	_LOGSS7((as)->inst, subsys, level, "AS(%s) " fmt, (as)->cfg.name, ## args)

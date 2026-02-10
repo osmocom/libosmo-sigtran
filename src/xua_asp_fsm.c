@@ -1355,14 +1355,14 @@ static void _ipa_asp_pick_unused_sls(struct osmo_ss7_asp *asp, const struct osmo
 {
 	for (unsigned int sls = 0; sls <= 0x0f; sls++) {
 		bool used = false;
-		for (unsigned i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-			if (!as->cfg.asps[i])
+		struct ss7_as_asp_assoc *assoc;
+		llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+			struct osmo_ss7_asp *asp_it = assoc->asp;
+			if (asp_it == asp)
 				continue;
-			if (as->cfg.asps[i] == asp)
+			if (!asp_it->ipa.sls_assigned)
 				continue;
-			if (!as->cfg.asps[i]->ipa.sls_assigned)
-				continue;
-			if (as->cfg.asps[i]->ipa.sls == sls) {
+			if (asp_it->ipa.sls == sls) {
 				used = true;
 				break;
 			}

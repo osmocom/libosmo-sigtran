@@ -51,6 +51,33 @@
 #include "xua_msg.h"
 
 /***********************************************************************
+ * SS7 AS<->ASP association (N<->M arity)
+ ***********************************************************************/
+static struct ss7_as_asp_assoc *ss7_as_asp_assoc_alloc(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp)
+{
+	struct ss7_as_asp_assoc *assoc;
+	OSMO_ASSERT(as);
+	OSMO_ASSERT(asp);
+
+	assoc = talloc_zero(as->inst, struct ss7_as_asp_assoc);
+	if (!assoc)
+		return NULL;
+	assoc->as = as;
+	assoc->asp = asp;
+	llist_add_tail(&assoc->as_entry, &as->assoc_asp_list);
+	as->num_assoc_asps++;
+
+	return assoc;
+}
+
+static void ss7_as_asp_assoc_free(struct ss7_as_asp_assoc *assoc)
+{
+	llist_del(&assoc->as_entry);
+	assoc->as->num_assoc_asps--;
+	talloc_free(assoc);
+}
+
+/***********************************************************************
  * SS7 Application Server
  ***********************************************************************/
 
@@ -137,14 +164,12 @@ struct osmo_ss7_as *ss7_as_alloc(struct osmo_ss7_instance *inst, const char *nam
 	}
 	rate_ctr_group_set_name(as->ctrg, name);
 	as->inst = inst;
+	INIT_LLIST_HEAD(&as->assoc_asp_list);
 	as->cfg.name = talloc_strdup(as, name);
 	as->cfg.proto = proto;
 	as->cfg.mode = OSMO_SS7_AS_TMOD_OVERRIDE;
 	as->cfg.recovery_timeout_msec = 2000;
 	as->cfg.routing_key.l_rk_id = ss7_find_free_l_rk_id(inst);
-
-	/* Pick 1st ASP upon 1st roundrobin assignment: */
-	as->cfg.last_asp_idx_assigned = ARRAY_SIZE(as->cfg.asps) - 1;
 
 #ifdef WITH_TCAP_LOADSHARING
 	/* loadshare-tcap based id sharing */
@@ -176,7 +201,8 @@ enum osmo_ss7_asp_protocol osmo_ss7_as_get_asp_protocol(const struct osmo_ss7_as
  *  \returns 0 on success; negative in case of error */
 int ss7_as_add_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp)
 {
-	unsigned int i;
+	struct ss7_as_asp_assoc *assoc;
+	OSMO_ASSERT(as);
 	OSMO_ASSERT(asp);
 
 	if (osmo_ss7_as_has_asp(as, asp))
@@ -184,17 +210,13 @@ int ss7_as_add_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp)
 
 	LOGPAS(as, DLSS7, LOGL_INFO, "Adding ASP %s to AS\n", asp->cfg.name);
 
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		if (!as->cfg.asps[i]) {
-			as->cfg.asps[i] = asp;
-			if (asp->fi)
-				osmo_fsm_inst_dispatch(asp->fi, XUA_ASP_E_AS_ASSIGNED, as);
-			return 0;
-		}
-	}
+	assoc = ss7_as_asp_assoc_alloc(as, asp);
+	OSMO_ASSERT(assoc);
 
-	LOGPAS(as, DLSS7, LOGL_ERROR, "Failed adding ASP %s to AS, ASP table is full!\n", asp->cfg.name);
-	return -ENOSPC;
+	if (asp->fi)
+		osmo_fsm_inst_dispatch(asp->fi, XUA_ASP_E_AS_ASSIGNED, as);
+
+	return 0;
 }
 
 /*! \brief Add given ASP to given AS
@@ -213,6 +235,36 @@ int osmo_ss7_as_add_asp(struct osmo_ss7_as *as, const char *asp_name)
 	return ss7_as_add_asp(as, asp);
 }
 
+static struct ss7_as_asp_assoc *ss7_as_asp_assoc_find(const struct osmo_ss7_as *as,
+						      const struct osmo_ss7_asp *asp)
+{
+	struct ss7_as_asp_assoc *assoc;
+	llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+		if (assoc->asp == asp)
+			return assoc;
+	}
+	return NULL;
+}
+
+/* Update a given llist_round_robin state pointer which may point to an asp being freed.
+ * Selects next in list if available, or sets pointer to null. */
+void ss7_as_del_asp_update_llist_round_robin(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, struct ss7_as_asp_assoc **state)
+{
+	struct ss7_as_asp_assoc *assoc;
+
+	OSMO_ASSERT(state);
+	assoc = *state;
+	if (!assoc)
+		return;
+	if (asp != assoc->asp)
+		return;
+
+	assoc = ss7_as_asp_assoc_llist_round_robin(as, (void **)state);
+	/* If there's only one left, remove state: */
+	if (asp == assoc->asp)
+		*state = NULL;
+}
+
 /*! \brief Delete given ASP from given AS
  *  \param[in] as Application Server from which \ref asp is deleted
  *  \param[in] asp Application Server Process to delete from \ref as
@@ -221,8 +273,11 @@ int osmo_ss7_as_add_asp(struct osmo_ss7_as *as, const char *asp_name)
  * \ref as may be freed during the function call. */
 int ss7_as_del_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp)
 {
-	unsigned int i;
-	bool found = false;
+	struct ss7_as_asp_assoc *assoc;
+
+	assoc = ss7_as_asp_assoc_find(as, asp);
+	if (!assoc)
+		return -EINVAL;
 
 	LOGPAS(as, DLSS7, LOGL_INFO, "Removing ASP %s from AS\n", asp->cfg.name);
 
@@ -238,23 +293,19 @@ int ss7_as_del_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp)
 	tcap_as_del_asp(as, asp);
 #endif /* WITH_TCAP_LOADSHARING */
 
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		if (as->cfg.asps[i] == asp) {
-			as->cfg.asps[i] = NULL;
-			found = true;
-			break;
-		}
-	}
+	/* Update round robin state */
+	ss7_as_del_asp_update_llist_round_robin(as, asp, &as->last_asp_idx_assigned);
+	ss7_as_del_asp_update_llist_round_robin(as, asp, &as->last_asp_idx_sent);
+	ss7_as_asp_assoc_free(assoc);
 
 	/* RKM-dynamically allocated AS: If there are no other ASPs, destroy the AS.
 	 * RFC 4666 4.4.2: "If a Deregistration results in no more ASPs in an
 	 * Application Server, an SG MAY delete the Routing Key data."
 	 */
-	if (as->rkm_dyn_allocated && osmo_ss7_as_count_asp(as) == 0)
+	if (as->rkm_dyn_allocated && llist_empty(&as->assoc_asp_list))
 		osmo_ss7_as_destroy(as);
 
-
-	return found ? 0 : -EINVAL;
+	return 0;
 }
 
 /*! \brief Delete given ASP from given AS
@@ -277,6 +328,7 @@ int osmo_ss7_as_del_asp(struct osmo_ss7_as *as, const char *asp_name)
  *  \param[in] as Application Server to destroy */
 void osmo_ss7_as_destroy(struct osmo_ss7_as *as)
 {
+	struct ss7_as_asp_assoc *assoc;
 	OSMO_ASSERT(ss7_initialized);
 	LOGPAS(as, DLSS7, LOGL_INFO, "Destroying AS\n");
 
@@ -289,6 +341,9 @@ void osmo_ss7_as_destroy(struct osmo_ss7_as *as)
 
 	/* find any routes pointing to this AS and remove them */
 	ss7_route_table_del_routes_by_as(as->inst->rtable_system, as);
+
+	while ((assoc = llist_first_entry_or_null(&as->assoc_asp_list, struct ss7_as_asp_assoc, as_entry)))
+		ss7_as_asp_assoc_free(assoc);
 
 	as->inst = NULL;
 	llist_del(&as->list);
@@ -303,48 +358,22 @@ void osmo_ss7_as_destroy(struct osmo_ss7_as *as)
 bool osmo_ss7_as_has_asp(const struct osmo_ss7_as *as,
 			 const struct osmo_ss7_asp *asp)
 {
-	unsigned int i;
-
 	OSMO_ASSERT(ss7_initialized);
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		if (as->cfg.asps[i] == asp)
-			return true;
-	}
-	return false;
-}
-
-/*! Determine amount of ASPs associated to an AS.
- *  \param[in] as Application Server.
- *  \returns number of ASPs associated to as */
-unsigned int osmo_ss7_as_count_asp(const struct osmo_ss7_as *as)
-{
-	unsigned int i;
-	unsigned int cnt = 0;
-
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		if (as->cfg.asps[i])
-			cnt++;
-	}
-	return cnt;
+	return !!ss7_as_asp_assoc_find(as, asp);
 }
 
 /* Determine which role (SG/ASP/IPSP) we operate in.
  * return enum osmo_ss7_asp_role on success, negative otherwise. */
 int ss7_as_get_local_role(const struct osmo_ss7_as *as)
 {
-	unsigned int i;
+	struct ss7_as_asp_assoc *assoc;
 
 	/* this is a bit tricky. "osmo_ss7_as" has no configuration of a role,
 	 * only the ASPs have.  As they all must be of the same role, let's simply
 	 * find the first one and return its role */
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		struct osmo_ss7_asp *asp = as->cfg.asps[i];
+	llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry)
+		return assoc->asp->cfg.role;
 
-		if (!asp)
-			continue;
-
-		return asp->cfg.role;
-	}
 	/* No ASPs associated to this AS yet? */
 	return -1;
 }
@@ -373,16 +402,13 @@ bool osmo_ss7_as_down(const struct osmo_ss7_as *as)
 
 static struct osmo_ss7_asp *ss7_as_select_asp_override(struct osmo_ss7_as *as)
 {
-	struct osmo_ss7_asp *asp;
-	unsigned int i;
+	struct ss7_as_asp_assoc *assoc;
 
-	/* FIXME: proper selection of the ASP based on the SLS! */
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		asp = as->cfg.asps[i];
-		if (asp && osmo_ss7_asp_active(asp))
-			break;
+	llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+		if (osmo_ss7_asp_active(assoc->asp))
+			return assoc->asp;
 	}
-	return asp;
+	return NULL;
 }
 
 /* Pick an ASP serving AS in a round-robin fashion.
@@ -394,41 +420,27 @@ static struct osmo_ss7_asp *ss7_as_select_asp_override(struct osmo_ss7_as *as)
  * distribution. */
 static struct osmo_ss7_asp *ss7_as_assign_asp_roundrobin(struct osmo_ss7_as *as)
 {
-	struct osmo_ss7_asp *asp;
-	unsigned int i;
-	unsigned int first_idx;
+	struct ss7_as_asp_assoc *assoc;
 
-	first_idx = (as->cfg.last_asp_idx_assigned + 1) % ARRAY_SIZE(as->cfg.asps);
-	i = first_idx;
-	do {
-		asp = as->cfg.asps[i];
-		if (asp)
-			break;
-		i = (i + 1) % ARRAY_SIZE(as->cfg.asps);
-	} while (i != first_idx);
-	as->cfg.last_asp_idx_assigned = i;
-
-	return asp;
+	for (unsigned int i = 0; i < as->num_assoc_asps; i++) {
+		assoc = ss7_as_asp_assoc_llist_round_robin(as, &as->last_asp_idx_assigned);
+		if (assoc)
+			return assoc->asp;
+	}
+	return NULL;
 }
 
 /* Pick an active ASP serving AS in a round-robin fashion, to send a message to. */
 static struct osmo_ss7_asp *ss7_as_select_asp_roundrobin(struct osmo_ss7_as *as)
 {
-	struct osmo_ss7_asp *asp;
-	unsigned int i;
-	unsigned int first_idx;
+	struct ss7_as_asp_assoc *assoc;
 
-	first_idx = (as->cfg.last_asp_idx_sent + 1) % ARRAY_SIZE(as->cfg.asps);
-	i = first_idx;
-	do {
-		asp = as->cfg.asps[i];
-		if (asp && osmo_ss7_asp_active(asp))
-			break;
-		i = (i + 1) % ARRAY_SIZE(as->cfg.asps);
-	} while (i != first_idx);
-	as->cfg.last_asp_idx_sent = i;
-
-	return asp;
+	for (unsigned int i = 0; i < as->num_assoc_asps; i++) {
+		assoc = ss7_as_asp_assoc_llist_round_robin(as, &as->last_asp_idx_sent);
+		if (assoc && osmo_ss7_asp_active(assoc->asp))
+			return assoc->asp;
+	}
+	return NULL;
 }
 
 /* Reset loadshare bindings table. It will be filled in as needed.
@@ -437,7 +449,7 @@ static struct osmo_ss7_asp *ss7_as_select_asp_roundrobin(struct osmo_ss7_as *as)
 void ss7_as_loadshare_binding_table_reset(struct osmo_ss7_as *as)
 {
 	memset(&as->aesls_table[0], 0, sizeof(as->aesls_table));
-	as->cfg.last_asp_idx_assigned = ARRAY_SIZE(as->cfg.asps) - 1;
+	as->last_asp_idx_assigned = NULL;
 }
 
 static as_ext_sls_t osmo_ss7_instance_calc_itu_as_ext_sls(const struct osmo_ss7_as *as, uint32_t opc, uint8_t sls)
@@ -550,16 +562,15 @@ static struct osmo_ss7_asp *ss7_as_select_asp_loadshare(struct osmo_ss7_as *as, 
 /* returns NULL if multiple ASPs would need to be selected. */
 static struct osmo_ss7_asp *ss7_as_select_asp_broadcast(struct osmo_ss7_as *as)
 {
-	struct osmo_ss7_asp *asp;
+	struct ss7_as_asp_assoc *assoc;
 	struct osmo_ss7_asp *asp_found = NULL;
 
-	for (unsigned int i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		asp = as->cfg.asps[i];
-		if (!asp || !osmo_ss7_asp_active(asp))
+	llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+		if (!osmo_ss7_asp_active(assoc->asp))
 			continue;
 		if (asp_found) /* >1 ASPs selected, early return */
 			return NULL;
-		asp_found = asp;
+		asp_found = assoc->asp;
 	}
 	return asp_found;
 }

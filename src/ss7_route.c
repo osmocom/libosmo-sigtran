@@ -326,14 +326,12 @@ const char *osmo_ss7_route_name(struct osmo_ss7_route *rt, bool list_asps)
 
 	if (rt->dest.as) {
 		struct osmo_ss7_as *as = rt->dest.as;
-		int i;
 		APPEND(" via AS %s proto=%s", as->cfg.name, osmo_ss7_asp_protocol_name(as->cfg.proto));
 
 		if (list_asps) {
-			for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-				struct osmo_ss7_asp *asp = as->cfg.asps[i];
-				if (!asp)
-					continue;
+			struct ss7_as_asp_assoc *assoc;
+			llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+				struct osmo_ss7_asp *asp = assoc->asp;
 				APPEND(" ASP");
 				if (asp->cfg.name)
 					APPEND(" %s", asp->cfg.name);

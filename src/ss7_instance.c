@@ -408,11 +408,11 @@ struct osmo_ss7_asp *
 osmo_ss7_asp_find_by_proto(struct osmo_ss7_as *as,
 			   enum osmo_ss7_asp_protocol proto)
 {
-	unsigned int i;
+	struct ss7_as_asp_assoc *assoc;
 
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		if (as->cfg.asps[i] && as->cfg.asps[i]->cfg.proto == proto)
-			return as->cfg.asps[i];
+	llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+		if (assoc->asp->cfg.proto == proto)
+			return assoc->asp;
 	}
 
 	return NULL;
