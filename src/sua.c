@@ -1085,8 +1085,20 @@ static int sua_rx_snm_ipsp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 			return rc;
 		xua_snm_rx_scon(asp, as, xua);
 		break;
+	case SUA_SNM_DAUD:
+		/* RFC states only permitted in ASP->SG direction, not reverse nor IPSP. But some
+		 * equipment still sends it to us as IPSP ?!? */
+		if (asp->cfg.quirks & OSMO_SS7_ASP_QUIRK_DAUD_IN_ASP) {
+			LOGPASP(asp, DLSUA, LOGL_NOTICE, "quirk daud_in_asp active: Accepting DAUD "
+				"despite being in IPSP role\n");
+			xua_snm_rx_daud(asp, xua);
+		} else {
+			LOGPASP(asp, DLSUA, LOGL_ERROR, "DAUD not permitted in IPSP role\n");
+			rc = SUA_ERR_UNSUPP_MSG_TYPE;
+		}
+		break;
 	default:
-		return M3UA_ERR_UNSUPP_MSG_TYPE;
+		rc = M3UA_ERR_UNSUPP_MSG_TYPE;
 	}
 
 	return rc;

@@ -1127,9 +1127,21 @@ static int m3ua_rx_snm_ipsp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 			return rc;
 		xua_snm_rx_scon(asp, as, xua);
 		break;
+	case M3UA_SNM_DAUD:
+		/* RFC states only permitted in ASP->SG direction, not reverse nor IPSP. But some
+		 * equipment still sends it to us as IPSP ?!? */
+		if (asp->cfg.quirks & OSMO_SS7_ASP_QUIRK_DAUD_IN_ASP) {
+			LOGPASP(asp, DLM3UA, LOGL_NOTICE, "quirk daud_in_asp active: Accepting DAUD "
+				"despite being in IPSP role\n");
+			xua_snm_rx_daud(asp, xua);
+		} else {
+			LOGPASP(asp, DLM3UA, LOGL_ERROR, "DAUD not permitted in IPSP role\n");
+			rc = M3UA_ERR_UNSUPP_MSG_TYPE;
+		}
+		break;
 	default:
 		/* RFC 4666 Section 1.5.2: there is no MTP3 network management status information */
-		return M3UA_ERR_UNSUPP_MSG_TYPE;
+		rc = M3UA_ERR_UNSUPP_MSG_TYPE;
 	}
 
 	return rc;
