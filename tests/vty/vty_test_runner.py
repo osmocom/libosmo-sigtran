@@ -188,6 +188,43 @@ class TestVTYSTP(TestVTYBase):
             self.assertTrue(self.vty.verify("no asp " + asp_name,['']))
         self.assertTrue(self.vty.verify("no as " + as_name,['']))
 
+    # Validate one ASP can be configured to serve tons of AS:
+    def testASPservesTonsOfAS(self):
+        self.vty.enable()
+        self.assertTrue(self.vty.verify("configure terminal",['']))
+        self.assertTrue(self.vty.verify("cs7 instance 0",['']))
+        asp_name = "asp-ASPservesTonsOfAS"
+        asp_node = "asp " + asp_name + " " + str(10000) + " " + "2905 m3ua"
+        self.assertTrue(self.vty.verify(asp_node,['']))
+        self.assertEqual(self.vty.node(), 'config-cs7-asp')
+        self.assertTrue(self.vty.verify("local-ip 127.0.0.1",['']))
+        self.assertTrue(self.vty.verify("local-ip ::1",['']))
+        self.assertTrue(self.vty.verify("remote-ip 127.0.0.9",['']))
+        self.assertTrue(self.vty.verify("remote-ip ::2",['']))
+        self.assertTrue(self.vty.verify("role sg",['']))
+        self.assertTrue(self.vty.verify("sctp-role server",['']))
+        self.assertTrue(self.vty.verify("no shutdown",['']))
+        self.assertTrue(self.vty.verify("exit",["% NOTE: Skipping automatic restart of ASP since an explicit '[no] shutdown' command was entered"]))
+        num_of_as = 1000
+        for i in range(num_of_as):
+            as_name = "as-ASPservesTonsOfAS" + str(i)
+            as_node = "as " + as_name + " m3ua"
+            self.assertTrue(self.vty.verify(as_node,['']))
+            self.assertEqual(self.vty.node(), 'config-cs7-as')
+            self.assertTrue(self.vty.verify("asp " + asp_name,['']))
+            self.assertTrue(self.vty.verify("exit", ['']))
+
+        # Now remove all of them:
+        for i in range(num_of_as):
+            as_name = "as-ASPservesTonsOfAS" + str(i)
+            as_node = "as " + as_name + " m3ua"
+            self.assertTrue(self.vty.verify(as_node,['']))
+            self.assertEqual(self.vty.node(), 'config-cs7-as')
+            self.assertTrue(self.vty.verify("no asp " + asp_name,['']))
+            self.assertTrue(self.vty.verify("exit", ['']))
+            self.assertTrue(self.vty.verify("no as " + as_name,['']))
+        self.assertTrue(self.vty.verify("no asp " + asp_name,['']))
+
 if __name__ == '__main__':
     import argparse
     import sys
