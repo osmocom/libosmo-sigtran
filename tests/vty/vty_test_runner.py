@@ -149,6 +149,45 @@ class TestVTYSTP(TestVTYBase):
         print("Connected to STP through SCTP (IPv6)")
         s.close()
 
+    def testTonsOfASP(self):
+        self.vty.enable()
+        self.assertTrue(self.vty.verify("configure terminal",['']))
+        self.assertTrue(self.vty.verify("cs7 instance 0",['']))
+        num_of_asp = 1000
+        for i in range(num_of_asp):
+            asp_name = "asp-TonsofASP" + str(i)
+            asp_node = "asp " + asp_name + " " + str(10000+i) + " " + "2905 m3ua"
+            self.assertTrue(self.vty.verify(asp_node,['']))
+            self.assertEqual(self.vty.node(), 'config-cs7-asp')
+            self.assertTrue(self.vty.verify("local-ip 127.0.0.1",['']))
+            self.assertTrue(self.vty.verify("local-ip ::1",['']))
+            self.assertTrue(self.vty.verify("remote-ip 127.0.0.9",['']))
+            self.assertTrue(self.vty.verify("remote-ip ::2",['']))
+            self.assertTrue(self.vty.verify("role sg",['']))
+            self.assertTrue(self.vty.verify("sctp-role server",['']))
+            self.assertTrue(self.vty.verify("no shutdown",['']))
+            self.assertTrue(self.vty.verify("exit",["% NOTE: Skipping automatic restart of ASP since an explicit '[no] shutdown' command was entered"]))
+        as_name = "as-TonsOfASP"
+        as_node = "as " + as_name + " m3ua"
+        self.assertTrue(self.vty.verify(as_node,['']))
+        self.assertEqual(self.vty.node(), 'config-cs7-as')
+        for i in range(num_of_asp):
+            asp_name = "asp-TonsofASP" + str(i)
+            self.assertTrue(self.vty.verify("asp " + asp_name,['']))
+        self.assertTrue(self.vty.verify("exit", ['']))
+
+        # Now remove all of them:
+        self.assertTrue(self.vty.verify(as_node,['']))
+        self.assertEqual(self.vty.node(), 'config-cs7-as')
+        for i in range(num_of_asp):
+            asp_name="asp-TonsofASP" + str(i)
+            self.assertTrue(self.vty.verify("no asp " + asp_name,['']))
+        self.assertTrue(self.vty.verify("exit", ['']))
+        for i in range(num_of_asp):
+            asp_name="asp-TonsofASP" + str(i)
+            self.assertTrue(self.vty.verify("no asp " + asp_name,['']))
+        self.assertTrue(self.vty.verify("no as " + as_name,['']))
+
 if __name__ == '__main__':
     import argparse
     import sys
