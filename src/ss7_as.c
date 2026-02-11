@@ -404,8 +404,16 @@ static struct osmo_ss7_asp *ss7_as_select_asp_override(struct osmo_ss7_as *as)
 {
 	struct ss7_as_asp_assoc *assoc;
 
-	llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
-		if (osmo_ss7_asp_active(assoc->asp))
+	/* Hot path: Override traffic mode has only max 1 active ASP at a time.
+	 * Unless there's a change in state, the last ASP used to transmit is most
+	 * probably the active one: */
+	if (as->last_asp_idx_sent && osmo_ss7_asp_active(as->last_asp_idx_sent->asp))
+		return as->last_asp_idx_sent->asp;
+
+	/* Slow path: Active ASP changed, look it up: */
+	for (unsigned int i = 0; i < as->num_assoc_asps; i++) {
+		assoc = ss7_as_asp_assoc_llist_round_robin(as, &as->last_asp_idx_sent);
+		if (assoc && osmo_ss7_asp_active(assoc->asp))
 			return assoc->asp;
 	}
 	return NULL;
