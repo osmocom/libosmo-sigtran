@@ -55,6 +55,9 @@ enum ss7_asp_ctr {
 struct osmo_ss7_asp {
 	/*! entry in \ref osmo_ss7_instance.asp_list */
 	struct llist_head list;
+	struct llist_head assoc_as_list; /* list of struct ss7_as_asp_assoc */
+	unsigned int num_assoc_as; /* amount of ss7_as_asp_assoc/ss7_as in as_list */
+
 	struct osmo_ss7_instance *inst;
 
 	/*! ASP FSM */
@@ -187,6 +190,7 @@ unsigned int ss7_asp_get_all_rctx(const struct osmo_ss7_asp *asp, uint32_t *rctx
 				  const struct osmo_ss7_as *excl_as);
 unsigned int ss7_asp_get_all_rctx_be(const struct osmo_ss7_asp *asp, uint32_t *rctx, unsigned int rctx_size,
 				  const struct osmo_ss7_as *excl_as);
+struct osmo_ss7_as *ss7_asp_get_first_as(const struct osmo_ss7_asp *asp);
 
 int ss7_asp_determine_traf_mode(const struct osmo_ss7_asp *asp);
 

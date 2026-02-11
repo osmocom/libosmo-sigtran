@@ -155,21 +155,6 @@ struct xua_layer_manager_default_priv {
 #define ENSURE_SG_OR_IPSP(fi, event) \
 	ENSURE_ROLE_COND(fi, event, _role == OSMO_SS7_ASP_ROLE_SG || _role == OSMO_SS7_ASP_ROLE_IPSP)
 
-static struct osmo_ss7_as *find_first_as_in_asp(struct osmo_ss7_asp *asp)
-{
-	struct osmo_ss7_as *as;
-
-	llist_for_each_entry(as, &asp->inst->as_list, list) {
-		struct ss7_as_asp_assoc *assoc;
-		llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
-			if (assoc->asp == asp)
-				return as;
-		}
-	}
-
-	return NULL;
-}
-
 /* handle an incoming RKM registration response */
 static int handle_reg_conf(struct osmo_fsm_inst *fi, uint32_t l_rk_id, uint32_t rctx)
 {
@@ -358,7 +343,7 @@ static int lm_timer_cb(struct osmo_fsm_inst *fi)
 		lm_fsm_state_chg(fi, S_RKM_REG);
 		prim = xua_xlm_prim_alloc(OSMO_XLM_PRIM_M_RK_REG, PRIM_OP_REQUEST);
 		OSMO_ASSERT(prim);
-		as = find_first_as_in_asp(lmp->asp);
+		as = ss7_asp_get_first_as(lmp->asp);
 		if (!as) {
 			LOGPFSML(fi, LOGL_ERROR, "Unable to find AS!\n");
 			ss7_asp_disconnect_stream(lmp->asp);

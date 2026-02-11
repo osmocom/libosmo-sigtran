@@ -394,14 +394,10 @@ static void dispatch_to_all_as(struct osmo_fsm_inst *fi, uint32_t event, void *d
 {
 	struct xua_asp_fsm_priv *xafp = fi->priv;
 	struct osmo_ss7_asp *asp = xafp->asp;
-	struct osmo_ss7_instance *inst = asp->inst;
-	struct osmo_ss7_as *as;
+	struct ss7_as_asp_assoc *assoc;
 
-	llist_for_each_entry(as, &inst->as_list, list) {
-		if (!osmo_ss7_as_has_asp(as, asp))
-			continue;
-		osmo_fsm_inst_dispatch(as->fi, event, data);
-	}
+	llist_for_each_entry(assoc, &asp->assoc_as_list, asp_entry)
+		osmo_fsm_inst_dispatch(assoc->as->fi, event, data);
 }
 
 /* check if expected message was received + stop t_ack */
@@ -483,17 +479,14 @@ static void xua_t_beat_cb(void *_fi)
 
 static void common_asp_fsm_down_onenter(struct osmo_ss7_asp *asp)
 {
-	struct osmo_ss7_as *as, *as2;
-	struct osmo_ss7_instance *inst = asp->inst;
+	struct ss7_as_asp_assoc *assoc, *assoc2;
 
 	/* First notify all AS associated to the ASP that it went down: */
 	dispatch_to_all_as(asp->fi, XUA_ASPAS_ASP_DOWN_IND, asp);
 
 	/* Implicit clean up tasks: */
-	llist_for_each_entry_safe(as, as2, &inst->as_list, list) {
-		if (!osmo_ss7_as_has_asp(as, asp))
-			continue;
-
+	llist_for_each_entry_safe(assoc, assoc2, &asp->assoc_as_list, asp_entry) {
+		struct osmo_ss7_as *as = assoc->as;
 #ifdef WITH_TCAP_LOADSHARING
 			tcap_as_del_asp(as, asp);
 #endif
@@ -702,10 +695,9 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 
 		if (traf_mode) { /* if the peer has specified a traffic mode at all */
 			enum osmo_ss7_as_traffic_mode tmode = osmo_ss7_tmode_from_xua(traf_mode);
-			llist_for_each_entry(as, &asp->inst->as_list, list) {
-				if (!osmo_ss7_as_has_asp(as, asp))
-					continue;
-
+			struct ss7_as_asp_assoc *assoc;
+			llist_for_each_entry(assoc, &asp->assoc_as_list, asp_entry) {
+				as = assoc->as;
 				if (!as->cfg.mode_set_by_peer && !as->cfg.mode_set_by_vty) {
 					as->cfg.mode = tmode;
 					LOGPAS(as, DLSS7, LOGL_INFO,
@@ -1531,7 +1523,7 @@ static int ipa_asp_fsm_start(struct osmo_ss7_asp *asp, int log_level)
 {
 	struct osmo_fsm_inst *fi;
 	struct ipa_asp_fsm_priv *iafp;
-	struct osmo_ss7_as *as = ipa_find_as_for_asp(asp);
+	struct osmo_ss7_as *as = ss7_asp_get_first_as(asp);
 	const char *unit_name;
 	bool can_start = true;
 

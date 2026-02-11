@@ -39,23 +39,6 @@
 #include "ss7_internal.h"
 #include "xua_internal.h"
 
-/* if given ASP only has one AS, return that AS */
-static struct osmo_ss7_as *find_single_as_for_asp(const struct osmo_ss7_asp *asp)
-{
-	struct osmo_ss7_as *as, *as_found = NULL;
-
-	llist_for_each_entry(as, &asp->inst->as_list, list) {
-		if (!osmo_ss7_as_has_asp(as, asp))
-			continue;
-		/* check if we already had found another AS within this ASP -> not unique */
-		if (as_found)
-			return NULL;
-		as_found = as;
-	}
-
-	return as_found;
-}
-
 /* this is why we can use the M3UA constants below in a function shared between M3UA + SUA */
 osmo_static_assert(M3UA_ERR_INVAL_ROUT_CTX == SUA_ERR_INVAL_ROUT_CTX, _err_rctx);
 osmo_static_assert(M3UA_ERR_NO_CONFGD_AS_FOR_ASP == SUA_ERR_NO_CONFGD_AS_FOR_ASP, _err_as_for_asp);
@@ -94,13 +77,13 @@ int xua_find_as_for_asp(struct osmo_ss7_as **as, const struct osmo_ss7_asp *asp,
 		}
 	} else {
 		/* no explicit routing context; this only works if there is only one AS in the ASP */
-		*as = find_single_as_for_asp(asp);
-		if (!*as) {
+		if (asp->num_assoc_as != 1) {
 			LOGPASP(asp, log_ss, LOGL_ERROR,
 				"%s(): ASP sent M3UA without Routing Context IE but unable to uniquely "
 				"identify the AS for this message\n", __func__);
 			return M3UA_ERR_INVAL_ROUT_CTX;
 		}
+		*as = ss7_asp_get_first_as(asp);
 	}
 
 	return 0;

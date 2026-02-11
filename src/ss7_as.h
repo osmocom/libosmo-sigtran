@@ -86,6 +86,8 @@ struct osmo_ss7_as_esls_entry {
 struct ss7_as_asp_assoc {
 	/* Entry in (struct osmo_ss7_as*)->assoc_asp_list */
 	struct llist_head as_entry;
+	/* Entry in (struct osmo_ss7_asp*)->assoc_as_list */
+	struct llist_head asp_entry;
 	struct osmo_ss7_as *as; /* backpointer */
 	struct osmo_ss7_asp *asp; /* backpointer */
 };

@@ -502,7 +502,7 @@ ss7_asp_vty_test(config-cs7)# no asp unknown-asp
 No ASP named 'unknown-asp' found
 
 ss7_asp_vty_test(config-cs7)# no asp my-asp
-% ASP 'my-asp' currently configured in AS 'my-ass'. You must first remove the ASP from the AS configuration
+% ASP 'my-asp' currently configured in 1 AS: 'my-ass'. You must first remove the ASP from the AS configuration
 ss7_asp_vty_test(config-cs7)# as my-ass m3ua
 ss7_asp_vty_test(config-cs7-as)# no asp my-asp
 ss7_asp_vty_test(config-cs7-as)# exit
