@@ -147,7 +147,6 @@ struct msgb *ipa_gen_ping(void);
 struct msgb *ipa_to_msg(struct xua_msg *xua);
 int ipa_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua);
 int ipa_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t sls);
-struct osmo_ss7_as *ipa_find_as_for_asp(struct osmo_ss7_asp *asp);
 
 int osmo_isup_party_parse(char *out_digits, const uint8_t *in,
 			unsigned int in_num_bytes, bool odd);

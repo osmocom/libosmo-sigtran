@@ -716,7 +716,11 @@ int ipa_rx_msg_osmo_ext_tcap_routing(struct osmo_ss7_asp *asp, struct msgb *msg)
 		goto out;
 	}
 
-	as = ipa_find_as_for_asp(asp);
+	/* in the IPA case, we assume there is a 1:1 mapping between the
+	 * ASP and the AS.  An AS without ASP means there is no
+	 * connection, and an ASP without AS means that we don't (yet?)
+	 * know the identity of the peer */
+	as = ss7_asp_get_first_as(asp);
 	if (!as) {
 		LOGPASP(asp, DLTCAP, LOGL_ERROR, "Rx message for IPA ASP without AS?!\n");
 		rc = -ENOENT;

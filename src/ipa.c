@@ -169,22 +169,6 @@ static int ipa_rx_msg_ccm(struct osmo_ss7_asp *asp, struct msgb *msg)
 	return rc;
 }
 
-struct osmo_ss7_as *ipa_find_as_for_asp(struct osmo_ss7_asp *asp)
-{
-	struct osmo_ss7_as *as;
-
-	/* in the IPA case, we assume there is a 1:1 mapping between the
-	 * ASP and the AS.  An AS without ASP means there is no
-	 * connection, and an ASP without AS means that we don't (yet?)
-	 * know the identity of the peer */
-
-	llist_for_each_entry(as, &asp->inst->as_list, list) {
-		if (osmo_ss7_as_has_asp(as, asp))
-			return as;
-	}
-	return NULL;
-}
-
 /* Patch a SCCP message and add point codes to Called/Calling Party (if missing) */
 static struct msgb *patch_sccp_with_pc(const struct osmo_ss7_asp *asp, const struct msgb *sccp_msg_in,
 					uint32_t opc, uint32_t dpc)
@@ -254,7 +238,7 @@ static int ipa_rx_msg_up(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t sls
 	enum ipaccess_proto ipa_proto = osmo_ipa_msgb_cb_proto(msg);
 	struct m3ua_data_hdr data_hdr;
 	struct xua_msg *xua = NULL;
-	struct osmo_ss7_as *as = ipa_find_as_for_asp(asp);
+	struct osmo_ss7_as *as = ss7_asp_get_first_as(asp);
 	uint32_t opc, dpc;
 
 	if (!as) {

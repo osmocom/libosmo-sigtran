@@ -116,6 +116,24 @@ static void tx_daud_pc(struct osmo_ss7_asp *asp, uint32_t pc)
 	xua_tx_snm_daud(asp, rctx, num_rctx, &aff_pc, 1, "VTY");
 }
 
+static char *as_list_for_asp(const struct osmo_ss7_asp *asp, char *buf, size_t buf_len)
+{
+	struct osmo_strbuf sb = { .buf = buf, .len = buf_len };
+	const struct ss7_as_asp_assoc *assoc;
+	unsigned int count = 0;
+
+	if (asp->num_assoc_as == 0) {
+		OSMO_STRBUF_PRINTF(sb, "?");
+		return buf;
+	}
+
+	llist_for_each_entry(assoc, &asp->assoc_as_list, asp_entry) {
+		OSMO_STRBUF_PRINTF(sb, "%s%s", count != 0 ? "," : "", assoc->as->cfg.name);
+		count++;
+	}
+	return buf;
+}
+
 DEFUN_ATTR(cs7_asp_audit, cs7_asp_audit_cmd,
 	   "cs7 instance <0-15> asp NAME audit point-code POINT_CODE",
 	   CS7_STR "Instance related commands\n" "SS7 Instance Number\n"
@@ -232,7 +250,6 @@ DEFUN_ATTR(no_cs7_asp, no_cs7_asp_cmd,
 	struct osmo_ss7_instance *inst = vty->index;
 	const char *name = argv[0];
 	struct osmo_ss7_asp *asp;
-	struct osmo_ss7_as *as;
 
 	asp = osmo_ss7_asp_find_by_name(inst, name);
 	if (!asp) {
@@ -240,13 +257,12 @@ DEFUN_ATTR(no_cs7_asp, no_cs7_asp_cmd,
 		return CMD_WARNING;
 	}
 
-	llist_for_each_entry(as, &inst->as_list, list) {
-		if (osmo_ss7_as_has_asp(as, asp)) {
-			vty_out(vty, "%% ASP '%s' currently configured in AS '%s'. "
-				"You must first remove the ASP from the AS configuration%s",
-				name, as->cfg.name, VTY_NEWLINE);
-			return CMD_WARNING;
-		}
+	if (asp->num_assoc_as > 0) {
+		char as_buf[512];
+		vty_out(vty, "%% ASP '%s' currently configured in %u AS: '%s'. "
+			"You must first remove the ASP from the AS configuration%s",
+			name, asp->num_assoc_as, as_list_for_asp(asp, as_buf, sizeof(as_buf)), VTY_NEWLINE);
+		return CMD_WARNING;
 	}
 
 	osmo_ss7_asp_destroy(asp);
@@ -869,24 +885,6 @@ static void write_asp_timers_lm(struct vty *vty, const char *indent,
 		vty_out(vty, "%stimer lm %s %lu%s", indent, ss7_asp_lm_timer_names[i].str,
 			tdef->val, VTY_NEWLINE);
 	}
-}
-
-static char *as_list_for_asp(const struct osmo_ss7_asp *asp, char *buf, size_t buf_len)
-{
-	struct osmo_strbuf sb = { .buf = buf, .len = buf_len };
-	const struct osmo_ss7_as *as;
-	unsigned int count = 0;
-	llist_for_each_entry(as, &asp->inst->as_list, list) {
-		if (!osmo_ss7_as_has_asp(as, asp))
-			continue;
-		OSMO_STRBUF_PRINTF(sb, "%s%s", count != 0 ? "," : "", as->cfg.name);
-		count++;
-		break;
-	}
-
-	if (count == 0)
-		OSMO_STRBUF_PRINTF(sb, "?");
-	return buf;
 }
 
 /* Similar to osmo_sock_multiaddr_get_name_buf(), but aimed at listening sockets (only local part): */

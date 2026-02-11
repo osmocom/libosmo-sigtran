@@ -65,7 +65,9 @@ static struct ss7_as_asp_assoc *ss7_as_asp_assoc_alloc(struct osmo_ss7_as *as, s
 	assoc->as = as;
 	assoc->asp = asp;
 	llist_add_tail(&assoc->as_entry, &as->assoc_asp_list);
+	llist_add_tail(&assoc->asp_entry, &asp->assoc_as_list);
 	as->num_assoc_asps++;
+	asp->num_assoc_as++;
 
 	return assoc;
 }
@@ -74,6 +76,8 @@ static void ss7_as_asp_assoc_free(struct ss7_as_asp_assoc *assoc)
 {
 	llist_del(&assoc->as_entry);
 	assoc->as->num_assoc_asps--;
+	llist_del(&assoc->asp_entry);
+	assoc->asp->num_assoc_as--;
 	talloc_free(assoc);
 }
 

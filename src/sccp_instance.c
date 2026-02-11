@@ -562,18 +562,6 @@ int osmo_sccp_addr_ri_cmp(const struct osmo_sccp_addr *a, const struct osmo_sccp
  * Convenience function for CLIENT
  ***********************************************************************/
 
- /* Returns whether AS is already associated to any AS.
-  * Helper function for osmo_sccp_simple_client_on_ss7_id(). */
-static bool asp_serves_some_as(const struct osmo_ss7_asp *asp)
-{
-	struct osmo_ss7_as *as_i;
-	llist_for_each_entry(as_i, &asp->inst->as_list, list) {
-		if (osmo_ss7_as_has_asp(as_i, asp))
-			return true;
-	}
-	return false;
-}
-
 /*! \brief request an sccp client instance
  *  \param[in] ctx talloc context
  *  \param[in] ss7_id of the SS7/CS7 instance
@@ -695,7 +683,7 @@ osmo_sccp_simple_client_on_ss7_id(void *ctx, uint32_t ss7_id, const char *name,
 		llist_for_each_entry(asp_i, &ss7->asp_list, list) {
 			if (asp_i->cfg.proto != prot)
 				continue;
-			if (asp_serves_some_as(asp_i)) {
+			if (asp_i->num_assoc_as > 0) {
 				/* This ASP is already on another AS.
 				 * If it was on this AS, we'd have found it above. */
 				continue;

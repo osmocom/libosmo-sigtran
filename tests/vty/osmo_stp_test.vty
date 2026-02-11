@@ -657,7 +657,7 @@ OsmoSTP(config-cs7)# no asp unknown-asp
 No ASP named 'unknown-asp' found
 
 OsmoSTP(config-cs7)# no asp my-asp
-% ASP 'my-asp' currently configured in AS 'my-ass'. You must first remove the ASP from the AS configuration
+% ASP 'my-asp' currently configured in 1 AS: 'my-ass'. You must first remove the ASP from the AS configuration
 OsmoSTP(config-cs7)# as my-ass m3ua
 OsmoSTP(config-cs7-as)# no asp my-asp
 OsmoSTP(config-cs7-as)# exit

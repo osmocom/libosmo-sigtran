@@ -742,6 +742,7 @@ struct osmo_ss7_asp *ss7_asp_alloc(struct osmo_ss7_instance *inst, const char *n
 	}
 	rate_ctr_group_set_name(asp->ctrg, name);
 	asp->inst = inst;
+	INIT_LLIST_HEAD(&asp->assoc_as_list);
 	/* ASP in "no shutdown" state by default: */
 	asp->cfg.adm_state = OSMO_SS7_ASP_ADM_S_ENABLED;
 	ss7_asp_peer_init(&asp->cfg.remote);
@@ -769,7 +770,7 @@ struct osmo_ss7_asp *ss7_asp_alloc(struct osmo_ss7_instance *inst, const char *n
 
 void osmo_ss7_asp_destroy(struct osmo_ss7_asp *asp)
 {
-	struct osmo_ss7_as *as, *as2;
+	struct ss7_as_asp_assoc *assoc, *assoc2;
 
 	OSMO_ASSERT(ss7_initialized);
 	LOGPASP(asp, DLSS7, LOGL_INFO, "Destroying ASP\n");
@@ -784,8 +785,8 @@ void osmo_ss7_asp_destroy(struct osmo_ss7_asp *asp)
 
 	/* Unlink from all ASs we are part of.
 	 * Some RKM-dynamically allocated ASs may be freed as a result from this: */
-	llist_for_each_entry_safe(as, as2, &asp->inst->as_list, list)
-		ss7_as_del_asp(as, asp);
+	llist_for_each_entry_safe(assoc, assoc2, &asp->assoc_as_list, asp_entry)
+		ss7_as_del_asp(assoc->as, asp);
 
 	/* unlink from ss7_instance */
 	asp->inst = NULL;
@@ -1552,12 +1553,11 @@ static unsigned int _ss7_asp_get_all_rctx(const struct osmo_ss7_asp *asp, uint32
 					  const struct osmo_ss7_as *excl_as, bool network_byte_order)
 {
 	unsigned int count = 0;
-	struct osmo_ss7_as *as;
+	struct ss7_as_asp_assoc *assoc;
 
-	llist_for_each_entry(as, &asp->inst->as_list, list) {
+	llist_for_each_entry(assoc, &asp->assoc_as_list, asp_entry) {
+		struct osmo_ss7_as *as = assoc->as;
 		if (as == excl_as)
-			continue;
-		if (!osmo_ss7_as_has_asp(as, asp))
 			continue;
 		if (as->cfg.routing_key.context == 0)
 			continue;
@@ -1586,6 +1586,17 @@ unsigned int ss7_asp_get_all_rctx(const struct osmo_ss7_asp *asp, uint32_t *rctx
 	return _ss7_asp_get_all_rctx(asp, rctx, rctx_size, excl_as, false);
 }
 
+/* Get first AS in the ASP, or NULL if no AS associated.
+ * This is useful for instance in IPA code, where we assume only up to 1 AS is configured per ASP. */
+struct osmo_ss7_as *ss7_asp_get_first_as(const struct osmo_ss7_asp *asp)
+{
+	struct ss7_as_asp_assoc *assoc;
+	assoc = llist_first_entry_or_null(&asp->assoc_as_list, struct ss7_as_asp_assoc, asp_entry);
+	if (!assoc)
+		return NULL;
+	return assoc->as;
+}
+
 /* determine the osmo_ss7_as_traffic_mode to be used by this ASP; will
  * iterate over all AS configured for this ASP.  If they're compatible,
  * a single traffic mode is returned as enum osmo_ss7_as_traffic_mode.
@@ -1593,12 +1604,11 @@ unsigned int ss7_asp_get_all_rctx(const struct osmo_ss7_asp *asp, uint32_t *rctx
  * configured, -1 is returned */
 int ss7_asp_determine_traf_mode(const struct osmo_ss7_asp *asp)
 {
-	const struct osmo_ss7_as *as;
+	const struct ss7_as_asp_assoc *assoc;
 	int tmode = -1;
 
-	llist_for_each_entry(as, &asp->inst->as_list, list) {
-		if (!osmo_ss7_as_has_asp(as, asp))
-			continue;
+	llist_for_each_entry(assoc, &asp->assoc_as_list, asp_entry) {
+		const struct osmo_ss7_as *as = assoc->as;
 		/* we only care about traffic modes explicitly set */
 		if (!as->cfg.mode_set_by_vty)
 			continue;
