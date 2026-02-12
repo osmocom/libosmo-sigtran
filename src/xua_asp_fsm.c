@@ -556,15 +556,41 @@ static void xua_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	case XUA_ASP_E_ASPSM_ASPUP:
 		ENSURE_SG_OR_IPSP(fi, event);
 		/* Optional ASP Identifier */
-		if ((asp_id_ie = xua_msg_find_tag(data, SUA_IEI_ASP_ID))) {
+		asp_id_ie = xua_msg_find_tag(data, SUA_IEI_ASP_ID);
+
+		if (asp_id_ie) {
 			asp_id = xua_msg_part_get_u32(asp_id_ie);
 			if (!ss7_asp_check_remote_asp_id_unique(asp, asp_id)) {
 				peer_send_error(fi, M3UA_ERR_INVAL_ASP_ID);
 				return;
 			}
+			/* Expect specific ASP Id from ASP in SG role to match local config.
+			 * In IPSP, each side can have its own local different ASP Identifier. */
+			if (asp->cfg.role == OSMO_SS7_ASP_ROLE_SG) {
+				if (asp->cfg.local_asp_id_present &&
+				    asp->cfg.local_asp_id != asp_id) {
+					LOGPFSML(fi, LOGL_NOTICE, "ASPUP: Received asp_id %" PRIu32
+						 " doesn't match configured 'asp-identifier %" PRIu32"'\n",
+						 asp_id, asp->cfg.local_asp_id);
+					peer_send_error(fi, M3UA_ERR_INVAL_ASP_ID);
+					return;
+				}
+			}
 			/* Store for NTFY */
 			asp->remote_asp_id = asp_id;
 			asp->remote_asp_id_present = true;
+		} else if (asp->cfg.role == OSMO_SS7_ASP_ROLE_SG &&
+			   asp->cfg.local_asp_id_present) {
+			/* If configured in role SG, expect the ASP to send us an ASP Identifier.
+			 * RFC4666 3.8.1: 'The "ASP Identifier Required" error is sent by an SGP in
+			 * response to an ASP Up message that does not contain an ASP Identifier
+			 * parameter when the SGP requires one. The ASP SHOULD resend the ASP Up
+			 * message with an ASP Identifier.'*/
+			LOGPFSML(fi, LOGL_NOTICE, "ASPUP: Received no asp_id "
+				 "while expecting 'asp-identifier %" PRIu32"'\n",
+				 asp->cfg.local_asp_id);
+			peer_send_error(fi, M3UA_ERR_ASP_ID_REQD);
+			return;
 		}
 		/* send ACK */
 		peer_send(fi, XUA_ASP_E_ASPSM_ASPUP_ACK, NULL);
