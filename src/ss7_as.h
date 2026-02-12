@@ -183,6 +183,8 @@ struct osmo_ss7_asp *ss7_as_select_asp(struct osmo_ss7_as *as, const struct xua_
 int ss7_as_add_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp);
 int ss7_as_del_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp);
 int ss7_as_get_local_role(const struct osmo_ss7_as *as);
+struct osmo_ss7_asp *ss7_as_find_asp_by_remote_asp_id(const struct osmo_ss7_as *as, uint32_t asp_id,
+						      const struct osmo_ss7_asp *excl_asp);
 void ss7_as_loadshare_binding_table_reset(struct osmo_ss7_as *as);
 
 void ss7_as_del_asp_update_llist_round_robin(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, struct ss7_as_asp_assoc **state);

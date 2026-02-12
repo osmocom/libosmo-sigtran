@@ -468,6 +468,7 @@ static void common_asp_fsm_down_onenter(struct osmo_ss7_asp *asp)
 	dispatch_to_all_as(asp->fi, XUA_ASPAS_ASP_DOWN_IND, asp);
 
 	/* Implicit clean up tasks: */
+	asp->remote_asp_id_present = false;
 	llist_for_each_entry_safe(assoc, assoc2, &asp->assoc_as_list, asp_entry) {
 		struct osmo_ss7_as *as = assoc->as;
 #ifdef WITH_TCAP_LOADSHARING
@@ -526,6 +527,7 @@ static void xua_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	struct xua_asp_fsm_priv *xafp = fi->priv;
 	struct osmo_ss7_asp *asp = xafp->asp;
 	struct xua_msg_part *asp_id_ie;
+	uint32_t asp_id;
 
 	check_stop_t_ack(fi, event);
 
@@ -539,7 +541,12 @@ static void xua_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		ENSURE_ASP_OR_IPSP(fi, event);
 		/* Optional ASP Identifier */
 		if ((asp_id_ie = xua_msg_find_tag(data, SUA_IEI_ASP_ID))) {
-			asp->remote_asp_id = xua_msg_part_get_u32(asp_id_ie);
+			asp_id = xua_msg_part_get_u32(asp_id_ie);
+			if (!ss7_asp_check_remote_asp_id_unique(asp, asp_id)) {
+				peer_send_error(fi, M3UA_ERR_INVAL_ASP_ID);
+				return;
+			}
+			asp->remote_asp_id = asp_id;
 			asp->remote_asp_id_present = true;
 		}
 		osmo_fsm_inst_state_chg(fi, XUA_ASP_S_INACTIVE, 0, 0);
@@ -548,9 +555,15 @@ static void xua_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		break;
 	case XUA_ASP_E_ASPSM_ASPUP:
 		ENSURE_SG_OR_IPSP(fi, event);
-		/* Optional ASP Identifier: Store for NTFY */
+		/* Optional ASP Identifier */
 		if ((asp_id_ie = xua_msg_find_tag(data, SUA_IEI_ASP_ID))) {
-			asp->remote_asp_id = xua_msg_part_get_u32(asp_id_ie);
+			asp_id = xua_msg_part_get_u32(asp_id_ie);
+			if (!ss7_asp_check_remote_asp_id_unique(asp, asp_id)) {
+				peer_send_error(fi, M3UA_ERR_INVAL_ASP_ID);
+				return;
+			}
+			/* Store for NTFY */
+			asp->remote_asp_id = asp_id;
 			asp->remote_asp_id_present = true;
 		}
 		/* send ACK */
@@ -606,6 +619,7 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 	struct xua_msg *xua_in;
 	uint32_t traf_mode = 0;
 	struct xua_msg_part *part;
+	uint32_t asp_id;
 	int i;
 
 	check_stop_t_ack(fi, event);
@@ -623,7 +637,12 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 		ENSURE_IPSP(fi, event);
 		/* Optional ASP Identifier */
 		if ((asp_id_ie = xua_msg_find_tag(data, SUA_IEI_ASP_ID))) {
-			asp->remote_asp_id = xua_msg_part_get_u32(asp_id_ie);
+			asp_id = xua_msg_part_get_u32(asp_id_ie);
+			if (!ss7_asp_check_remote_asp_id_unique(asp, asp_id)) {
+				peer_send_error(fi, M3UA_ERR_INVAL_ASP_ID);
+				return;
+			}
+			asp->remote_asp_id = asp_id;
 			asp->remote_asp_id_present = true;
 		}
 		/* inform layer manager */

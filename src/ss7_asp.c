@@ -1623,6 +1623,17 @@ int ss7_asp_determine_traf_mode(const struct osmo_ss7_asp *asp)
 	return tmode;
 }
 
+bool ss7_asp_check_remote_asp_id_unique(const struct osmo_ss7_asp *asp, uint32_t remote_asp_id)
+{
+	const struct ss7_as_asp_assoc *assoc;
+
+	llist_for_each_entry(assoc, &asp->assoc_as_list, asp_entry) {
+		if (ss7_as_find_asp_by_remote_asp_id(assoc->as, remote_asp_id, asp))
+			return false;
+	}
+	return true;
+}
+
 /* process a primitive from the xUA Layer Manager (LM) */
 int osmo_xlm_sap_down(struct osmo_ss7_asp *asp, struct osmo_prim_hdr *oph)
 {

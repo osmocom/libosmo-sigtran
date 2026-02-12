@@ -378,6 +378,29 @@ bool osmo_ss7_as_has_asp(const struct osmo_ss7_as *as,
 	return !!ss7_as_asp_assoc_find(as, asp);
 }
 
+/*! \brief Find ASP with a given announced remote ASP Id
+ *  \param[in] as Application Server in which to look for \ref asp
+ *  \param[in] asp_id M3UA/SUA ASP Identifier
+ *  \param[in] excl_asp If not NULL, skip this asp from the candidates.
+ *  \returns the asp object if found, NULL otherwise */
+struct osmo_ss7_asp *ss7_as_find_asp_by_remote_asp_id(const struct osmo_ss7_as *as, uint32_t asp_id,
+						      const struct osmo_ss7_asp *excl_asp)
+{
+	struct ss7_as_asp_assoc *assoc;
+
+	llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+		struct osmo_ss7_asp *asp = assoc->asp;
+		if (!asp->remote_asp_id_present)
+			continue;
+		if (assoc->asp->remote_asp_id != asp_id)
+			continue;
+		if (excl_asp == assoc->asp)
+			continue;
+		return asp;
+	}
+	return NULL;
+}
+
 /* Determine which role (SG/ASP/IPSP) we operate in.
  * return enum osmo_ss7_asp_role on success, negative otherwise. */
 int ss7_as_get_local_role(const struct osmo_ss7_as *as)
