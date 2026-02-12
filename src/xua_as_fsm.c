@@ -128,6 +128,9 @@ static int as_notify_all_asp(struct osmo_ss7_as *as, struct osmo_xlm_prim_notify
 		if (!asp->fi || asp->fi->state == XUA_ASP_S_DOWN)
 			continue;
 
+		LOGPASP(asp, DLSS7, LOGL_INFO, "Tx NOTIFY Type %s:%s (%s)\n",
+			type_name, info_name, info_str);
+
 		/* Optional: ASP Identifier (if sent in ASP-UP) */
 		if (asp->remote_asp_id_present) {
 			npar->presence |= NOTIFY_PAR_P_ASP_ID;
@@ -135,11 +138,8 @@ static int as_notify_all_asp(struct osmo_ss7_as *as, struct osmo_xlm_prim_notify
 		} else
 			npar->presence &= ~NOTIFY_PAR_P_ASP_ID;
 
-		/* TODO: Optional Routing Context */
-
-		LOGPASP(asp, DLSS7, LOGL_INFO, "Tx NOTIFY Type %s:%s (%s)\n",
-			type_name, info_name, info_str);
 		fill_notify_route_ctx(asp, npar);
+
 		msg = encode_notify(npar);
 		osmo_ss7_asp_send(asp, msg);
 		sent++;
