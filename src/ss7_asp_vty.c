@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <netdb.h>
 #include <arpa/inet.h>
@@ -450,6 +451,35 @@ DEFUN_ATTR(asp_role, asp_role_cmd,
 	}
 
 	asp->cfg.role_set_by_vty = true;
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(asp_identifier, asp_identifier_cmd,
+	   "asp-identifier <0-4294967295>",
+	   "Specify ASP Identifier for this ASP\n"
+	   "ASP Identifier\n",
+	   CMD_ATTR_NODE_EXIT)
+{
+	struct osmo_ss7_asp *asp = vty->index;
+	int64_t id64 = 0;
+	int rc = osmo_str_to_int64(&id64, argv[0], 10, 0, UINT32_MAX);
+	if (rc < 0)
+		return CMD_WARNING;
+
+	asp->cfg.local_asp_id_present = true;
+	asp->cfg.local_asp_id = (uint32_t)id64;
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(asp_no_identifier, asp_no_identifier_cmd,
+	   "no asp-identifier",
+	   NO_STR "Specify ASP Identifier for this ASP\n",
+	   CMD_ATTR_NODE_EXIT)
+{
+	struct osmo_ss7_asp *asp = vty->index;
+
+	asp->cfg.local_asp_id_present = false;
+	asp->cfg.local_asp_id = 0;
 	return CMD_SUCCESS;
 }
 
@@ -1322,6 +1352,8 @@ void ss7_vty_write_one_asp(struct vty *vty, struct osmo_ss7_asp *asp, bool show_
 	vty_out(vty, "%s", VTY_NEWLINE);
 	if (asp->cfg.description)
 		vty_out(vty, "  description %s%s", asp->cfg.description, VTY_NEWLINE);
+	if (asp->cfg.local_asp_id_present)
+		vty_out(vty, "  asp-identifier %" PRIu32 "%s", asp->cfg.local_asp_id, VTY_NEWLINE);
 	for (i = 0; i < asp->cfg.local.host_cnt; i++) {
 		if (asp->cfg.local.host[i])
 			vty_out(vty, "  local-ip %s%s%s", asp->cfg.local.host[i],
@@ -1443,6 +1475,8 @@ void ss7_vty_init_node_asp(void)
 	install_lib_element(L_CS7_NODE, &cs7_asp_trans_proto_cmd);
 	install_lib_element(L_CS7_NODE, &no_cs7_asp_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &cfg_description_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_identifier_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_no_identifier_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_remote_ip_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_remote_ip_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_local_ip_cmd);

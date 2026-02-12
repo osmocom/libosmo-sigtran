@@ -73,12 +73,8 @@ struct osmo_ss7_asp {
 	/*! pre-formatted human readable local/remote socket name */
 	char *sock_name;
 
-	/* ASP Identifier for ASP-UP + NTFY, as received by the peer.
-	 * FIXME: This should actually be stored in a AS-ASP relation, since it
-	 *        can be different per AS, see RFC4666 3.5.1
-	 * "The optional ASP Identifier parameter contains a unique value that
-	 *  is locally significant among the ASPs that support an AS".
-	 */
+	/* Peer's ASP Identifier, as received during ASPUP (SG/IPSP) and ASPUP ACK (IPSP),
+	 * and transmitted during NOTIFY. */
 	uint32_t remote_asp_id;
 	bool remote_asp_id_present;
 
@@ -127,6 +123,13 @@ struct osmo_ss7_asp {
 		 * Can be dropped in the future once we make sure everybody uses
 		 * "[no] shutdown" explicitly in cfg files. */
 		bool explicit_shutdown_state_by_vty_since_node_enter;
+
+		/* Local ASP Identifier transmitted during ASPUP (ASP/IPSP) and ASPUP ACK (IPSP),
+		* and received during NOTIFY.
+		* "The optional ASP Identifier parameter contains a unique value
+		* that is locally significant among the ASPs that support an AS". */
+		uint32_t local_asp_id;
+		bool local_asp_id_present;
 
 		struct osmo_ss7_asp_peer local;
 		struct osmo_ss7_asp_peer remote;
