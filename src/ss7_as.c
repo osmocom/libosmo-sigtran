@@ -243,8 +243,20 @@ static struct ss7_as_asp_assoc *ss7_as_asp_assoc_find(const struct osmo_ss7_as *
 						      const struct osmo_ss7_asp *asp)
 {
 	struct ss7_as_asp_assoc *assoc;
-	llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
-		if (assoc->asp == asp)
+	OSMO_ASSERT(as);
+	OSMO_ASSERT(asp);
+
+	/* Optimization: Look for counterpart on the object with the shortest list: */
+	if (as->num_assoc_asps <= asp->num_assoc_as) {
+		llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+			if (assoc->asp == asp)
+				return assoc;
+		}
+		return NULL;
+	}
+
+	llist_for_each_entry(assoc, &asp->assoc_as_list, asp_entry) {
+		if (assoc->as == as)
 			return assoc;
 	}
 	return NULL;
