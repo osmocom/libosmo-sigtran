@@ -135,8 +135,9 @@ static int as_notify_all_asp(struct osmo_ss7_as *as, struct osmo_xlm_prim_notify
 		if (asp->remote_asp_id_present) {
 			npar->presence |= NOTIFY_PAR_P_ASP_ID;
 			npar->asp_id = asp->remote_asp_id;
-		} else
+		} else {
 			npar->presence &= ~NOTIFY_PAR_P_ASP_ID;
+		}
 
 		fill_notify_route_ctx(asp, npar);
 
