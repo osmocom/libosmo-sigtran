@@ -174,6 +174,20 @@ static int handle_reg_conf(struct osmo_fsm_inst *fi, uint32_t l_rk_id, uint32_t 
 	return 0;
 }
 
+static void reg_req_all_assoc_as(struct osmo_ss7_asp *asp)
+{
+	struct ss7_as_asp_assoc *assoc;
+	llist_for_each_entry(assoc, &asp->assoc_as_list, asp_entry) {
+		struct osmo_ss7_as *as = assoc->as;
+		struct osmo_xlm_prim *prim;
+		prim = xua_xlm_prim_alloc(OSMO_XLM_PRIM_M_RK_REG, PRIM_OP_REQUEST);
+		OSMO_ASSERT(prim);
+		prim->u.rk_reg.key = as->cfg.routing_key;
+		prim->u.rk_reg.traf_mode = as->cfg.mode;
+		osmo_xlm_sap_down(asp, &prim->oph);
+	}
+}
+
 static void lm_idle(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct xua_layer_manager_default_priv *lmp = fi->priv;
@@ -319,8 +333,6 @@ static void lm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 static int lm_timer_cb(struct osmo_fsm_inst *fi)
 {
 	struct xua_layer_manager_default_priv *lmp = fi->priv;
-	struct osmo_xlm_prim *prim;
-	struct osmo_ss7_as *as;
 
 	switch (fi->T) {
 	case SS7_ASP_LM_T_WAIT_ASP_UP:
@@ -341,18 +353,7 @@ static int lm_timer_cb(struct osmo_fsm_inst *fi)
 		 * (statically) configured at the SG for this ASP, so
 		 * let's dynamically register */
 		lm_fsm_state_chg(fi, S_RKM_REG);
-		prim = xua_xlm_prim_alloc(OSMO_XLM_PRIM_M_RK_REG, PRIM_OP_REQUEST);
-		OSMO_ASSERT(prim);
-		as = ss7_asp_get_first_as(lmp->asp);
-		if (!as) {
-			LOGPFSML(fi, LOGL_ERROR, "Unable to find AS!\n");
-			ss7_asp_disconnect_stream(lmp->asp);
-			return 0;
-		}
-		/* Fill in settings from first AS (TODO: multiple AS support) */
-		prim->u.rk_reg.key = as->cfg.routing_key;
-		prim->u.rk_reg.traf_mode = as->cfg.mode;
-		osmo_xlm_sap_down(lmp->asp, &prim->oph);
+		reg_req_all_assoc_as(lmp->asp);
 		break;
 	case SS7_ASP_LM_T_WAIT_NOTIY_RKM:
 		/* No AS has reported via NOTIFY even after dynamic RKM
