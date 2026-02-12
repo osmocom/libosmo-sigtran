@@ -531,13 +531,11 @@ static void xua_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 
 	switch (event) {
 	case XUA_ASP_E_M_ASP_UP_REQ:
-		/* only if role ASP */
 		ENSURE_ASP_OR_IPSP(fi, event);
 		/* Send M3UA_MSGT_ASPSM_ASPUP and start t_ack */
 		peer_send_and_start_t_ack(fi, XUA_ASP_E_ASPSM_ASPUP);
 		break;
 	case XUA_ASP_E_ASPSM_ASPUP_ACK:
-		/* only if role ASP */
 		ENSURE_ASP_OR_IPSP(fi, event);
 		/* Optional ASP Identifier */
 		if ((asp_id_ie = xua_msg_find_tag(data, SUA_IEI_ASP_ID))) {
@@ -549,7 +547,6 @@ static void xua_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		send_xlm_prim_simple(fi, OSMO_XLM_PRIM_M_ASP_UP, PRIM_OP_CONFIRM);
 		break;
 	case XUA_ASP_E_ASPSM_ASPUP:
-		/* only if role SG */
 		ENSURE_SG_OR_IPSP(fi, event);
 		/* Optional ASP Identifier: Store for NTFY */
 		if ((asp_id_ie = xua_msg_find_tag(data, SUA_IEI_ASP_ID))) {
@@ -564,7 +561,6 @@ static void xua_asp_fsm_down(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 				     PRIM_OP_INDICATION);
 		break;
 	case XUA_ASP_E_ASPSM_ASPDN:
-		/* only if role SG */
 		ENSURE_SG_OR_IPSP(fi, event);
 		/* The SGP MUST send an ASP Down Ack message in response
 		 * to a received ASP Down message from the ASP even if
@@ -634,7 +630,6 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 		send_xlm_prim_simple(fi, OSMO_XLM_PRIM_M_ASP_UP, PRIM_OP_CONFIRM);
 		break;
 	case XUA_ASP_E_ASPTM_ASPAC_ACK:
-		/* only in role ASP */
 		ENSURE_ASP_OR_IPSP(fi, event);
 		/* transition state and inform layer manager */
 		osmo_fsm_inst_state_chg(fi, XUA_ASP_S_ACTIVE, 0, 0);
@@ -642,7 +637,6 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 				     PRIM_OP_CONFIRM);
 		break;
 	case XUA_ASP_E_ASPSM_ASPDN_ACK:
-		/* only in role ASP */
 		ENSURE_ASP_OR_IPSP(fi, event);
 		/* transition state and inform layer manager */
 		osmo_fsm_inst_state_chg(fi, XUA_ASP_S_DOWN, 0, 0);
@@ -651,7 +645,6 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 		break;
 	case XUA_ASP_E_ASPTM_ASPAC:
 		xua_in = data;
-		/* only in role SG */
 		ENSURE_SG_OR_IPSP(fi, event);
 		if (xua_msg_find_tag(xua_in, M3UA_IEI_TRAF_MODE_TYP)) {
 			traf_mode = xua_msg_get_u32(xua_in, M3UA_IEI_TRAF_MODE_TYP);
@@ -702,7 +695,6 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 				     PRIM_OP_INDICATION);
 		break;
 	case XUA_ASP_E_ASPSM_ASPDN:
-		/* only in role SG */
 		ENSURE_SG_OR_IPSP(fi, event);
 		/* send ACK */
 		peer_send(fi, XUA_ASP_E_ASPSM_ASPDN_ACK, NULL);
@@ -712,7 +704,6 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 				     PRIM_OP_INDICATION);
 		break;
 	case XUA_ASP_E_ASPSM_ASPUP:
-		/* only if role SG */
 		ENSURE_SG_OR_IPSP(fi, event);
 		/* If an ASP Up message is received and internally the
 		 * remote ASP is already in the ASP-INACTIVE state, an
@@ -721,7 +712,6 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 		peer_send(fi, XUA_ASP_E_ASPSM_ASPUP_ACK, NULL);
 		break;
 	case XUA_ASP_E_ASPTM_ASPIA:
-		/* only in role SG */
 		ENSURE_SG_OR_IPSP(fi, event);
 		peer_send(fi, XUA_ASP_E_ASPTM_ASPIA_ACK, NULL);
 		break;
@@ -759,7 +749,6 @@ static void xua_asp_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		send_xlm_prim_simple(fi, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_CONFIRM);
 		break;
 	case XUA_ASP_E_ASPSM_ASPDN_ACK:
-		/* only in role ASP */
 		ENSURE_ASP_OR_IPSP(fi, event);
 		osmo_fsm_inst_state_chg(fi, XUA_ASP_S_DOWN, 0, 0);
 		/* inform layer manager */
@@ -767,7 +756,6 @@ static void xua_asp_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *d
 				     PRIM_OP_CONFIRM);
 		break;
 	case XUA_ASP_E_ASPTM_ASPIA_ACK:
-		/* only in role ASP */
 		ENSURE_ASP_OR_IPSP(fi, event);
 		osmo_fsm_inst_state_chg(fi, XUA_ASP_S_INACTIVE, 0, 0);
 		/* inform layer manager */
@@ -775,19 +763,16 @@ static void xua_asp_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *d
 				     PRIM_OP_CONFIRM);
 		break;
 	case XUA_ASP_E_M_ASP_DOWN_REQ:
-		/* only in role ASP */
 		ENSURE_ASP_OR_IPSP(fi, event);
 		/* send M3UA_MSGT_ASPSM_ASPDN and star t_ack */
 		peer_send_and_start_t_ack(fi, XUA_ASP_E_ASPSM_ASPDN);
 		break;
 	case XUA_ASP_E_M_ASP_INACTIVE_REQ:
-		/* only in role ASP */
 		ENSURE_ASP_OR_IPSP(fi, event);
 		/* send M3UA_MSGT_ASPTM_ASPIA and star t_ack */
 		peer_send_and_start_t_ack(fi, XUA_ASP_E_ASPTM_ASPIA);
 		break;
 	case XUA_ASP_E_ASPTM_ASPIA:
-		/* only in role SG */
 		ENSURE_SG_OR_IPSP(fi, event);
 		/* send ACK */
 		peer_send(fi, XUA_ASP_E_ASPTM_ASPIA_ACK, NULL);
@@ -797,7 +782,6 @@ static void xua_asp_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *d
 				     PRIM_OP_INDICATION);
 		break;
 	case XUA_ASP_E_ASPSM_ASPDN:
-		/* only in role SG */
 		ENSURE_SG_OR_IPSP(fi, event);
 		/* send ACK */
 		peer_send(fi, XUA_ASP_E_ASPSM_ASPDN_ACK, NULL);
@@ -807,7 +791,6 @@ static void xua_asp_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *d
 				     PRIM_OP_INDICATION);
 		break;
 	case XUA_ASP_E_ASPSM_ASPUP:
-		/* only if role SG */
 		ENSURE_SG_OR_IPSP(fi, event);
 		/* an ASP Up Ack message is returned, as well as
 		 * an Error message ("Unexpected Message), and the
@@ -821,7 +804,6 @@ static void xua_asp_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		break;
 	case XUA_ASP_E_ASPTM_ASPAC:
 		xua_in = data;
-		/* only in role SG */
 		ENSURE_SG_OR_IPSP(fi, event);
 		/* send ACK */
 		peer_send(fi, XUA_ASP_E_ASPTM_ASPAC_ACK, xua_in);
