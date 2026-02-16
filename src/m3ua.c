@@ -1197,6 +1197,7 @@ static int m3ua_rx_snm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		break;
 	case OSMO_SS7_ASP_ROLE_IPSP:
 		rc = m3ua_rx_snm_ipsp(asp, xua);
+		break;
 	default:
 		rc = M3UA_ERR_UNSUPP_MSG_CLASS;
 		break;
