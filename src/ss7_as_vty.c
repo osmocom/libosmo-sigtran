@@ -506,7 +506,7 @@ void ss7_vty_write_one_as(struct vty *vty, struct osmo_ss7_as *as, bool show_dyn
 	}
 #ifdef WITH_TCAP_LOADSHARING
 	if (as->cfg.loadshare.tcap.enabled)
-		vty_out(vty, "tcap-routing");
+		vty_out(vty, "  tcap-routing%s", VTY_NEWLINE);
 #endif /* WITH_TCAP_LOADSHARING */
 
 	if (as->cfg.recovery_timeout_msec != 2000) {
