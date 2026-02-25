@@ -309,8 +309,10 @@ static int ipa_rx_msg_up(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t sls
 		/* Third, patch this into the SCCP message and create M3UA message in XUA structure  */
 		data_hdr.si = MTP_SI_SCCP;
 #ifdef WITH_TCAP_LOADSHARING
-		/* update TCAP Transaction Tracking (Rx) */
-		tcap_as_rx_sccp_asp(as, asp, opc, dpc, msg);
+		if (as->cfg.loadshare.tcap.enabled) {
+			/* update TCAP Transaction Tracking (Rx) */
+			tcap_as_rx_sccp_asp(as, asp, opc, dpc, msg);
+		}
 #endif /* WITH_TCAP_LOADSHARING */
 		if (as->cfg.pc_override.sccp_mode == OSMO_SS7_PATCH_BOTH) {
 			struct msgb *msg_patched = patch_sccp_with_pc(asp, msg, opc, dpc);
