@@ -27,7 +27,7 @@
 
 #include <osmocom/core/hashtable.h>
 
-#include <osmocom/sigtran/osmo_ss7.h>
+#include <osmocom/tcap/tcap.h>
 
 #include <osmocom/vty/vty.h>
 #include <osmocom/vty/command.h>
@@ -35,6 +35,7 @@
 #include <osmocom/vty/telnet_interface.h>
 #include <osmocom/vty/misc.h>
 
+#include <osmocom/sigtran/osmo_ss7.h>
 #include "ss7_as.h"
 #include "ss7_asp.h"
 #include "ss7_vty.h"
@@ -125,8 +126,10 @@ DEFUN(show_cs7_as_tcaproute_name, show_cs7_as_name_tcapranges_tid_cmd,
 	return CMD_SUCCESS;
 }
 
-void tcap_as_vty_init(void)
+void tcap_as_vty_init(void *ctx)
 {
+	osmo_asn1_tcap_set_talloc_ctx(ctx);
+
 	install_lib_element_ve(&show_cs7_as_name_tcapranges_cmd);
 	install_lib_element_ve(&show_cs7_as_name_tcapranges_tid_cmd);
 }

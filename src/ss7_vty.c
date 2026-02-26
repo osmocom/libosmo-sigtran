@@ -1564,7 +1564,7 @@ void osmo_ss7_vty_init_sg(void *ctx)
 	vty_init_shared(ctx);
 
 #ifdef WITH_TCAP_LOADSHARING
-	tcap_as_vty_init();
+	tcap_as_vty_init(ctx);
 #endif /* WITH_TCAP_LOADSHARING */
 	install_node(&rtable_node, NULL);
 	install_lib_element(L_CS7_NODE, &cs7_route_table_cmd);
