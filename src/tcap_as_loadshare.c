@@ -314,7 +314,7 @@ int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32
 
 	rc = sua_addr_parse(&calling_addr, sua, SUA_IEI_SRC_ADDR);
 	if (rc < 0) {
-		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Unable to parse SCCP Destination Address\n");
+		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Unable to parse SCCP Source Address\n");
 		return -3;
 	}
 
