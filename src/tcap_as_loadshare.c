@@ -270,7 +270,7 @@ static bool ssn_contains_tcap(uint8_t ssn)
  * @param opc M3UA opc
  * @param dpc M3UA DPC
  * @param sccp_msg pointer to a msg.
- * @return 0 on successful handling, < 0 on error cases (missing IE, decoding errors)
+ * @return 0 on successful handling (TCAP fully processed, non-TCAP ignored), < 0 on error cases (missing IE, decoding errors)
  */
 int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32_t opc, uint32_t dpc, struct msgb *sccp_msg)
 {
@@ -286,7 +286,7 @@ int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32
 
 	/* TCAP uses only connectionless SCCP messages */
 	if (sua->hdr.msg_class != SUA_MSGC_CL && sua->hdr.msg_class != SUA_CL_CLDT)
-		return -2;
+		return 0;
 
 	rc = sua_addr_parse(&calling_addr, sua, SUA_IEI_SRC_ADDR);
 	if (rc < 0) {
