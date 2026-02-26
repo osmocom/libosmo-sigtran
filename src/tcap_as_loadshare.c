@@ -78,7 +78,7 @@ static int parse_tcap(struct osmo_ss7_as *as, const uint8_t *data, size_t len, s
 
 	rc = osmo_asn1_tcap_decode(tcapmsg, data, len);
 	if (rc < 0) {
-		LOGPAS(as, DLTCAP, LOGL_DEBUG, "Error decoding TCAP message rc: %d, message: %s\n",
+		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Error decoding TCAP message rc: %d, message: %s\n",
 		       rc, osmo_hexdump(data, len));
 		goto free_asn;
 	}
@@ -280,7 +280,7 @@ int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32
 	int rc;
 	struct xua_msg *sua = osmo_sccp_to_xua(sccp_msg);
 	if (!sua) {
-		LOGPAS(as, DLTCAP, LOGL_ERROR, "Unable to parse SCCP message\n");
+		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Unable to parse SCCP message\n");
 		return -1;
 	}
 
@@ -290,14 +290,14 @@ int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32
 
 	rc = sua_addr_parse(&calling_addr, sua, SUA_IEI_SRC_ADDR);
 	if (rc < 0) {
-		LOGPAS(as, DLTCAP, LOGL_ERROR, "Unable to parse SCCP Destination Address\n");
+		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Unable to parse SCCP Destination Address\n");
 		return -3;
 	}
 
 	/* retrieve + decode destination address */
 	rc = sua_addr_parse(&called_addr, sua, SUA_IEI_DEST_ADDR);
 	if (rc < 0) {
-		LOGPAS(as, DLTCAP, LOGL_ERROR, "Unable to parse SCCP Destination Address\n");
+		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Unable to parse SCCP Destination Address\n");
 		return -4;
 	}
 
@@ -325,7 +325,7 @@ int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32
 
 	rc = parse_tcap(as, ie_data->dat, ie_data->len, &parsed);
 	if (rc <= 0) {
-		LOGPAS(as, DLTCAP, LOGL_ERROR, "Failed get TCAP otid/dtid.\n");
+		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Failed get TCAP otid/dtid.\n");
 		return -7;
 	}
 
@@ -451,7 +451,7 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 	/* decode SCCP and convert to a SUA/xUA representation */
 	sua = osmo_sccp_to_xua(sccp_msg);
 	if (!sua) {
-		LOGPAS(as, DLTCAP, LOGL_ERROR, "Unable to parse SCCP message\n");
+		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Unable to parse SCCP message\n");
 		rc = -EPROTONOSUPPORT;
 		goto out_free_msgb;
 	}
@@ -465,13 +465,13 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 
 	rc = sua_addr_parse(&calling_addr, sua, SUA_IEI_SRC_ADDR);
 	if (rc < 0) {
-		LOGPAS(as, DLTCAP, LOGL_ERROR, "Unable to parse SCCP Source Address\n");
+		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Unable to parse SCCP Source Address\n");
 		goto out_free_sua;
 	}
 
 	rc = sua_addr_parse(&called_addr, sua, SUA_IEI_DEST_ADDR);
 	if (rc < 0) {
-		LOGPAS(as, DLTCAP, LOGL_ERROR, "Unable to parse SCCP Destination Address\n");
+		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Unable to parse SCCP Destination Address\n");
 		goto out_free_sua;
 	}
 
@@ -505,7 +505,7 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 
 	if (rc <= 0) {
 		rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_TCAP_FAILED);
-		LOGPAS(as, DLTCAP, LOGL_ERROR, "Failed get TCAP otid/dtid.\n");
+		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Failed get TCAP otid/dtid.\n");
 		rc = -EINVAL;
 		goto out_free_sua;
 	}
