@@ -35,8 +35,8 @@
 #include <osmocom/sigtran/sccp_helpers.h>
 #include <osmocom/sigtran/protocol/sua.h>
 #include "xua_msg.h"
-
 #include "xua_internal.h"
+#include "ss7_internal.h"
 #include "sccp_internal.h"
 
 /* libosmocore candidates */
@@ -53,14 +53,6 @@ static void msgb_put_u16le(struct msgb *msg, uint16_t val)
 	msgb_put_u8(msg, val & 0xff);
 	msgb_put_u8(msg, (val >> 8) & 0xff);
 }
-
-/*! \brief load a 24bit value as big-endian */
-static uint32_t load_24be(const void *ptr)
-{
-	const uint8_t *data = ptr;
-	return (data[0] << 16) | (data[1] << 8) | data[2];
-}
-
 
 
 /*! \brief Parse ISUP style address of BCD digets

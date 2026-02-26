@@ -44,5 +44,12 @@ static inline struct llist_head *_ss7_llist_round_robin(struct llist_head *list,
 #define ss7_llist_round_robin(list, state, struct_type, entry_name) \
 	llist_entry(_ss7_llist_round_robin(list, state), struct_type, entry_name)
 
+/*! \brief load a 24bit value as big-endian */
+static inline uint32_t load_24be(const void *ptr)
+{
+	const uint8_t *data = ptr;
+	return (data[0] << 16) | (data[1] << 8) | data[2];
+}
+
 /* VTY */
 #define XUA_VAR_STR	"(sua|m3ua|ipa)"

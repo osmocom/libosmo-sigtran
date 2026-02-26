@@ -1,4 +1,4 @@
-/* TCAP ID based ASP Load-Sharing */
+/* TCAP ID based ASP Load-Sharing, ITU-T Q.771-Q.775 */
 
 /* (C) 2025 by sysmocom s.f.m.c. GmbH <info@sysmocom.de>
  * All Rights Reserved
@@ -60,11 +60,31 @@ struct tcap_parsed {
 	uint32_t dtid;
 };
 
-static inline uint32_t tcap_id_from_octet_str(const OCTET_STRING_t *src)
+/* Obtain TID in 32BE format from octetstring.
+* returns 0 on success, negative on error. */
+static int tcap_id_from_octet_str(uint32_t *tid, const OCTET_STRING_t *src)
 {
-	OSMO_ASSERT(src->size == 4);
+	switch (src->size) {
+	case 4:
+		*tid = osmo_load32be(src->buf);
+		break;
+	case 3:
+		*tid = load_24be(src->buf);
+		break;
+	case 2:
+		*tid = osmo_load16be(src->buf);
+		break;
+	case 1:
+		*tid = src->buf[0];
+		break;
+	default:
+		LOGP(DLTCAP, LOGL_NOTICE, "Rx TCAP message with unexpected TID length %zu\n",
+		     src->size);
+		*tid = 0;
+		return -EINVAL;
+	}
 
-	return osmo_load32be(src->buf);
+	return 0;
 }
 
 /* returns negative on error, mask with any/both OTID_SET|DTID_SET on success */
@@ -88,33 +108,37 @@ static int parse_tcap(struct osmo_ss7_as *as, const uint8_t *data, size_t len, s
 	case TCAP_TCMessage_PR_begin:
 	{
 		TCAP_Begin_t part = tcapmsg->choice.begin;
-		ids->otid = tcap_id_from_octet_str(&part.otid);
+		if ((rc = tcap_id_from_octet_str(&ids->otid, &part.otid)) < 0)
+			goto free_asn;
 		rc = OTID_SET;
 		break;
 	}
 	case TCAP_TCMessage_PR_continue:
 	{
 		TCAP_Continue_t part = tcapmsg->choice.Continue;
-		ids->otid = tcap_id_from_octet_str(&part.otid);
-		ids->dtid = tcap_id_from_octet_str(&part.dtid);
+		if ((rc = tcap_id_from_octet_str(&ids->otid, &part.otid)) < 0)
+			goto free_asn;
+		if ((rc = tcap_id_from_octet_str(&ids->dtid, &part.dtid)) < 0)
+			goto free_asn;
 		rc = OTID_SET | DTID_SET;
 		break;
 	}
 	case TCAP_TCMessage_PR_end:
 	{
 		TCAP_End_t part = tcapmsg->choice.end;
-		ids->dtid = tcap_id_from_octet_str(&part.dtid);
+		if ((rc = tcap_id_from_octet_str(&ids->dtid, &part.dtid)) < 0)
+			goto free_asn;
 		rc = DTID_SET;
 		break;
 	}
 	case TCAP_TCMessage_PR_abort:
 	{
 		TCAP_Abort_t part = tcapmsg->choice.abort;
-		ids->dtid = tcap_id_from_octet_str(&part.dtid);
+		if ((rc = tcap_id_from_octet_str(&ids->dtid, &part.dtid)) < 0)
+			goto free_asn;
 		rc = DTID_SET;
 		break;
 	}
-
 	/* No TID present */
 	case TCAP_TCMessage_PR_unidirectional:
 		rc = 0;
