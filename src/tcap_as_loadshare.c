@@ -96,7 +96,7 @@ static int parse_tcap(struct osmo_ss7_as *as, const uint8_t *data, size_t len, s
 
 	OSMO_ASSERT(ids);
 
-	rc = osmo_asn1_tcap_decode(tcapmsg, data, len);
+	rc = osmo_asn1_tcap_TCMessage_decode(tcapmsg, data, len, as);
 	if (rc < 0) {
 		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Error decoding TCAP message rc: %d, message: %s\n",
 		       rc, osmo_hexdump(data, len));
