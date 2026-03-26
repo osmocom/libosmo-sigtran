@@ -236,7 +236,7 @@ void xua_snm_pc_available(struct osmo_ss7_as *as, const uint32_t *aff_pc,
 
 	/* inform remote ASPs via DUNA/DAVA */
 	llist_for_each_entry(asp, &s7i->asp_list, list) {
-		/* SSNM is only permitted for ASPs in ACTIVE state */
+		/* SSNM is only permitted for ASPs in ACTIVE state (RFC4666 4.3.1) */
 		if (!osmo_ss7_asp_active(asp))
 			continue;
 
@@ -278,7 +278,7 @@ static void sua_snm_ssn_available(struct osmo_ss7_as *as, uint32_t aff_pc, uint3
 
 	/* inform remote SUA ASPs via DUNA/DAVA */
 	llist_for_each_entry(asp, &s7i->asp_list, list) {
-		/* SSNM is only permitted for ASPs in ACTIVE state */
+		/* SSNM is only permitted for ASPs in ACTIVE state (RFC4666 4.3.1) */
 		if (!osmo_ss7_asp_active(asp))
 			continue;
 
@@ -317,7 +317,7 @@ static void xua_snm_upu(struct osmo_ss7_as *as, uint32_t dpc, uint16_t user, uin
 
 	/* inform remote ASPs via DUPU */
 	llist_for_each_entry(asp, &s7i->asp_list, list) {
-		/* SSNM is only permitted for ASPs in ACTIVE state */
+		/* SSNM is only permitted for ASPs in ACTIVE state (RFC4666 4.3.1) */
 		if (!osmo_ss7_asp_active(asp))
 			continue;
 
@@ -386,7 +386,7 @@ static void xua_snm_scon(struct osmo_ss7_as *as, const uint32_t *aff_pc, unsigne
 	 * procedures of the relevant MTP3 standard."
 	 * ie. inform remote ASPs via SCON: */
 	llist_for_each_entry(asp, &s7i->asp_list, list) {
-		/* SSNM is only permitted for ASPs in ACTIVE state */
+		/* SSNM is only permitted for ASPs in ACTIVE state (RFC4666 4.3.1) */
 		if (!osmo_ss7_asp_active(asp))
 			continue;
 
