@@ -33,6 +33,8 @@
 #include "ss7_route.h"
 #include "ss7_route_table.h"
 #include "ss7_internal.h"
+#include "xua_internal.h"
+#include "ss7_vty.h"
 
 /***********************************************************************
  * SS7 Routes
@@ -45,6 +47,57 @@ const struct value_string ss7_route_status_names[] = {
 	{ OSMO_SS7_ROUTE_STATUS_RESTRICTED, "restricted" },
 	{}
 };
+
+/* Figure 46/Q.704 (sheet 1 of 3) RSRT: "Start T10" */
+static void t10_audit_timer_start(struct osmo_ss7_route *rt)
+{
+	unsigned int t10_sec = osmo_tdef_get(rt->rtable->inst->cfg.T_defs_xua, SS7_INST_XUA_T10, OSMO_TDEF_S, -1);
+	LOGPRT(rt, DLSS7, LOGL_INFO, "Start T10 (%us)\n", t10_sec);
+	osmo_timer_schedule(&rt->t10_audit_timer, t10_sec, 0);
+}
+
+/* Figure 46/Q.704 (sheet 1 of 3) RSRT: "Stop T10" */
+static void t10_audit_timer_stop(struct osmo_ss7_route *rt)
+{
+	LOGPRT(rt, DLSS7, LOGL_INFO, "Stop T10\n");
+	osmo_timer_del(&rt->t10_audit_timer);
+}
+
+/* Figure 46/Q.704 (sheet 1 of 3) RSRT: "T10" */
+static void t10_audit_timer_cb(void *_rt)
+{
+	struct osmo_ss7_route *rt = _rt;
+
+	LOGPRT(rt, DLSS7, LOGL_INFO, "T10 timeout\n");
+
+	/* "Signalling route set test RSRT → HMRT" */
+	if (rt->dest.as) {
+		struct osmo_ss7_as *as = rt->dest.as;
+		uint32_t rctx = htonl(as->cfg.routing_key.context);
+		uint32_t aff_pc = htonl(rt->cfg.pc); /* mask = 0 */
+		char buf_pc[MAX_PC_STR_LEN];
+		struct ss7_as_asp_assoc *assoc;
+
+		llist_for_each_entry(assoc, &as->assoc_asp_list, as_entry) {
+			struct osmo_ss7_asp *asp = assoc->asp;
+
+			/* SSNM is only permitted for ASPs in ACTIVE state (RFC4666 4.3.1) */
+			if (!osmo_ss7_asp_active(asp))
+				continue;
+
+			LOGPASP(asp, DLSS7, LOGL_INFO, "T10: Tx DAUD pc=%u=%s rtcx=%u\n",
+				rt->cfg.pc,
+				osmo_ss7_pointcode_print_buf(buf_pc, sizeof(buf_pc), asp->inst, rt->cfg.pc),
+				rctx);
+			xua_tx_snm_daud(asp, &rctx, 1, &aff_pc, 1, "T10");
+		}
+	} else if (rt->dest.linkset) {
+		LOGPRT(rt, DLSS7, LOGL_INFO, "T10 on linkset route not implemented!\n");
+		return; /* no need to keep printing "not implemented" repeteadly... */
+	}
+
+	t10_audit_timer_start(rt);
+}
 
 /*! \brief Allocate a route entry
  *  \param[in] rtbl Routing Table where the route belongs
@@ -94,6 +147,9 @@ ss7_route_alloc(struct osmo_ss7_route_table *rtbl, uint32_t pc, uint32_t mask, b
 	rt->cfg.pc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, pc);
 	rt->cfg.priority = OSMO_SS7_ROUTE_PRIO_DEFAULT;
 	rt->cfg.dyn_allocated = dynamic;
+
+	osmo_timer_setup(&rt->t10_audit_timer, t10_audit_timer_cb, rt);
+
 	return rt;
 }
 
@@ -240,6 +296,8 @@ void ss7_route_destroy(struct osmo_ss7_route *rt)
 			"Destroying route: %s\n", osmo_ss7_route_name(rt, false));
 		ss7_combined_linkset_del_route(rt);
 	}
+
+	osmo_timer_del(&rt->t10_audit_timer);
 	talloc_free(rt);
 }
 
@@ -404,6 +462,31 @@ bool ss7_route_is_fully_qualified(const struct osmo_ss7_route *rt)
 
 void ss7_route_update_route_status(struct osmo_ss7_route *rt, enum osmo_ss7_route_status status)
 {
-	LOGPRT(rt, DLSS7, LOGL_NOTICE, "changed to status '%s'\n", ss7_route_status_name(status));
+	LOGPRT(rt, DLSS7, rt->status != status ? LOGL_NOTICE : LOGL_DEBUG,
+	       "changed to status '%s'\n", ss7_route_status_name(status));
+
+	/* "Signalling route set test RSRT → HMRT" */
+	if (rt->dest.as) {
+		int role = ss7_as_get_local_role(rt->dest.as);
+		if (role == OSMO_SS7_ASP_ROLE_ASP ||
+		    role == OSMO_SS7_ASP_ROLE_IPSP) {
+			/* Figure 46/Q.704 (sheet 1 of 3) - Signalling route management; signalling route set test control (RSRT) */
+			if (rt->status == OSMO_SS7_ROUTE_STATUS_AVAILABLE &&
+			    status != OSMO_SS7_ROUTE_STATUS_AVAILABLE) {
+				/* rt becomes restricted or unavailable:
+				* "Transfer prohibited received", "Start route set test RTPC → RSRT" -> "Start T10". */
+				unsigned int t10_sec = osmo_tdef_get(rt->rtable->inst->cfg.T_defs_xua, SS7_INST_XUA_T10, OSMO_TDEF_S, -1);
+				osmo_timer_schedule(&rt->t10_audit_timer, t10_sec, 0);
+				t10_audit_timer_start(rt);
+			} else if (rt->status != OSMO_SS7_ROUTE_STATUS_AVAILABLE &&
+				   status == OSMO_SS7_ROUTE_STATUS_AVAILABLE) {
+				/* rt becomes available, "Signalling route available RTAC → RSRT" -> "Stop T10". */
+				t10_audit_timer_stop(rt);
+			}
+		}
+	} else if (rt->dest.linkset) {
+		LOGPRT(rt, DLSS7, LOGL_NOTICE, "update_route_status on linkset route not implemented!\n");
+	}
+
 	rt->status = status;
 }

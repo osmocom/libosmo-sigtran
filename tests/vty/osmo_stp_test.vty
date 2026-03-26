@@ -132,7 +132,7 @@ OsmoSTP(config-cs7)# list
   no as NAME
   sccp-address NAME
   no sccp-address NAME
-  timer xua (T8) <1-999999>
+  timer xua (T8|T10) <1-999999>
   listen (sua|m3ua|ipa) <0-65534> [(sctp|tcp)]
   no listen (sua|m3ua|ipa) <0-65534> [(sctp|tcp)]
   route-table system

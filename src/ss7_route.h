@@ -34,6 +34,8 @@ struct osmo_ss7_route {
 	struct osmo_ss7_combined_linkset *clset;
 
 	enum osmo_ss7_route_status status;
+	/* T10: ITU Q.704 13.5.2 & rfc4666 4.5.3, ETSI TS 102 142 V1.1.1 */
+	struct osmo_timer_list t10_audit_timer;
 
 	struct {
 		/*! pointer to linkset (destination) of route */

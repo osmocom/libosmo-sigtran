@@ -22,6 +22,7 @@ struct osmo_sccp_instance;
 enum ss7_instance_xua_timer {
 	/* 0 kept unused on purpose since it's handled specially by osmo_fsm */
 	SS7_INST_XUA_T8 = 1, /* Q.704 T8 */
+	SS7_INST_XUA_T10, /* Q.704 T10 */
 	/* This must remain the last item: */
 	SS7_INST_XUA_TIMERS_LEN
 };
@@ -29,6 +30,7 @@ extern const struct value_string ss7_instance_xua_timer_names[];
 extern const struct osmo_tdef ss7_instance_xua_timer_defaults[SS7_INST_XUA_TIMERS_LEN];
 /* According to SUA RFC3868 Section 8, M3UA RFC4666 Section 4.3.4.1 */
 #define SS7_INST_XUA_DEFAULT_T8_MSEC	1000
+#define SS7_INST_XUA_DEFAULT_T10_SEC	45
 
 enum ss7_instance_ctr {
 	SS7_INST_CTR_PKT_RX_TOTAL,

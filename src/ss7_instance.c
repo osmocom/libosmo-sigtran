@@ -67,12 +67,16 @@ const struct osmo_tdef ss7_instance_xua_timer_defaults[SS7_INST_XUA_TIMERS_LEN] 
 	{ .T = SS7_INST_XUA_T8,	.default_val = SS7_INST_XUA_DEFAULT_T8_MSEC,	.unit = OSMO_TDEF_MS,
 	  .desc = "T8 - Transfer prohibited inhibition timer (transient solution) (ms)",
 	  .min_val = 800, .max_val = 1200},
+	{ .T = SS7_INST_XUA_T10, .default_val = SS7_INST_XUA_DEFAULT_T10_SEC, .unit = OSMO_TDEF_S,
+	  .desc = "T10 - Waiting to repeat signalling route set test message (s)",
+	  .min_val = 30, .max_val = 60},
 	{}
 };
 
 /* ITU Q.704 16.8 Timers and timer values */
 const struct value_string ss7_instance_xua_timer_names[] = {
 	{ SS7_INST_XUA_T8, "T8" },
+	{ SS7_INST_XUA_T10, "T10" },
 	{}
 };
 
