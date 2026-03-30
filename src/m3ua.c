@@ -383,7 +383,6 @@ static struct xua_msg *m3ua_gen_error_msg(uint32_t err_code, struct msgb *msg)
 {
 	struct xua_msg *err = m3ua_gen_error(err_code);
 	struct xua_msg *xua;
-	struct xua_msg_part *na_ie;
 	unsigned int len_max_40;
 
 	if (!err)
@@ -393,17 +392,26 @@ static struct xua_msg *m3ua_gen_error_msg(uint32_t err_code, struct msgb *msg)
 	case M3UA_ERR_INVAL_NET_APPEAR:
 		/* Include NA IE in Error message. */
 		xua = xua_from_msg(M3UA_VERSION, msgb_length(msg), msgb_data(msg));
-		na_ie = xua_msg_find_tag(xua, M3UA_IEI_NET_APPEAR);
-		xua_msg_add_data(err, M3UA_IEI_NET_APPEAR, na_ie->len, na_ie->dat);
+		if (xua)
+			xua_msg_copy_part(err, M3UA_IEI_NET_APPEAR, xua, M3UA_IEI_NET_APPEAR);
+		xua_msg_free(xua);
+		break;
+	case M3UA_ERR_INVAL_ROUT_CTX:
+		/* Include Routing Context IE if available: */
+		xua = xua_from_msg(M3UA_VERSION, msgb_length(msg), msgb_data(msg));
+		if (xua)
+			xua_msg_copy_part(err, M3UA_IEI_ROUTE_CTX, xua, M3UA_IEI_ROUTE_CTX);
 		xua_msg_free(xua);
 		break;
 	default:
-		len_max_40 = msgb_length(msg);
-		if (len_max_40 > 40)
-			len_max_40 = 40;
-
-		xua_msg_add_data(err, M3UA_IEI_DIAG_INFO, len_max_40, msgb_data(msg));
+		break;
 	}
+
+	len_max_40 = msgb_length(msg);
+	if (len_max_40 > 40)
+		len_max_40 = 40;
+
+	xua_msg_add_data(err, M3UA_IEI_DIAG_INFO, len_max_40, msgb_data(msg));
 
 	return err;
 }
