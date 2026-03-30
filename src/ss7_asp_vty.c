@@ -705,9 +705,33 @@ DEFUN_ATTR(asp_block, asp_block_cmd,
 	   "Allows a SCTP Association with ASP, but doesn't let it become active\n",
 	   CMD_ATTR_NODE_EXIT)
 {
-	/* TODO */
-	vty_out(vty, "Not supported yet%s", VTY_NEWLINE);
-	return CMD_WARNING;
+	struct osmo_ss7_asp *asp = vty->index;
+
+	if (asp->cfg.proto != OSMO_SS7_ASP_PROT_M3UA &&
+	    asp->cfg.proto != OSMO_SS7_ASP_PROT_SUA) {
+		vty_out(vty, "%% 'block' not supported for ASP protocol %s%s",
+			osmo_ss7_asp_protocol_name(asp->cfg.proto), VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP) {
+		vty_out(vty, "%% 'block' not yet implemented in 'role asp'%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	ss7_asp_set_blocked(asp, true);
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(asp_no_block, asp_no_block_cmd,
+	   "no block",
+	   NO_STR "Allows a SCTP Association with ASP, but doesn't let it become active\n",
+	   CMD_ATTR_NODE_EXIT)
+{
+	struct osmo_ss7_asp *asp = vty->index;
+
+	ss7_asp_set_blocked(asp, false);
+	return CMD_SUCCESS;
 }
 
 DEFUN_ATTR(asp_shutdown, asp_shutdown_cmd,
@@ -1492,6 +1516,7 @@ void ss7_vty_init_node_asp(void)
 	gen_asp_timer_lm_cmd_strs(&asp_timer_lm_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_timer_lm_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_block_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_no_block_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_shutdown_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_shutdown_cmd);
 }

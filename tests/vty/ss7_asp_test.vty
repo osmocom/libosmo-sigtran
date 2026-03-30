@@ -299,6 +299,7 @@ ss7_asp_vty_test(config-cs7-asp)# list
   timer xua (ack|beat) <1-999999>
   timer lm (wait_asp_up|wait_notify|wait_notify_rkm|wait_rk_reg_resp) <1-999999>
   block
+  no block
   shutdown
   no shutdown
 ...
@@ -330,6 +331,7 @@ ss7_asp_vty_test(config-cs7-asp)# no ?
   tcp-param          Configure TCP parameters
   destination-audit  Configure ASP Auditing (xUA DAUD)
   quirk              Disable quirk to work around interop issues
+  block              Allows a SCTP Association with ASP, but doesn't let it become active
   shutdown           Terminates SCTP association; New associations will be rejected
 ...
 

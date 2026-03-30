@@ -655,7 +655,7 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 	struct xua_msg_part *asp_id_ie;
 	struct xua_msg *xua_in;
 	uint32_t traf_mode = 0;
-	struct xua_msg_part *part;
+	struct xua_msg_part *rctx_ie;
 	uint32_t asp_id;
 	int i;
 
@@ -711,9 +711,9 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 				return;
 			}
 		}
-		if ((part = xua_msg_find_tag(xua_in, M3UA_IEI_ROUTE_CTX))) {
-			for (i = 0; i < part->len / sizeof(uint32_t); i++) {
-				uint8_t *rctx_raw = &part->dat[i * sizeof(uint32_t)];
+		if ((rctx_ie = xua_msg_find_tag(xua_in, M3UA_IEI_ROUTE_CTX))) {
+			for (i = 0; i < rctx_ie->len / sizeof(uint32_t); i++) {
+				uint8_t *rctx_raw = &rctx_ie->dat[i * sizeof(uint32_t)];
 				uint32_t rctx = osmo_load32be(rctx_raw);
 				as = ss7_asp_find_as_by_rctx(asp, rctx);
 				if (!as) {
@@ -724,6 +724,23 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 					return;
 				}
 			}
+		}
+
+		if (asp->cfg.adm_state.blocked) {
+			/* RFC4666 (M3UA) 3.8.1: The "Refused - Management Blocking" error is sent
+			 * when an ASP Up or ASP Active message is received and the request is refused
+			 * for management reasons (e.g., management lockout).  If this error is in
+			 * response to an ASP Active message, the Routing Context(s) in the ASP Active
+			 * message SHOULD be included in the Error message."
+			 * RC4666 (M3UA) 4.3.4.3: "If for any local reason (e.g., management lockout)
+			 * the SGP responds to an ASP Active message with an Error message with reason
+			 * Refused Management Blocking".
+			 */
+			LOGPFSML(fi, LOGL_INFO, "ASPAC: Reject due to ASP in administrative state 'block'\n");
+			peer_send_error_ext(fi, SUA_ERR_REFUSED_MGMT_BLOCKING,
+					    rctx_ie ? rctx_ie->dat : NULL,
+					    rctx_ie ? rctx_ie->len : 0);
+			return;
 		}
 
 		if (traf_mode) { /* if the peer has specified a traffic mode at all */
