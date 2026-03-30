@@ -172,6 +172,7 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 	uint32_t rk_id, rctx, _tmode, dpc;
 	enum osmo_ss7_as_traffic_mode tmode;
 	struct osmo_ss7_as *as;
+	struct ss7_as_asp_assoc *assoc;
 	struct osmo_ss7_route *rt;
 	char namebuf[32];
 	bool as_already_in_array;
@@ -264,19 +265,27 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 		}
 		if (_tmode) {  /* if the peer has specified a traffic mode at all */
 			tmode = osmo_ss7_tmode_from_xua(_tmode);
-			if (!as->cfg.mode_set_by_peer && !as->cfg.mode_set_by_vty) {
-				as->cfg.mode = tmode;
-				LOGPAS(as, DLSS7, LOGL_INFO,
-					"RKM: Traffic mode set dynamically by peer to %s\n",
-					osmo_ss7_as_traffic_mode_name(as->cfg.mode));
-			/* verify if existing AS has same traffic-mode as new request (if any) */
-			} else if (!osmo_ss7_as_tmode_compatible_xua(as, _tmode)) {
-				LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: Non-matching Traffic Mode %s\n",
-					osmo_ss7_as_traffic_mode_name(tmode));
-				msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_UNSUPP_TRAF_MODE, 0);
-				return -1;
+			/* First validate peer not trying to establish an incompatible traffic mode: */
+			llist_for_each_entry(assoc, &asp->assoc_as_list, asp_entry) {
+				if (!osmo_ss7_as_tmode_compatible_xua(assoc->as, _tmode)) {
+					LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: Non-matching Traffic Mode %s\n",
+						osmo_ss7_as_traffic_mode_name(tmode));
+					msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_UNSUPP_TRAF_MODE, 0);
+					return -1;
+				}
 			}
-			as->cfg.mode_set_by_peer = true;
+
+			/* Update traffic mode in all AS associated with the ASP: */
+			llist_for_each_entry(assoc, &asp->assoc_as_list, asp_entry) {
+				as = assoc->as;
+				if (!as->cfg.mode_set_by_peer && !as->cfg.mode_set_by_vty) {
+					as->cfg.mode = tmode;
+					 LOGPAS(as, DLSS7, LOGL_INFO,
+						"RKM: Traffic mode set dynamically by peer to %s\n",
+						osmo_ss7_as_traffic_mode_name(as->cfg.mode));
+				}
+				as->cfg.mode_set_by_peer = true;
+			}
 		}
 	} else {
 		/* Create an AS for this routing key */

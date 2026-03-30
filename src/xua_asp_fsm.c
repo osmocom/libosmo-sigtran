@@ -641,6 +641,7 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 	struct xua_asp_fsm_priv *xafp = fi->priv;
 	struct osmo_ss7_asp *asp = xafp->asp;
 	struct osmo_ss7_as *as;
+	struct ss7_as_asp_assoc *assoc;
 	struct xua_msg_part *asp_id_ie;
 	struct xua_msg *xua_in;
 	uint32_t traf_mode = 0;
@@ -715,8 +716,16 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 		}
 
 		if (traf_mode) { /* if the peer has specified a traffic mode at all */
+			/* First validate peer not trying to establish an incompatible traffic mode: */
+			llist_for_each_entry(assoc, &asp->assoc_as_list, asp_entry) {
+				if (!osmo_ss7_as_tmode_compatible_xua(assoc->as, traf_mode)) {
+					peer_send_error(fi, M3UA_ERR_UNSUPP_TRAF_MOD_TYP);
+					return;
+				}
+			}
+
+			/* Update traffic mode in all AS associated with the ASP: */
 			enum osmo_ss7_as_traffic_mode tmode = osmo_ss7_tmode_from_xua(traf_mode);
-			struct ss7_as_asp_assoc *assoc;
 			llist_for_each_entry(assoc, &asp->assoc_as_list, asp_entry) {
 				as = assoc->as;
 				if (!as->cfg.mode_set_by_peer && !as->cfg.mode_set_by_vty) {
@@ -724,9 +733,6 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 					LOGPAS(as, DLSS7, LOGL_INFO,
 						"ASPAC: Traffic mode set dynamically by peer to %s\n",
 						osmo_ss7_as_traffic_mode_name(as->cfg.mode));
-				} else if (!osmo_ss7_as_tmode_compatible_xua(as, traf_mode)) {
-					peer_send_error(fi, M3UA_ERR_UNSUPP_TRAF_MOD_TYP);
-					return;
 				}
 				as->cfg.mode_set_by_peer = true;
 			}
