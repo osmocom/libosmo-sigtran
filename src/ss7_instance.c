@@ -240,25 +240,41 @@ bool osmo_ss7_pc_is_local(const struct osmo_ss7_instance *inst, uint32_t pc)
 	return false;
 }
 
+/* Next RCTX, skipping special value "0" meaning no context. */
+static inline uint32_t rctx_inc(uint32_t rctx)
+{
+	return (rctx == UINT32_MAX) ? 1 : rctx + 1;
+}
+
 int osmo_ss7_find_free_rctx(struct osmo_ss7_instance *inst)
 {
-	int32_t rctx;
+	uint32_t rctx = next_rctx;
 
-	for (rctx = next_rctx; rctx; rctx = ++next_rctx) {
-		if (!osmo_ss7_as_find_by_rctx(inst, next_rctx))
+	OSMO_ASSERT(next_rctx != 0);
+
+	do {
+		if (!osmo_ss7_as_find_by_rctx(inst, rctx)) {
+			next_rctx = rctx_inc(rctx);
 			return rctx;
-	}
+		}
+		rctx = rctx_inc(rctx);
+	} while (rctx != next_rctx);
+
 	return -1;
 }
 
 uint32_t ss7_find_free_l_rk_id(struct osmo_ss7_instance *inst)
 {
-	uint32_t l_rk_id;
+	uint32_t l_rk_id = next_l_rk_id;
 
-	for (l_rk_id = next_l_rk_id; next_l_rk_id; l_rk_id = ++next_l_rk_id) {
-		if (!osmo_ss7_as_find_by_l_rk_id(inst, next_l_rk_id))
+	do {
+		if (!osmo_ss7_as_find_by_l_rk_id(inst, l_rk_id)) {
+			next_l_rk_id = l_rk_id + 1;
 			return l_rk_id;
-	}
+		}
+		l_rk_id++;
+	} while (l_rk_id != next_l_rk_id);
+
 	return -1;
 }
 
