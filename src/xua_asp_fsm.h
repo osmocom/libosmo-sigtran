@@ -31,6 +31,9 @@ enum xua_asp_event {
 	/* The ASP was added to an AS. data: (struct osmo_ss7_as *) */
 	XUA_ASP_E_AS_ASSIGNED,
 
+	/* The ASP became administratively blocked */
+	XUA_ASP_E_ADM_BLOCKED,
+
 	/* IPA specific */
 	IPA_ASP_E_ID_RESP,
 	IPA_ASP_E_ID_ACK,

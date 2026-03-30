@@ -1540,6 +1540,9 @@ void ss7_asp_set_blocked(struct osmo_ss7_asp *asp, bool blocked)
 		asp->cfg.adm_state.blocked ? "" : "no ",
 		blocked ? "" : "no ");
 	asp->cfg.adm_state.blocked = blocked;
+
+	if (asp->cfg.adm_state.blocked)
+		osmo_fsm_inst_dispatch(asp->fi, XUA_ASP_E_ADM_BLOCKED, NULL);
 }
 
 /* Apply sane configs for unconfigured options and restart the ASP.  */

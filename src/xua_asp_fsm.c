@@ -74,6 +74,7 @@ static const struct value_string xua_asp_event_names[] = {
 	{ XUA_ASP_E_ASPSM_BEAT_ACK,	"ASPSM_BEAT_ACK" },
 
 	{ XUA_ASP_E_AS_ASSIGNED,	"AS_ASSIGNED" },
+	{ XUA_ASP_E_ADM_BLOCKED,	"ADM_BLOCKED" },
 
 	{ IPA_ASP_E_ID_RESP,		"IPA_CCM_ID_RESP" },
 	{ IPA_ASP_E_ID_GET,		"IPA_CCM_ID_GET" },
@@ -210,6 +211,24 @@ static int xua_msg_add_asp_rctx(struct xua_msg *xua, struct osmo_ss7_asp *asp)
 		xua_msg_add_data(xua, M3UA_IEI_ROUTE_CTX, cnt*sizeof(uint32_t), (uint8_t *)rctx);
 	/* return count of routing contexts added */
 	return cnt;
+}
+
+static int xua_asp_tx_unsolicited_aspia_ack(struct osmo_ss7_asp *asp)
+{
+	struct msgb *msg;
+	struct xua_msg *xua = xua_msg_alloc();
+
+	OSMO_ASSERT(xua);
+
+	xua->hdr = XUA_HDR(SUA_MSGC_ASPTM, SUA_ASPTM_INACTIVE_ACK);
+	xua_msg_add_asp_rctx(xua, asp);
+
+	msg = xua_to_msg(SUA_VERSION, xua);
+	xua_msg_free(xua);
+	if (!msg)
+		return -1;
+
+	return osmo_ss7_asp_send(asp, msg);
 }
 
 /* ask the xUA implementation to transmit a specific message */
@@ -893,6 +912,7 @@ static void xua_asp_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *d
 static void xua_asp_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct xua_asp_fsm_priv *xafp = fi->priv;
+	struct osmo_ss7_asp *asp = xafp->asp;
 	struct xua_msg *xua;
 
 	switch (event) {
@@ -913,6 +933,26 @@ static void xua_asp_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		break;
 	case XUA_ASP_E_AS_ASSIGNED:
 		/* Ignore, only used in IPA asps so far. */
+		break;
+	case XUA_ASP_E_ADM_BLOCKED:
+		if (fi->state != XUA_ASP_S_ACTIVE) {
+			/* nothing to be done, ASPAC will be rejected when received. */
+			return;
+		}
+		if (asp->cfg.role == OSMO_SS7_ASP_ROLE_SG) {
+			/* RFC4666 4.3.4.4: Transmit unsolicited ASPIA ACK no tnotify peer.
+				* "If the ASP receives an ASP Inactive Ack without having sent an
+				*  ASP Inactive message, the ASP should now consider itself to be
+				*  in the ASP-INACTIVE state.  If the ASP was previously in the
+				*  ASP-ACTIVE state, the ASP should then initiate procedures to
+				*  return itself to its previous state."
+				*/
+			xua_asp_tx_unsolicited_aspia_ack(asp);
+			/* transition state and inform layer manager */
+			osmo_fsm_inst_state_chg(fi, XUA_ASP_S_INACTIVE, 0, 0);
+			send_xlm_prim_simple(fi, OSMO_XLM_PRIM_M_ASP_INACTIVE, PRIM_OP_INDICATION);
+		}
+		/* TODO: implement ASP and IPSP roles. */
 		break;
 	default:
 		break;
@@ -999,7 +1039,8 @@ struct osmo_fsm xua_asp_fsm = {
 			       S(XUA_ASP_E_SCTP_RESTART_IND) |
 			       S(XUA_ASP_E_ASPSM_BEAT) |
 			       S(XUA_ASP_E_ASPSM_BEAT_ACK) |
-			       S(XUA_ASP_E_AS_ASSIGNED),
+			       S(XUA_ASP_E_AS_ASSIGNED) |
+			       S(XUA_ASP_E_ADM_BLOCKED),
 	.allstate_action = xua_asp_allstate,
 	.cleanup = xua_asp_fsm_cleanup,
 };
