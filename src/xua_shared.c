@@ -58,21 +58,14 @@ int xua_find_as_for_asp(struct osmo_ss7_as **as, const struct osmo_ss7_asp *asp,
 	*as = NULL;
 
 	if (rctx_ie) {
-		uint32_t rctx = xua_msg_part_get_u32(rctx_ie);
 		/* Use routing context IE to look up the AS for which the
 		 * message was received. */
-		*as = osmo_ss7_as_find_by_rctx(asp->inst, rctx);
+		uint32_t rctx = xua_msg_part_get_u32(rctx_ie);
+		*as = ss7_asp_find_as_by_rctx(asp, rctx);
 		if (!*as) {
-			LOGPASP(asp, log_ss, LOGL_ERROR, "%s(): invalid routing context: %u\n",
-				__func__, rctx);
-			return M3UA_ERR_INVAL_ROUT_CTX;
-		}
-
-		/* Verify that this ASP is part of the AS. */
-		if (!osmo_ss7_as_has_asp(*as, asp)) {
 			LOGPASP(asp, log_ss, LOGL_ERROR,
-				"%s(): This Application Server Process is not part of the AS %s "
-				"resolved by routing context %u\n", __func__, (*as)->cfg.name, rctx);
+				"%s(): This Application Server Process is not serving any AS with routing context: %u\n",
+				__func__, rctx);
 			return M3UA_ERR_NO_CONFGD_AS_FOR_ASP;
 		}
 	} else {
