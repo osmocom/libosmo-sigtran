@@ -717,12 +717,11 @@ DEFUN_ATTR(asp_shutdown, asp_shutdown_cmd,
 {
 	struct osmo_ss7_asp *asp = vty->index;
 
-	LOGPASP(asp, DLSS7, LOGL_NOTICE, "Applying Adm State change: %s -> %s\n",
-		get_value_string(osmo_ss7_asp_admin_state_names, asp->cfg.adm_state),
-		get_value_string(osmo_ss7_asp_admin_state_names, OSMO_SS7_ASP_ADM_S_SHUTDOWN));
+	LOGPASP(asp, DLSS7, LOGL_NOTICE, "Applying Adm State change: '%sshutdown' -> 'shutdown'\n",
+		asp->cfg.adm_state.shutdown ? "" : "no ");
 
 	asp->cfg.explicit_shutdown_state_by_vty_since_node_enter = true;
-	asp->cfg.adm_state = OSMO_SS7_ASP_ADM_S_SHUTDOWN;
+	asp->cfg.adm_state.shutdown = true;
 	ss7_asp_restart_after_reconfigure(asp);
 	return CMD_SUCCESS;
 }
@@ -734,12 +733,11 @@ DEFUN_ATTR(asp_no_shutdown, asp_no_shutdown_cmd,
 {
 	struct osmo_ss7_asp *asp = vty->index;
 
-	LOGPASP(asp, DLSS7, LOGL_NOTICE, "Applying Adm State change: %s -> %s\n",
-		get_value_string(osmo_ss7_asp_admin_state_names, asp->cfg.adm_state),
-		get_value_string(osmo_ss7_asp_admin_state_names, OSMO_SS7_ASP_ADM_S_ENABLED));
+	LOGPASP(asp, DLSS7, LOGL_NOTICE, "Applying Adm State change: '%sshutdown' -> 'no shutdown'\n",
+		asp->cfg.adm_state.shutdown ? "" : "no ");
 
 	asp->cfg.explicit_shutdown_state_by_vty_since_node_enter = true;
-	asp->cfg.adm_state = OSMO_SS7_ASP_ADM_S_ENABLED;
+	asp->cfg.adm_state.shutdown = false;
 	ss7_asp_restart_after_reconfigure(asp);
 	return CMD_SUCCESS;
 }
@@ -1406,18 +1404,10 @@ void ss7_vty_write_one_asp(struct vty *vty, struct osmo_ss7_asp *asp, bool show_
 	write_asp_timers_xua(vty, "  ", asp);
 	write_asp_timers_lm(vty, "  ", asp);
 
-	switch (asp->cfg.adm_state) {
-	case OSMO_SS7_ASP_ADM_S_SHUTDOWN:
-		vty_out(vty, "  shutdown%s", VTY_NEWLINE);
-		break;
-	case OSMO_SS7_ASP_ADM_S_BLOCKED:
+	if (asp->cfg.adm_state.blocked)
 		vty_out(vty, "  block%s", VTY_NEWLINE);
-		break;
-	case OSMO_SS7_ASP_ADM_S_ENABLED:
-		/* Default, no need to print: */
-		vty_out(vty, "  no shutdown%s", VTY_NEWLINE);
-		break;
-	}
+
+	vty_out(vty, "  %sshutdown%s", asp->cfg.adm_state.shutdown ? "" : "no ", VTY_NEWLINE);
 }
 
 int ss7_vty_node_asp_go_parent(struct vty *vty)

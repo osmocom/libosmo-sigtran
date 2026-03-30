@@ -112,7 +112,12 @@ struct osmo_ss7_asp {
 		char *name;
 		char *description;
 		enum osmo_ss7_asp_protocol proto;
-		enum osmo_ss7_asp_admin_state adm_state;
+		struct {
+			/*! no SCTP association with peer */
+			bool shutdown:1;
+			/*! SCP association, but reject ASP-ACTIVE */
+			bool blocked:1;
+		} adm_state;
 		bool is_server;
 		enum osmo_ss7_asp_role role;
 		bool role_set_by_vty;

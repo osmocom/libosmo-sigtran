@@ -240,16 +240,6 @@ bool osmo_ss7_as_tmode_compatible_xua(struct osmo_ss7_as *as, uint32_t m3ua_tmt)
  * SS7 Application Server Processes
  ***********************************************************************/
 
-enum osmo_ss7_asp_admin_state {
-	/*! no SCTP association with peer */
-	OSMO_SS7_ASP_ADM_S_SHUTDOWN,
-	/*! SCP association, but reject ASP-ACTIVE */
-	OSMO_SS7_ASP_ADM_S_BLOCKED,
-	/*! in normal operation */
-	OSMO_SS7_ASP_ADM_S_ENABLED,
-};
-extern const struct value_string osmo_ss7_asp_admin_state_names[];
-
 enum osmo_ss7_asp_role {
 	OSMO_SS7_ASP_ROLE_ASP,
 	OSMO_SS7_ASP_ROLE_SG,
