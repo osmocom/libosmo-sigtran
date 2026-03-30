@@ -1578,6 +1578,21 @@ unsigned int ss7_asp_get_all_rctx(const struct osmo_ss7_asp *asp, uint32_t *rctx
 	return _ss7_asp_get_all_rctx(asp, rctx, rctx_size, excl_as, false);
 }
 
+/*! \brief Find Application Server associated to ASP by given routing context
+ *  \param[in] asp Application Server Process through which to send
+ *  \param[in] rctx Routing Context
+ *  \returns pointer to Application Server on success; NULL otherwise */
+struct osmo_ss7_as *ss7_asp_find_as_by_rctx(const struct osmo_ss7_asp *asp, uint32_t rctx)
+{
+	struct ss7_as_asp_assoc *assoc;
+
+	llist_for_each_entry(assoc, &asp->assoc_as_list, asp_entry) {
+		if (assoc->as->cfg.routing_key.context == rctx)
+			return assoc->as;
+	}
+	return NULL;
+}
+
 /* Get first AS in the ASP, or NULL if no AS associated.
  * This is useful for instance in IPA code, where we assume only up to 1 AS is configured per ASP. */
 struct osmo_ss7_as *ss7_asp_get_first_as(const struct osmo_ss7_asp *asp)

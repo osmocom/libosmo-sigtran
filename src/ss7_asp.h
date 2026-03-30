@@ -198,6 +198,7 @@ unsigned int ss7_asp_get_all_rctx(const struct osmo_ss7_asp *asp, uint32_t *rctx
 				  const struct osmo_ss7_as *excl_as);
 unsigned int ss7_asp_get_all_rctx_be(const struct osmo_ss7_asp *asp, uint32_t *rctx, unsigned int rctx_size,
 				  const struct osmo_ss7_as *excl_as);
+struct osmo_ss7_as *ss7_asp_find_as_by_rctx(const struct osmo_ss7_asp *asp, uint32_t rctx);
 struct osmo_ss7_as *ss7_asp_get_first_as(const struct osmo_ss7_asp *asp);
 
 int ss7_asp_determine_traf_mode(const struct osmo_ss7_asp *asp);

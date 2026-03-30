@@ -289,7 +289,11 @@ static void test_as(void)
 	OSMO_ASSERT(asp);
 
 	OSMO_ASSERT(osmo_ss7_as_has_asp(as, asp) == false);
+	OSMO_ASSERT(ss7_asp_find_as_by_rctx(asp, as->cfg.routing_key.context) == NULL);
+
 	OSMO_ASSERT(osmo_ss7_as_add_asp(as, "asp1") == 0);
+	OSMO_ASSERT(osmo_ss7_as_has_asp(as, asp) == true);
+	OSMO_ASSERT(ss7_asp_find_as_by_rctx(asp, as->cfg.routing_key.context) == as);
 
 	osmo_ss7_asp_restart(asp);
 

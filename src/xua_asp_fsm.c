@@ -704,7 +704,7 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 		if ((part = xua_msg_find_tag(xua_in, M3UA_IEI_ROUTE_CTX))) {
 			for (i = 0; i < part->len / sizeof(uint32_t); i++) {
 				uint32_t rctx = osmo_load32be(&part->dat[i * sizeof(uint32_t)]);
-				as = osmo_ss7_as_find_by_rctx(asp->inst, rctx);
+				as = ss7_asp_find_as_by_rctx(asp, rctx);
 				if (!as) {
 					LOGPFSML(fi, LOGL_NOTICE,
 						 "ASPAC: Couldn't find any AS with rctx=%u. Check your config!\n",
