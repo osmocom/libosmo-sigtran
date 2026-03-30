@@ -171,7 +171,7 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 {
 	uint32_t rk_id, rctx, _tmode, dpc;
 	enum osmo_ss7_as_traffic_mode tmode;
-	struct osmo_ss7_as *as;
+	struct osmo_ss7_as *as = NULL;
 	struct ss7_as_asp_assoc *assoc;
 	struct osmo_ss7_route *rt;
 	char namebuf[32];
@@ -211,14 +211,6 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 		return -1;
 	}
 
-	/* if the ASP did not include a routing context number, allocate
-	 * one locally (will be part of response) */
-	if (!rctx)
-		rctx = osmo_ss7_find_free_rctx(asp->inst);
-
-	LOGPASP(asp, DLSS7, LOGL_INFO, "RKM: Registering routing key %u for DPC %s\n",
-		rctx, osmo_ss7_pointcode_print(asp->inst, dpc));
-
 	/* We have two cases here:
 	 * a) pre-configured routing context on both ASP and SG (or IPSP peers):
 	 *    We will find the AS based on the RCTX send by the client, check if
@@ -231,8 +223,17 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 	 *    all AS/RK in situations where the peers are trusted.
 	 */
 
-	/* check if there is already an AS for this routing key */
-	as = osmo_ss7_as_find_by_rctx(asp->inst, rctx);
+	if (rctx) {
+		/* check if there is already an AS for this routing key */
+		as = osmo_ss7_as_find_by_rctx(asp->inst, rctx);
+	} else {
+		/* if the ASP did not include a routing context number, allocate
+		 * one locally (will be part of response) */
+		rctx = osmo_ss7_find_free_rctx(asp->inst);
+	}
+
+	LOGPASP(asp, DLSS7, LOGL_INFO, "RKM: Registering routing key %u for DPC %s\n",
+		rctx, osmo_ss7_pointcode_print(asp->inst, dpc));
 
 	if (!as && !asp->inst->cfg.permit_dyn_rkm_alloc) {
 		/* not permitted to create dynamic RKM entries */
