@@ -1411,7 +1411,7 @@ void ss7_vty_write_one_asp(struct vty *vty, struct osmo_ss7_asp *asp, bool show_
 		vty_out(vty, "  shutdown%s", VTY_NEWLINE);
 		break;
 	case OSMO_SS7_ASP_ADM_S_BLOCKED:
-		vty_out(vty, "  blocked%s", VTY_NEWLINE);
+		vty_out(vty, "  block%s", VTY_NEWLINE);
 		break;
 	case OSMO_SS7_ASP_ADM_S_ENABLED:
 		/* Default, no need to print: */
