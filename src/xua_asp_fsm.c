@@ -304,7 +304,9 @@ static int peer_send(struct osmo_fsm_inst *fi, int out_event, struct xua_msg *in
 	return osmo_ss7_asp_send(asp, msg);
 }
 
-static int peer_send_error(struct osmo_fsm_inst *fi, uint32_t err_code)
+/* Transmit an Error MGMT message (RFC4666 3.8.1)
+ * rctx_be and rctx_size is raw data as obtained from originating message with "xua_msg_find_tag(xua_in, M3UA_IEI_ROUTE_CTX)" */
+static int peer_send_error_ext(struct osmo_fsm_inst *fi, uint32_t err_code, const uint8_t *rctx_be, unsigned int rctx_size)
 {
 	struct xua_asp_fsm_priv *xafp = fi->priv;
 	struct osmo_ss7_asp *asp = xafp->asp;
@@ -317,12 +319,20 @@ static int peer_send_error(struct osmo_fsm_inst *fi, uint32_t err_code)
 	xua->hdr.version = SUA_VERSION;
 	xua_msg_add_u32(xua, SUA_IEI_ERR_CODE, err_code);
 
+	if (rctx_be && rctx_size > 0)
+		xua_msg_add_data(xua, M3UA_IEI_ROUTE_CTX, rctx_size, rctx_be);
+
 	msg = xua_to_msg(SUA_VERSION, xua);
 	xua_msg_free(xua);
 	if (!msg)
 		return -1;
 
 	return osmo_ss7_asp_send(asp, msg);
+}
+
+static int peer_send_error(struct osmo_fsm_inst *fi, uint32_t err_code)
+{
+	return peer_send_error_ext(fi, err_code, NULL, 0);
 }
 
 static void xua_t_ack_cb(void *data)
@@ -703,13 +713,14 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 		}
 		if ((part = xua_msg_find_tag(xua_in, M3UA_IEI_ROUTE_CTX))) {
 			for (i = 0; i < part->len / sizeof(uint32_t); i++) {
-				uint32_t rctx = osmo_load32be(&part->dat[i * sizeof(uint32_t)]);
+				uint8_t *rctx_raw = &part->dat[i * sizeof(uint32_t)];
+				uint32_t rctx = osmo_load32be(rctx_raw);
 				as = ss7_asp_find_as_by_rctx(asp, rctx);
 				if (!as) {
 					LOGPFSML(fi, LOGL_NOTICE,
 						 "ASPAC: Couldn't find any AS with rctx=%u. Check your config!\n",
 						 rctx);
-					peer_send_error(fi, M3UA_ERR_INVAL_ROUT_CTX);
+					peer_send_error_ext(fi, M3UA_ERR_INVAL_ROUT_CTX, rctx_raw, sizeof(uint32_t));
 					return;
 				}
 			}
