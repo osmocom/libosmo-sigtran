@@ -35,6 +35,7 @@
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <osmocom/sigtran/sigtran_sap.h>
 
+#include "xua_asp_fsm.h"
 #include "xua_internal.h"
 #include "ss7_asp.h"
 
@@ -142,6 +143,14 @@ int osmo_xlm_sap_down(struct osmo_ss7_asp *asp, struct osmo_prim_hdr *oph)
 		osmo_xlm_prim_name(&prim->oph));
 
 	switch (OSMO_PRIM_HDR(&prim->oph)) {
+	case OSMO_PRIM(OSMO_XLM_PRIM_M_ASP_UP, PRIM_OP_REQUEST):
+		/* Layer Manager asks us to send an ASPUP REQ */
+		osmo_fsm_inst_dispatch(asp->fi, XUA_ASP_E_M_ASP_UP_REQ, NULL);
+		break;
+	case OSMO_PRIM(OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST):
+		/* Layer Manager asks us to send an ASPAC REQ */
+		osmo_fsm_inst_dispatch(asp->fi, XUA_ASP_E_M_ASP_ACTIVE_REQ, NULL);
+		break;
 	case OSMO_PRIM(OSMO_XLM_PRIM_M_RK_REG, PRIM_OP_REQUEST):
 		/* Layer Manager asks us to send a Routing Key Reg Request */
 		xua_rkm_send_reg_req(asp, &prim->u.rk_reg.key, prim->u.rk_reg.traf_mode);
@@ -158,4 +167,14 @@ int osmo_xlm_sap_down(struct osmo_ss7_asp *asp, struct osmo_prim_hdr *oph)
 
 	msgb_free(prim->oph.msg);
 	return 0;
+}
+
+/* wrapper around osmo_xlm_sap_down for primitives without data */
+int xlm_sap_down_simple(struct osmo_ss7_asp *asp,
+			enum osmo_xlm_prim_type prim_type,
+			enum osmo_prim_operation op)
+{
+	struct osmo_xlm_prim *prim = xua_xlm_prim_alloc(prim_type, op);
+	OSMO_ASSERT(prim);
+	return osmo_xlm_sap_down(asp, &prim->oph);
 }

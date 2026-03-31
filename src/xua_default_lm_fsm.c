@@ -196,7 +196,7 @@ static void lm_idle(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		    lmp->asp->cfg.role == OSMO_SS7_ASP_ROLE_IPSP) {
 			/* Try to transition to ASP-UP, wait to receive message for a few seconds */
 			lm_fsm_state_chg(fi, S_WAIT_ASP_UP);
-			osmo_fsm_inst_dispatch(lmp->asp->fi, XUA_ASP_E_M_ASP_UP_REQ, NULL);
+			xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_UP, PRIM_OP_REQUEST);
 		}
 		/* role SG: Unimplemented, do nothing, stay in this state forever. */
 		break;
@@ -249,7 +249,7 @@ static void lm_wait_notify(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 			break;
 
 		lm_fsm_state_chg(fi, S_ACTIVE);
-		osmo_fsm_inst_dispatch(lmp->asp->fi, XUA_ASP_E_M_ASP_ACTIVE_REQ, NULL);
+		xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
 		break;
 	case LM_E_ASP_ACT_IND:
 		ENSURE_SG_OR_IPSP(fi, event);
@@ -262,7 +262,7 @@ static void lm_wait_notify(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		 * hopefully will bring the AS to active, too) */
 		lm_fsm_state_chg(fi, S_ACTIVE);
 		if (lmp->asp->cfg.role != OSMO_SS7_ASP_ROLE_SG)
-			osmo_fsm_inst_dispatch(lmp->asp->fi, XUA_ASP_E_M_ASP_ACTIVE_REQ, NULL);
+			xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
 		break;
 	}
 };
@@ -306,7 +306,7 @@ static void lm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		break;
 	case LM_E_AS_INACTIVE_IND:
 		/* request the ASP to go into active state */
-		osmo_fsm_inst_dispatch(lmp->asp->fi, XUA_ASP_E_M_ASP_ACTIVE_REQ, NULL);
+		xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
 		break;
 	case LM_E_NOTIFY_IND:
 		oxp = data;
