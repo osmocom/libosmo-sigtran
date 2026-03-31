@@ -310,11 +310,15 @@ static void lm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		break;
 	case LM_E_NOTIFY_IND:
 		oxp = data;
+		ENSURE_ASP_OR_IPSP(fi, event);
 		OSMO_ASSERT(oxp->oph.primitive == OSMO_XLM_PRIM_M_NOTIFY);
 		OSMO_ASSERT(oxp->oph.operation == PRIM_OP_INDICATION);
 		if (oxp->u.notify.status_type == M3UA_NOTIFY_T_STATCHG &&
-		    oxp->u.notify.status_info != M3UA_NOTIFY_I_AS_ACT)
-			lm_fsm_state_chg(fi, S_IDLE);
+		    oxp->u.notify.status_info != M3UA_NOTIFY_I_AS_ACT) {
+			/* There not much we can do here, Go back to S_WAIT_NOTIFY to either wait for
+			 * some notification to re-attempt, or end up timing out and reconnecting.*/
+			lm_fsm_state_chg(fi, S_WAIT_NOTIFY);
+		}
 		break;
 	}
 }
@@ -404,7 +408,8 @@ static const struct osmo_fsm_state lm_states[] = {
 		.in_event_mask = S(LM_E_ASP_ACT_IND) |
 				 S(LM_E_AS_INACTIVE_IND) |
 				 S(LM_E_NOTIFY_IND),
-		.out_state_mask = S(S_IDLE),
+		.out_state_mask = S(S_IDLE) |
+				  S(S_WAIT_NOTIFY),
 		.name = "ACTIVE",
 		.action = lm_active,
 	},
