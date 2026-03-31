@@ -10,6 +10,7 @@ enum osmo_sigtran_sap {
 	MTP_SAP_USER,
 };
 
+/* RFC4666 1.6.3 (M3UA), RFC3868 1.6.3 (SUA) */
 enum osmo_xlm_prim_type {
 	OSMO_XLM_PRIM_M_SCTP_ESTABLISH,
 	OSMO_XLM_PRIM_M_SCTP_RELEASE,
