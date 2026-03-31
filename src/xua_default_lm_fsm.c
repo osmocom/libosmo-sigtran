@@ -62,6 +62,7 @@ enum lm_event {
 	LM_E_ASP_UP_CONF,
 	LM_E_ASP_UP_IND,
 	LM_E_ASP_ACT_IND,
+	LM_E_ASP_INACT_CONF,
 	LM_E_ASP_INACT_IND,
 	LM_E_NOTIFY_IND,
 	LM_E_ERROR_IND,
@@ -77,6 +78,7 @@ static const struct value_string lm_event_names[] = {
 	{ LM_E_ASP_UP_CONF,	"ASP-UP.conf" },
 	{ LM_E_ASP_UP_IND,	"ASP-UP.ind" },
 	{ LM_E_ASP_ACT_IND,	"ASP-ACT.ind" },
+	{ LM_E_ASP_INACT_CONF,	"ASP-INACT.conf" },
 	{ LM_E_ASP_INACT_IND,	"ASP-INACT.ind" },
 	{ LM_E_NOTIFY_IND,	"NOTIFY.ind" },
 	{ LM_E_ERROR_IND,	"ERROR.ind" },
@@ -328,6 +330,14 @@ static void lm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		/* This may come in IPSP if we received ASPAC from peer before it answered our ASPAC: */
 		ENSURE_IPSP(fi, event);
 		break;
+	case LM_E_ASP_INACT_CONF:
+		ENSURE_ASP_OR_IPSP(fi, event);
+		/* RFC 4666 RFC4666 4.3.4.4: Rx unsolicited ASPIA ACK, usually triggered because
+		 * peer's ASP became administratively blocked.
+		 * Try to re-activate, if peer's ASP is indeed blocked we'll probably receive an
+		 * ERR msg and continue from there in the case LM_E_ERROR_IND below. */
+		xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
+		break;
 	case LM_E_AS_INACTIVE_IND:
 		/* request the ASP to go into active state */
 		xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
@@ -442,6 +452,7 @@ static const struct osmo_fsm_state lm_states[] = {
 	},
 	[S_ACTIVE] = {
 		.in_event_mask = S(LM_E_ASP_ACT_IND) |
+				 S(LM_E_ASP_INACT_CONF) |
 				 S(LM_E_AS_INACTIVE_IND) |
 				 S(LM_E_NOTIFY_IND) |
 				 S(LM_E_ERROR_IND),
@@ -459,6 +470,7 @@ static const struct osmo_prim_event_map lm_event_map[] = {
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_ASP_UP, PRIM_OP_CONFIRM, LM_E_ASP_UP_CONF },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_ASP_UP, PRIM_OP_INDICATION, LM_E_ASP_UP_IND },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_INDICATION, LM_E_ASP_ACT_IND },
+	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_ASP_INACTIVE, PRIM_OP_CONFIRM, LM_E_ASP_INACT_CONF },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_ASP_INACTIVE, PRIM_OP_INDICATION, LM_E_ASP_INACT_IND },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_AS_STATUS, PRIM_OP_INDICATION, LM_E_AS_STATUS_IND },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_NOTIFY, PRIM_OP_INDICATION, LM_E_NOTIFY_IND },
