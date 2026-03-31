@@ -143,6 +143,10 @@ int osmo_xlm_sap_down(struct osmo_ss7_asp *asp, struct osmo_prim_hdr *oph)
 		osmo_xlm_prim_name(&prim->oph));
 
 	switch (OSMO_PRIM_HDR(&prim->oph)) {
+	case OSMO_PRIM(OSMO_XLM_PRIM_M_SCTP_RELEASE, PRIM_OP_REQUEST):
+		/* Layer Manager asks us to release an SCTP association with the peer */
+		ss7_asp_disconnect_stream(asp);
+		break;
 	case OSMO_PRIM(OSMO_XLM_PRIM_M_ASP_UP, PRIM_OP_REQUEST):
 		/* Layer Manager asks us to send an ASPUP REQ */
 		osmo_fsm_inst_dispatch(asp->fi, XUA_ASP_E_M_ASP_UP_REQ, NULL);
