@@ -64,6 +64,7 @@ enum lm_event {
 	LM_E_ASP_ACT_IND,
 	LM_E_ASP_INACT_IND,
 	LM_E_NOTIFY_IND,
+	LM_E_ERROR_IND,
 	LM_E_AS_INACTIVE_IND,
 	LM_E_AS_ACTIVE_IND,
 	LM_E_AS_STATUS_IND,
@@ -78,6 +79,7 @@ static const struct value_string lm_event_names[] = {
 	{ LM_E_ASP_ACT_IND,	"ASP-ACT.ind" },
 	{ LM_E_ASP_INACT_IND,	"ASP-INACT.ind" },
 	{ LM_E_NOTIFY_IND,	"NOTIFY.ind" },
+	{ LM_E_ERROR_IND,	"ERROR.ind" },
 	{ LM_E_AS_INACTIVE_IND,	"AS-INACTIVE.ind" },
 	{ LM_E_AS_ACTIVE_IND,	"AS-ACTIVE.ind" },
 	{ LM_E_AS_STATUS_IND,	"AS-STATUS.ind" },
@@ -205,6 +207,8 @@ static void lm_idle(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 
 static void lm_wait_asp_up(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
+	const struct osmo_xlm_prim *oxp = data;
+
 	switch (event) {
 	case LM_E_ASP_UP_CONF:
 		ENSURE_ASP_OR_IPSP(fi, event);
@@ -218,6 +222,16 @@ static void lm_wait_asp_up(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		* indications about AS in this ASP are received.
 		*/
 		lm_fsm_state_chg(fi, S_WAIT_NOTIFY);
+		break;
+	case LM_E_ERROR_IND:
+		ENSURE_ASP_OR_IPSP(fi, event);
+		OSMO_ASSERT(oxp->oph.primitive == OSMO_XLM_PRIM_M_ERROR);
+		OSMO_ASSERT(oxp->oph.operation == PRIM_OP_INDICATION);
+		/* Our ASPUP was most probably rejected by peer with an M3UA ERR.
+		 * Log the issue and let the SS7_ASP_LM_T_WAIT_ASP_UP timer timeout in a while and
+		 * then attempt again  */
+		LOGPFSML(fi, LOGL_NOTICE, "Received M-ERROR.ind with error code %u (%s)\n",
+			 oxp->u.error.code, get_value_string(m3ua_err_names, oxp->u.error.code));
 		break;
 	}
 }
@@ -270,12 +284,11 @@ static void lm_wait_notify(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 static void lm_rkm_reg(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct xua_layer_manager_default_priv *lmp = fi->priv;
-	struct osmo_xlm_prim *oxp;
+	struct osmo_xlm_prim *oxp = data;
 	int rc;
 
 	switch (event) {
 	case LM_E_RKM_REG_CONF:
-		oxp = data;
 		if (oxp->u.rk_reg.status != M3UA_RKM_REG_SUCCESS) {
 			LOGPFSML(fi, LOGL_NOTICE, "Received RKM_REG_RSP with negative result\n");
 			xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_SCTP_RELEASE, PRIM_OP_REQUEST);
@@ -291,13 +304,24 @@ static void lm_rkm_reg(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 			osmo_fsm_inst_state_chg(fi, S_WAIT_NOTIFY, timeout_sec, SS7_ASP_LM_T_WAIT_NOTIY_RKM);
 		}
 		break;
+	case LM_E_ERROR_IND:
+		ENSURE_ASP_OR_IPSP(fi, event);
+		OSMO_ASSERT(oxp->oph.primitive == OSMO_XLM_PRIM_M_ERROR);
+		OSMO_ASSERT(oxp->oph.operation == PRIM_OP_INDICATION);
+		/* Our RKM_REQ REQ was most probably rejected by peer with an M3UA ERR.
+		 * Go back to Wait Notify to either wait for some notificaiton to re-attempt,
+		 * or end up timing out and reconnecting. */
+		LOGPFSML(fi, LOGL_NOTICE, "Received M-ERROR.ind with error code %u (%s)\n",
+			 oxp->u.error.code, get_value_string(m3ua_err_names, oxp->u.error.code));
+		lm_fsm_state_chg(fi, S_WAIT_NOTIFY);
+		break;
 	}
 }
 
 static void lm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct xua_layer_manager_default_priv *lmp = fi->priv;
-	struct osmo_xlm_prim *oxp;
+	struct osmo_xlm_prim *oxp = data;
 
 	switch (event) {
 	case LM_E_ASP_ACT_IND:
@@ -309,7 +333,6 @@ static void lm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
 		break;
 	case LM_E_NOTIFY_IND:
-		oxp = data;
 		ENSURE_ASP_OR_IPSP(fi, event);
 		OSMO_ASSERT(oxp->oph.primitive == OSMO_XLM_PRIM_M_NOTIFY);
 		OSMO_ASSERT(oxp->oph.operation == PRIM_OP_INDICATION);
@@ -319,6 +342,17 @@ static void lm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 			 * some notification to re-attempt, or end up timing out and reconnecting.*/
 			lm_fsm_state_chg(fi, S_WAIT_NOTIFY);
 		}
+		break;
+	case LM_E_ERROR_IND:
+		ENSURE_ASP_OR_IPSP(fi, event);
+		OSMO_ASSERT(oxp->oph.primitive == OSMO_XLM_PRIM_M_ERROR);
+		OSMO_ASSERT(oxp->oph.operation == PRIM_OP_INDICATION);
+		/* Our ASPAC was most probably rejected by peer with an M3UA ERR.
+		 * Go back to Wait Notify to either wait for some notificaiton to re-attempt,
+		 * or end up timing out and reconnecting. */
+		LOGPFSML(fi, LOGL_NOTICE, "Received M-ERROR.ind with error code %u (%s)\n",
+			 oxp->u.error.code, get_value_string(m3ua_err_names, oxp->u.error.code));
+		lm_fsm_state_chg(fi, S_WAIT_NOTIFY);
 		break;
 	}
 }
@@ -380,7 +414,8 @@ static const struct osmo_fsm_state lm_states[] = {
 	},
 	[S_WAIT_ASP_UP] = {
 		.in_event_mask = S(LM_E_ASP_UP_CONF) |
-				 S(LM_E_ASP_UP_IND),
+				 S(LM_E_ASP_UP_IND) |
+				 S(LM_E_ERROR_IND),
 		.out_state_mask = S(S_IDLE) |
 				  S(S_WAIT_NOTIFY),
 		.name = "WAIT_ASP_UP",
@@ -398,7 +433,8 @@ static const struct osmo_fsm_state lm_states[] = {
 		.action = lm_wait_notify,
 	},
 	[S_RKM_REG] = {
-		.in_event_mask = S(LM_E_RKM_REG_CONF),
+		.in_event_mask = S(LM_E_RKM_REG_CONF) |
+				 S(LM_E_ERROR_IND),
 		.out_state_mask = S(S_IDLE) |
 				  S(S_WAIT_NOTIFY),
 		.name = "RKM_REG",
@@ -407,7 +443,8 @@ static const struct osmo_fsm_state lm_states[] = {
 	[S_ACTIVE] = {
 		.in_event_mask = S(LM_E_ASP_ACT_IND) |
 				 S(LM_E_AS_INACTIVE_IND) |
-				 S(LM_E_NOTIFY_IND),
+				 S(LM_E_NOTIFY_IND) |
+				 S(LM_E_ERROR_IND),
 		.out_state_mask = S(S_IDLE) |
 				  S(S_WAIT_NOTIFY),
 		.name = "ACTIVE",
@@ -425,6 +462,7 @@ static const struct osmo_prim_event_map lm_event_map[] = {
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_ASP_INACTIVE, PRIM_OP_INDICATION, LM_E_ASP_INACT_IND },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_AS_STATUS, PRIM_OP_INDICATION, LM_E_AS_STATUS_IND },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_NOTIFY, PRIM_OP_INDICATION, LM_E_NOTIFY_IND },
+	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_ERROR, PRIM_OP_INDICATION, LM_E_ERROR_IND },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_AS_INACTIVE, PRIM_OP_INDICATION, LM_E_AS_INACTIVE_IND },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_AS_ACTIVE, PRIM_OP_INDICATION, LM_E_AS_ACTIVE_IND },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_RK_REG, PRIM_OP_CONFIRM, LM_E_RKM_REG_CONF },
