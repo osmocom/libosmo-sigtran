@@ -585,8 +585,6 @@ static void xua_as_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *da
 			osmo_fsm_inst_state_chg(fi, XUA_AS_S_PENDING, 0, 0);
 			/* Start T(r) */
 			osmo_timer_schedule(&xafp->recovery.t_r, MSEC_TO_S_US(recovery_msec));
-			/* FIXME: Queue all signalling messages until
-			 * recovery or T(r) expiry */
 		}
 		break;
 	case XUA_ASPAS_ASP_INACTIVE_IND:
@@ -596,8 +594,6 @@ static void xua_as_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *da
 			osmo_fsm_inst_state_chg(fi, XUA_AS_S_PENDING, 0, 0);
 			/* Start T(r) */
 			osmo_timer_schedule(&xafp->recovery.t_r, MSEC_TO_S_US(recovery_msec));
-			/* FIXME: Queue all signalling messages until
-			 * recovery or T(r) expiry */
 		} else if (inact_ind_pars->asp_requires_notify) {
 			fill_notify_statchg_pars(fi, &npar);
 			tx_notify(inact_ind_pars->asp, &npar);
