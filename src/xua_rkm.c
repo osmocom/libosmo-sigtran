@@ -120,13 +120,18 @@ void xua_rkm_send_reg_req(struct osmo_ss7_asp *asp,
 {
 	struct msgb *msg = m3ua_msgb_alloc(__func__);
 	int tmod = osmo_ss7_tmode_to_xua(traf_mode);
+	uint16_t outter_len;
 
 	/* One individual Registration Request according to Chapter 3.6.1 */
 	msgb_put_u16(msg, M3UA_IEI_ROUT_KEY); /* outer IEI */
-	msgb_put_u16(msg, 32 + 4); /* outer length */
+	outter_len = 24 + 4;
+	if (rkey->context > 0)
+		outter_len += 8;
+	msgb_put_u16(msg, outter_len); /* outer length */
 	/* nested IEIs */
 	msgb_t16l16vp_put_u32(msg, M3UA_IEI_LOC_RKEY_ID, rkey->l_rk_id);
-	msgb_t16l16vp_put_u32(msg, M3UA_IEI_ROUTE_CTX, rkey->context);
+	if (rkey->context > 0)
+		msgb_t16l16vp_put_u32(msg, M3UA_IEI_ROUTE_CTX, rkey->context);
 	msgb_t16l16vp_put_u32(msg, M3UA_IEI_TRAF_MODE_TYP, tmod);
 	msgb_t16l16vp_put_u32(msg, M3UA_IEI_DEST_PC, rkey->pc);
 
