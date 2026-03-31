@@ -28,6 +28,9 @@ enum xua_asp_event {
 	XUA_ASP_E_ASPSM_BEAT,
 	XUA_ASP_E_ASPSM_BEAT_ACK,
 
+	/* Rx M3UA MGMT Error message from peer */
+	XUA_ASP_E_MGMT_ERROR,
+
 	/* The ASP was added to an AS. data: (struct osmo_ss7_as *) */
 	XUA_ASP_E_AS_ASSIGNED,
 

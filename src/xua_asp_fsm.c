@@ -74,6 +74,8 @@ static const struct value_string xua_asp_event_names[] = {
 	{ XUA_ASP_E_ASPSM_BEAT,		"ASPSM_BEAT" },
 	{ XUA_ASP_E_ASPSM_BEAT_ACK,	"ASPSM_BEAT_ACK" },
 
+	{ XUA_ASP_E_MGMT_ERROR,		"XUA_ASP_E_MGMT_ERROR" },
+
 	{ XUA_ASP_E_AS_ASSIGNED,	"AS_ASSIGNED" },
 	{ XUA_ASP_E_ADM_BLOCKED,	"ADM_BLOCKED" },
 
@@ -374,6 +376,12 @@ static void dispatch_to_all_as(struct osmo_fsm_inst *fi, uint32_t event, void *d
 }
 
 /* check if expected message was received + stop t_ack */
+static void stop_t_ack(struct osmo_fsm_inst *fi)
+{
+	struct xua_asp_fsm_priv *xafp = fi->priv;
+	LOGPFSML(fi, LOGL_DEBUG, "T(ack) stopped\n");
+	osmo_timer_del(&xafp->t_ack.timer);
+}
 static void check_stop_t_ack(struct osmo_fsm_inst *fi, uint32_t event)
 {
 	struct xua_asp_fsm_priv *xafp = fi->priv;
@@ -383,10 +391,8 @@ static void check_stop_t_ack(struct osmo_fsm_inst *fi, uint32_t event)
 		return;
 
 	exp_ack = evt_ack_map[xafp->t_ack.out_event];
-	if (exp_ack && event == exp_ack) {
-		LOGPFSML(fi, LOGL_DEBUG, "T(ack) stopped\n");
-		osmo_timer_del(&xafp->t_ack.timer);
-	}
+	if (exp_ack && event == exp_ack)
+		stop_t_ack(fi);
 }
 
 static void xua_t_beat_stop(struct osmo_fsm_inst *fi)
@@ -875,6 +881,7 @@ static void xua_asp_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	struct xua_asp_fsm_priv *xafp = fi->priv;
 	struct osmo_ss7_asp *asp = xafp->asp;
 	struct xua_msg *xua;
+	struct osmo_xlm_prim *oxp;
 
 	switch (event) {
 	case XUA_ASP_E_SCTP_COMM_DOWN_IND:
@@ -891,6 +898,15 @@ static void xua_asp_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	case XUA_ASP_E_ASPSM_BEAT_ACK:
 		LOGPFSML(fi, LOGL_DEBUG, "Rx HEARTBEAT ACK\n");
 		xafp->t_beat.unacked_beats = 0;
+		break;
+	case XUA_ASP_E_MGMT_ERROR:
+		xua = data;
+		OSMO_ASSERT(xua);
+		/* Mark ongoing request as rejected, no need to retransmit: */
+		stop_t_ack(fi);
+		/* report this to layer manager */
+		oxp = xua_xlm_prim_alloc_m_error_ind(xua_msg_get_u32(xua, M3UA_IEI_ERR_CODE));
+		xua_asp_send_xlm_prim(asp, oxp);
 		break;
 	case XUA_ASP_E_AS_ASSIGNED:
 		/* Ignore, only used in IPA asps so far. */
@@ -1000,6 +1016,7 @@ struct osmo_fsm xua_asp_fsm = {
 			       S(XUA_ASP_E_SCTP_RESTART_IND) |
 			       S(XUA_ASP_E_ASPSM_BEAT) |
 			       S(XUA_ASP_E_ASPSM_BEAT_ACK) |
+			       S(XUA_ASP_E_MGMT_ERROR) |
 			       S(XUA_ASP_E_AS_ASSIGNED) |
 			       S(XUA_ASP_E_ADM_BLOCKED),
 	.allstate_action = xua_asp_allstate,
