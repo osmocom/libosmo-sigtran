@@ -103,14 +103,6 @@ int m3ua_decode_notify(struct osmo_xlm_prim_notify *npar, void *ctx,
 			const struct xua_msg *xua);
 int m3ua_rx_rkm(struct osmo_ss7_asp *asp, struct xua_msg *xua);
 
-struct osmo_xlm_prim *xua_xlm_prim_alloc(enum osmo_xlm_prim_type prim_type,
-					 enum osmo_prim_operation op);
-
-void xua_asp_send_xlm_prim(struct osmo_ss7_asp *asp, struct osmo_xlm_prim *prim);
-void xua_asp_send_xlm_prim_simple(struct osmo_ss7_asp *asp,
-				enum osmo_xlm_prim_type prim_type,
-				enum osmo_prim_operation op);
-
 void xua_snm_pc_available(struct osmo_ss7_as *as, const uint32_t *aff_pc,
                           unsigned int num_aff_pc, const char *info_str, bool available);
 

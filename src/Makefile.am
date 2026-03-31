@@ -30,6 +30,7 @@ noinst_HEADERS = \
 	tcap_trans_tracking.h \
 	xua_asp_fsm.h \
 	xua_as_fsm.h \
+	xua_lm_sap.h \
 	xua_internal.h \
 	xua_msg.h \
 	xua_types.h \
@@ -92,6 +93,7 @@ libosmo_sigtran_la_SOURCES = \
 	xua_asp_fsm.c \
 	xua_as_fsm.c \
 	xua_default_lm_fsm.c \
+	xua_lm_sap.c \
 	xua_msg.c \
 	xua_rkm.c \
 	xua_shared.c \

@@ -36,6 +36,7 @@
 #include "sccp_internal.h"
 #include "xua_asp_fsm.h"
 #include "xua_as_fsm.h"
+#include "xua_lm_sap.h"
 #include "xua_internal.h"
 
 #ifdef WITH_TCAP_LOADSHARING
@@ -102,46 +103,6 @@ struct xua_asp_fsm_priv {
 		uint32_t unacked_beats;
 	} t_beat;
 };
-
-struct osmo_xlm_prim *xua_xlm_prim_alloc(enum osmo_xlm_prim_type prim_type,
-					 enum osmo_prim_operation op)
-{
-	struct osmo_xlm_prim *prim;
-	struct msgb *msg = msgb_alloc_headroom(2048+128, 128, "xua_asp-xlm msgb");
-	if (!msg)
-		return NULL;
-
-	prim = (struct osmo_xlm_prim *) msgb_put(msg, sizeof(*prim));
-	osmo_prim_init(&prim->oph, XUA_SAP_LM, prim_type, op, msg);
-
-	return prim;
-}
-
-/* Send a XUA LM Primitive to the XUA Layer Manager (LM) */
-void xua_asp_send_xlm_prim(struct osmo_ss7_asp *asp, struct osmo_xlm_prim *prim)
-{
-	const struct osmo_xua_layer_manager *lm = asp->lm;
-
-	if (lm && lm->prim_cb)
-		lm->prim_cb(&prim->oph, asp);
-	else {
-		LOGPFSML(asp->fi, LOGL_DEBUG, "No Layer Manager, dropping %s\n",
-			 osmo_xlm_prim_name(&prim->oph));
-	}
-
-	msgb_free(prim->oph.msg);
-}
-
-/* wrapper around send_xlm_prim for primitives without data */
-void xua_asp_send_xlm_prim_simple(struct osmo_ss7_asp *asp,
-				enum osmo_xlm_prim_type prim_type,
-				enum osmo_prim_operation op)
-{
-	struct osmo_xlm_prim *prim = xua_xlm_prim_alloc(prim_type, op);
-	if (!prim)
-		return;
-	xua_asp_send_xlm_prim(asp, prim);
-}
 
 static void send_xlm_prim_simple(struct osmo_fsm_inst *fi,
 				 enum osmo_xlm_prim_type prim_type,

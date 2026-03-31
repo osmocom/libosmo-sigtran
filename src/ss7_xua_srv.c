@@ -55,6 +55,7 @@
 #include "ss7_internal.h"
 #include "xua_asp_fsm.h"
 #include "xua_as_fsm.h"
+#include "xua_lm_sap.h"
 #include "ss7_xua_srv.h"
 
 /***********************************************************************

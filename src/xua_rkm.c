@@ -36,6 +36,7 @@
 #include "xua_internal.h"
 #include "xua_as_fsm.h"
 #include "xua_asp_fsm.h"
+#include "xua_lm_sap.h"
 
 const struct value_string m3ua_rkm_reg_status_vals[] = {
 	{ M3UA_RKM_REG_SUCCESS,			"SUCCESS" },
@@ -465,6 +466,7 @@ static int m3ua_rx_rkm_dereg_req(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 static int handle_rkey_reg_resp(struct osmo_ss7_asp *asp, struct xua_msg *inner)
 {
 	struct osmo_xlm_prim *oxp;
+	struct osmo_ss7_routing_key rkey;
 
 	if (!xua_msg_find_tag(inner, M3UA_IEI_LOC_RKEY_ID) ||
 	    !xua_msg_find_tag(inner, M3UA_IEI_REG_STATUS) ||
@@ -474,13 +476,11 @@ static int handle_rkey_reg_resp(struct osmo_ss7_asp *asp, struct xua_msg *inner)
 		return -1;
 	}
 
-	oxp = xua_xlm_prim_alloc(OSMO_XLM_PRIM_M_RK_REG, PRIM_OP_CONFIRM);
-	if (!oxp)
-		return -1;
-
-	oxp->u.rk_reg.key.l_rk_id = xua_msg_get_u32(inner, M3UA_IEI_LOC_RKEY_ID);
-	oxp->u.rk_reg.key.context = xua_msg_get_u32(inner, M3UA_IEI_ROUTE_CTX);
-	oxp->u.rk_reg.status = xua_msg_get_u32(inner, M3UA_IEI_REG_STATUS);
+	rkey = (struct osmo_ss7_routing_key){
+		.l_rk_id = xua_msg_get_u32(inner, M3UA_IEI_LOC_RKEY_ID),
+		.context = xua_msg_get_u32(inner, M3UA_IEI_ROUTE_CTX),
+	};
+	oxp = xua_xlm_prim_alloc_m_rk_reg_cfm(&rkey, xua_msg_get_u32(inner, M3UA_IEI_REG_STATUS));
 
 	LOGPASP(asp, DLSS7, LOGL_INFO, "Received RKM REG RES rctx=%u status=%s\n",
 		oxp->u.rk_reg.key.context,
@@ -528,12 +528,8 @@ static int handle_rkey_dereg_resp(struct osmo_ss7_asp *asp, struct xua_msg *inne
 		return -1;
 	}
 
-	oxp = xua_xlm_prim_alloc(OSMO_XLM_PRIM_M_RK_DEREG, PRIM_OP_CONFIRM);
-	if (!oxp)
-		return -1;
-
-	oxp->u.rk_dereg.route_ctx = xua_msg_get_u32(inner, M3UA_IEI_ROUTE_CTX);
-	oxp->u.rk_dereg.status = xua_msg_get_u32(inner, M3UA_IEI_DEREG_STATUS);
+	oxp = xua_xlm_prim_alloc_m_rk_dereg_cfm(xua_msg_get_u32(inner, M3UA_IEI_ROUTE_CTX),
+						xua_msg_get_u32(inner, M3UA_IEI_DEREG_STATUS));
 
 	LOGPASP(asp, DLSS7, LOGL_INFO, "Received RKM DEREG RES rctx=%u status=%s\n",
 		oxp->u.rk_reg.key.context,

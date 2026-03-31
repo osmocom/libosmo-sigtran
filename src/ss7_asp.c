@@ -59,6 +59,7 @@
 #include "ss7_xua_srv.h"
 #include "xua_asp_fsm.h"
 #include "xua_as_fsm.h"
+#include "xua_lm_sap.h"
 
 static int _setsockopt_peer_primary_addr(int fd, const struct osmo_sockaddr *saddr)
 {
@@ -1654,31 +1655,4 @@ bool ss7_asp_check_remote_asp_id_unique(const struct osmo_ss7_asp *asp, uint32_t
 			return false;
 	}
 	return true;
-}
-
-/* process a primitive from the xUA Layer Manager (LM) */
-int osmo_xlm_sap_down(struct osmo_ss7_asp *asp, struct osmo_prim_hdr *oph)
-{
-	struct osmo_xlm_prim *prim = (struct osmo_xlm_prim *) oph;
-
-	LOGPASP(asp, DLSS7, LOGL_DEBUG, "Received XUA Layer Manager Primitive: %s)\n",
-		osmo_xlm_prim_name(&prim->oph));
-
-	switch (OSMO_PRIM_HDR(&prim->oph)) {
-	case OSMO_PRIM(OSMO_XLM_PRIM_M_RK_REG, PRIM_OP_REQUEST):
-		/* Layer Manager asks us to send a Routing Key Reg Request */
-		xua_rkm_send_reg_req(asp, &prim->u.rk_reg.key, prim->u.rk_reg.traf_mode);
-		break;
-	case OSMO_PRIM(OSMO_XLM_PRIM_M_RK_DEREG, PRIM_OP_REQUEST):
-		/* Layer Manager asks us to send a Routing Key De-Reg Request */
-		xua_rkm_send_dereg_req(asp, prim->u.rk_dereg.route_ctx);
-		break;
-	default:
-		LOGPASP(asp, DLSS7, LOGL_ERROR, "Unknown XUA Layer Manager Primitive: %s\n",
-			osmo_xlm_prim_name(&prim->oph));
-		break;
-	}
-
-	msgb_free(prim->oph.msg);
-	return 0;
 }

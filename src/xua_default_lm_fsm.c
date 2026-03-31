@@ -37,6 +37,7 @@
 
 #include "xua_internal.h"
 #include "xua_asp_fsm.h"
+#include "xua_lm_sap.h"
 #include "ss7_as.h"
 #include "ss7_asp.h"
 #include "ss7_xua_srv.h"
@@ -178,12 +179,9 @@ static void reg_req_all_assoc_as(struct osmo_ss7_asp *asp)
 {
 	struct ss7_as_asp_assoc *assoc;
 	llist_for_each_entry(assoc, &asp->assoc_as_list, asp_entry) {
-		struct osmo_ss7_as *as = assoc->as;
 		struct osmo_xlm_prim *prim;
-		prim = xua_xlm_prim_alloc(OSMO_XLM_PRIM_M_RK_REG, PRIM_OP_REQUEST);
-		OSMO_ASSERT(prim);
-		prim->u.rk_reg.key = as->cfg.routing_key;
-		prim->u.rk_reg.traf_mode = as->cfg.mode;
+		prim = xua_xlm_prim_alloc_m_rk_reg_req(&assoc->as->cfg.routing_key,
+						       assoc->as->cfg.mode);
 		osmo_xlm_sap_down(asp, &prim->oph);
 	}
 }

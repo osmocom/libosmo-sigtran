@@ -49,6 +49,7 @@
 #include "ss7_asp.h"
 #include "ss7_internal.h"
 #include "xua_msg.h"
+#include "xua_lm_sap.h"
 
 #define M3UA_MSGB_SIZE 1500
 
@@ -700,8 +701,7 @@ static int m3ua_rx_mgmt_err(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		xua_msg_dump(xua, &xua_dialect_m3ua));
 
 	/* report this to layer manager */
-	prim = xua_xlm_prim_alloc(OSMO_XLM_PRIM_M_ERROR, PRIM_OP_INDICATION);
-	prim->u.error.code = err_code;
+	prim = xua_xlm_prim_alloc_m_error_ind(err_code);
 	xua_asp_send_xlm_prim(asp, prim);
 
 	/* NEVER return != 0 here, as we cannot respont to an ERR
@@ -724,9 +724,8 @@ static int m3ua_rx_mgmt_ntfy(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		ntfy.info_string ? ntfy.info_string : "");
 
 	/* report this to layer manager */
-	prim = xua_xlm_prim_alloc(OSMO_XLM_PRIM_M_NOTIFY, PRIM_OP_INDICATION);
-	prim->u.notify = ntfy;
-	xua_asp_send_xlm_prim(asp,prim);
+	prim = xua_xlm_prim_alloc_m_notify_ind(&ntfy);
+	xua_asp_send_xlm_prim(asp, prim);
 
 	if (ntfy.info_string)
 		talloc_free(ntfy.info_string);
