@@ -27,7 +27,7 @@ enum osmo_xlm_prim_type {
 	OSMO_XLM_PRIM_M_AS_ACTIVE,
 	OSMO_XLM_PRIM_M_AS_INACTIVE,
 	OSMO_XLM_PRIM_M_AS_DOWN,
-	/* optional as per spec, not implemented yet */
+	/* optional as per spec: */
 	OSMO_XLM_PRIM_M_RK_REG,
 	OSMO_XLM_PRIM_M_RK_DEREG,
 };
