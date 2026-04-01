@@ -1113,7 +1113,7 @@ static int sua_rx_snm_ipsp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 static int sua_rx_snm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
 	/* SNM only permitted in ACTIVE state */
-	if (asp->fi->state != XUA_ASP_S_ACTIVE) {
+	if (!osmo_ss7_asp_active(asp)) {
 		if (asp->fi->state == XUA_ASP_S_INACTIVE && asp->cfg.quirks & OSMO_SS7_ASP_QUIRK_SNM_INACTIVE) {
 			LOGPASP(asp, DLSUA, LOGL_NOTICE, "quirk snm_inactive active: "
 				"Accepting SSNM in state %s\n", osmo_fsm_inst_state_name(asp->fi));

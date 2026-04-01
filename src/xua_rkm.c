@@ -420,7 +420,7 @@ static int handle_rkey_dereg(struct osmo_ss7_asp *asp, uint32_t rctx,
 	}
 
 	/* Reject if ASP is still active */
-	if (asp->fi->state == XUA_ASP_S_ACTIVE) {
+	if (osmo_ss7_asp_active(asp)) {
 		msgb_append_dereg_res(resp, M3UA_RKM_DEREG_ERR_ASP_ACTIVE, 0);
 		return -1;
 	}

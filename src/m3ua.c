@@ -1166,7 +1166,7 @@ static int m3ua_rx_snm(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	int rc;
 
 	/* SNM only permitted in ACTIVE state */
-	if (asp->fi->state != XUA_ASP_S_ACTIVE) {
+	if (!osmo_ss7_asp_active(asp)) {
 		if (asp->fi->state == XUA_ASP_S_INACTIVE &&
 		    asp->cfg.quirks & OSMO_SS7_ASP_QUIRK_SNM_INACTIVE) {
 			LOGPASP(asp, DLM3UA, LOGL_NOTICE, "quirk snm_inactive active: "

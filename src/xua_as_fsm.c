@@ -296,7 +296,7 @@ static bool check_any_other_asp_in_active(struct osmo_ss7_as *as, struct osmo_ss
 		if (asp_cmp == asp)
 			continue;
 
-		if (asp->fi && asp->fi->state == XUA_ASP_S_ACTIVE)
+		if (osmo_ss7_asp_active(asp))
 			return true;
 	}
 
