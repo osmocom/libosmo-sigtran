@@ -918,12 +918,12 @@ static void xua_asp_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		}
 		if (asp->cfg.role == OSMO_SS7_ASP_ROLE_SG) {
 			/* RFC4666 4.3.4.4: Transmit unsolicited ASPIA ACK no tnotify peer.
-				* "If the ASP receives an ASP Inactive Ack without having sent an
-				*  ASP Inactive message, the ASP should now consider itself to be
-				*  in the ASP-INACTIVE state.  If the ASP was previously in the
-				*  ASP-ACTIVE state, the ASP should then initiate procedures to
-				*  return itself to its previous state."
-				*/
+			 * "If the ASP receives an ASP Inactive Ack without having sent an
+			 *  ASP Inactive message, the ASP should now consider itself to be
+			 *  in the ASP-INACTIVE state.  If the ASP was previously in the
+			 *  ASP-ACTIVE state, the ASP should then initiate procedures to
+			 *  return itself to its previous state."
+			 */
 			xua_asp_tx_unsolicited_aspia_ack(asp);
 			/* transition state and inform layer manager */
 			osmo_fsm_inst_state_chg(fi, XUA_ASP_S_INACTIVE, 0, 0);
