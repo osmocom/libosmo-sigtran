@@ -1117,7 +1117,7 @@ int ss7_asp_xua_srv_conn_rx_cb(struct osmo_stream_srv *conn, int res, struct msg
 	flags = msgb_sctp_msg_flags(msg);
 
 	LOGPASP(asp, DLSS7, LOGL_DEBUG, "%s(): sctp_recvmsg() returned %d (flags=0x%x)\n",
-		__func__, rc, flags);
+		__func__, res, flags);
 
 	if (flags & OSMO_STREAM_SCTP_MSG_FLAGS_NOTIFICATION) {
 		union sctp_notification *notif = (union sctp_notification *) msgb_data(msg);
@@ -1318,7 +1318,7 @@ static int xua_cli_read_cb(struct osmo_stream_cli *conn, int res, struct msgb *m
 	flags = msgb_sctp_msg_flags(msg);
 
 	LOGPASP(asp, DLSS7, LOGL_DEBUG, "%s(): sctp_recvmsg() returned %d (flags=0x%x)\n",
-		__func__, msgb_length(msg), flags);
+		__func__, res, flags);
 
 	if (flags & OSMO_STREAM_SCTP_MSG_FLAGS_NOTIFICATION) {
 		union sctp_notification *notif = (union sctp_notification *) msgb_data(msg);
