@@ -53,6 +53,8 @@ enum lm_state {
 	S_WAIT_NOTIFY,
 	/* we've sent a RK REG REQ and wait for the result */
 	S_RKM_REG,
+	/* Inactive, waiting to be activated based on policy */
+	S_INACTIVE,
 	/* all systems up, we're communicating */
 	S_ACTIVE,
 };
@@ -61,6 +63,8 @@ enum lm_event {
 	LM_E_SCTP_EST_IND,
 	LM_E_ASP_UP_CONF,
 	LM_E_ASP_UP_IND,
+	LM_E_ASP_DOWN_IND,
+	LM_E_ASP_ACT_CONF,
 	LM_E_ASP_ACT_IND,
 	LM_E_ASP_INACT_CONF,
 	LM_E_ASP_INACT_IND,
@@ -77,6 +81,8 @@ static const struct value_string lm_event_names[] = {
 	{ LM_E_SCTP_EST_IND,	"SCTP-ESTABLISH.ind" },
 	{ LM_E_ASP_UP_CONF,	"ASP-UP.conf" },
 	{ LM_E_ASP_UP_IND,	"ASP-UP.ind" },
+	{ LM_E_ASP_DOWN_IND,	"ASP-DOWN.ind" },
+	{ LM_E_ASP_ACT_CONF,	"ASP-ACT.conf" },
 	{ LM_E_ASP_ACT_IND,	"ASP-ACT.ind" },
 	{ LM_E_ASP_INACT_CONF,	"ASP-INACT.conf" },
 	{ LM_E_ASP_INACT_IND,	"ASP-INACT.ind" },
@@ -124,6 +130,7 @@ static const struct osmo_tdef_state_timeout lm_fsm_timeouts[32] = {
 	[S_WAIT_ASP_UP]	= { .T = SS7_ASP_LM_T_WAIT_ASP_UP },
 	[S_WAIT_NOTIFY]	= { .T = SS7_ASP_LM_T_WAIT_NOTIFY }, /* SS7_ASP_LM_T_WAIT_NOTIY_RKM if coming from S_RKM_REG */
 	[S_RKM_REG]	= { .T = SS7_ASP_LM_T_WAIT_RK_REG_RESP },
+	[S_INACTIVE]	= { },
 	[S_ACTIVE]	= { },
 };
 
@@ -190,25 +197,42 @@ static void reg_req_all_assoc_as(struct osmo_ss7_asp *asp)
 	}
 }
 
+static bool asp_act_needed(const struct osmo_ss7_asp *asp)
+{
+	/* Don't change active ASP if there's already one active in the AS. */
+	if (ss7_asp_determine_traf_mode(asp) == OSMO_SS7_AS_TMOD_OVERRIDE) {
+		struct ss7_as_asp_assoc *assoc;
+		llist_for_each_entry(assoc, &asp->assoc_as_list, asp_entry) {
+			if (osmo_ss7_as_active(assoc->as))
+				return false;
+		}
+	}
+	return true;
+}
+
 static void lm_idle(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+	switch (event) {
+	case LM_E_SCTP_EST_IND:
+		/* Try to transition to ASP-UP, wait to receive message for a few seconds */
+		lm_fsm_state_chg(fi, S_WAIT_ASP_UP);
+		break;
+	}
+}
+
+static void lm_wait_asp_up_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct xua_layer_manager_default_priv *lmp = fi->priv;
 
-	switch (event) {
-	case LM_E_SCTP_EST_IND:
-		if (lmp->asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP ||
-		    lmp->asp->cfg.role == OSMO_SS7_ASP_ROLE_IPSP) {
-			/* Try to transition to ASP-UP, wait to receive message for a few seconds */
-			lm_fsm_state_chg(fi, S_WAIT_ASP_UP);
-			xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_UP, PRIM_OP_REQUEST);
-		}
-		/* role SG: Unimplemented, do nothing, stay in this state forever. */
-		break;
+	if (lmp->asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP ||
+	    lmp->asp->cfg.role == OSMO_SS7_ASP_ROLE_IPSP) {
+		xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_UP, PRIM_OP_REQUEST);
 	}
 }
 
 static void lm_wait_asp_up(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
+	struct xua_layer_manager_default_priv *lmp = fi->priv;
 	const struct osmo_xlm_prim *oxp = data;
 
 	switch (event) {
@@ -220,10 +244,14 @@ static void lm_wait_asp_up(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		break;
 	case LM_E_ASP_UP_IND:
 		ENSURE_SG_OR_IPSP(fi, event);
-		/* ASP is up, wait for some time if any NOTIFY
-		* indications about AS in this ASP are received.
-		*/
-		lm_fsm_state_chg(fi, S_WAIT_NOTIFY);
+		/* ASP is up */
+		if (lmp->asp->cfg.role == OSMO_SS7_ASP_ROLE_IPSP) {
+			/* wait for some time if any NOTIFY indications about AS in this ASP
+			 * are received */
+			lm_fsm_state_chg(fi, S_WAIT_NOTIFY);
+		} else {
+			lm_fsm_state_chg(fi, S_INACTIVE);
+		}
 		break;
 	case LM_E_ERROR_IND:
 		ENSURE_ASP_OR_IPSP(fi, event);
@@ -240,7 +268,6 @@ static void lm_wait_asp_up(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 
 static void lm_wait_notify(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	struct xua_layer_manager_default_priv *lmp = fi->priv;
 	struct osmo_xlm_prim *oxp = data;
 
 	switch (event) {
@@ -254,18 +281,10 @@ static void lm_wait_notify(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		ENSURE_ASP_OR_IPSP(fi, event);
 		OSMO_ASSERT(oxp->oph.primitive == OSMO_XLM_PRIM_M_NOTIFY);
 		OSMO_ASSERT(oxp->oph.operation == PRIM_OP_INDICATION);
-
 		/* Not handling/interested in other status changes for now. */
 		if (oxp->u.notify.status_type != M3UA_NOTIFY_T_STATCHG)
 			break;
-
-		/* Don't change active ASP if there's already one active. */
-		if (ss7_asp_determine_traf_mode(lmp->asp) == OSMO_SS7_AS_TMOD_OVERRIDE &&
-		    oxp->u.notify.status_info == M3UA_NOTIFY_I_AS_ACT)
-			break;
-
-		lm_fsm_state_chg(fi, S_ACTIVE);
-		xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
+		lm_fsm_state_chg(fi, S_INACTIVE);
 		break;
 	case LM_E_ASP_ACT_IND:
 		ENSURE_SG_OR_IPSP(fi, event);
@@ -274,11 +293,8 @@ static void lm_wait_notify(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	case LM_E_AS_INACTIVE_IND:
 		/* we now know that an AS is associated with this ASP at
 		 * the SG, and that this AS is currently inactive */
-		/* request the ASP to go into active state (which
-		 * hopefully will bring the AS to active, too) */
-		lm_fsm_state_chg(fi, S_ACTIVE);
-		if (lmp->asp->cfg.role != OSMO_SS7_ASP_ROLE_SG)
-			xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
+		/* Transition to S_INACTIVE, which will trigger activation if needed. */
+		lm_fsm_state_chg(fi, S_INACTIVE);
 		break;
 	}
 };
@@ -291,6 +307,7 @@ static void lm_rkm_reg(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 
 	switch (event) {
 	case LM_E_RKM_REG_CONF:
+		ENSURE_ASP_OR_IPSP(fi, event);
 		if (oxp->u.rk_reg.status != M3UA_RKM_REG_SUCCESS) {
 			LOGPFSML(fi, LOGL_NOTICE, "Received RKM_REG_RSP with negative result\n");
 			xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_SCTP_RELEASE, PRIM_OP_REQUEST);
@@ -320,6 +337,62 @@ static void lm_rkm_reg(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	}
 }
 
+static void lm_inactive_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct xua_layer_manager_default_priv *lmp = fi->priv;
+
+	if (lmp->asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP ||
+	    lmp->asp->cfg.role == OSMO_SS7_ASP_ROLE_IPSP) {
+		if (asp_act_needed(lmp->asp))
+			xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
+	}
+}
+
+static void lm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+	struct xua_layer_manager_default_priv *lmp = fi->priv;
+	struct osmo_xlm_prim *oxp = data;
+
+	switch (event) {
+	case LM_E_ASP_ACT_CONF:
+		ENSURE_ASP_OR_IPSP(fi, event);
+		/* RFC4666 4.3.4.3: "[...] the ASP does not consider itself in the ASP-ACTIVE state
+		 * until receipt of the ASP Active Ack message". */
+		lm_fsm_state_chg(fi, S_ACTIVE);
+		break;
+	case LM_E_ASP_ACT_IND:
+		ENSURE_SG_OR_IPSP(fi, event);
+		lm_fsm_state_chg(fi, S_ACTIVE);
+		break;
+	case LM_E_AS_INACTIVE_IND:
+		/* request the ASP to go into active state if needed */
+		if (asp_act_needed(lmp->asp))
+			xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
+		break;
+	case LM_E_NOTIFY_IND:
+		ENSURE_ASP_OR_IPSP(fi, event);
+		OSMO_ASSERT(oxp->oph.primitive == OSMO_XLM_PRIM_M_NOTIFY);
+		OSMO_ASSERT(oxp->oph.operation == PRIM_OP_INDICATION);
+		/* request the ASP to go into active state if needed */
+		if (asp_act_needed(lmp->asp))
+			xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
+		break;
+	case LM_E_ERROR_IND:
+		ENSURE_ASP_OR_IPSP(fi, event);
+		OSMO_ASSERT(oxp->oph.primitive == OSMO_XLM_PRIM_M_ERROR);
+		OSMO_ASSERT(oxp->oph.operation == PRIM_OP_INDICATION);
+		/* Our ASPAC was most probably rejected by peer with an M3UA ERR.
+		 * Go back to Wait Notify to either wait for some notificaiton to re-attempt,
+		 * or end up timing out and reconnecting. */
+		LOGPFSML(fi, LOGL_NOTICE, "Received M-ERROR.ind with error code %u (%s)\n",
+			 oxp->u.error.code, get_value_string(m3ua_err_names, oxp->u.error.code));
+		if (asp_act_needed(lmp->asp))
+			lm_fsm_state_chg(fi, S_WAIT_NOTIFY);
+		/* else: stay in inactive */
+		break;
+	}
+}
+
 static void lm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct xua_layer_manager_default_priv *lmp = fi->priv;
@@ -337,6 +410,10 @@ static void lm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		 * Try to re-activate, if peer's ASP is indeed blocked we'll probably receive an
 		 * ERR msg and continue from there in the case LM_E_ERROR_IND below. */
 		xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
+		break;
+	case LM_E_ASP_INACT_IND:
+		ENSURE_SG_OR_IPSP(fi, event);
+		lm_fsm_state_chg(fi, S_INACTIVE);
 		break;
 	case LM_E_AS_INACTIVE_IND:
 		/* request the ASP to go into active state */
@@ -370,6 +447,9 @@ static void lm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 static void lm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	switch (event) {
+	case LM_E_ASP_DOWN_IND:
+		lm_fsm_state_chg(fi, S_WAIT_ASP_UP);
+		break;
 	case LM_E_SCTP_DISC_IND:
 		lm_fsm_state_chg(fi, S_IDLE);
 		break;
@@ -427,9 +507,12 @@ static const struct osmo_fsm_state lm_states[] = {
 				 S(LM_E_ASP_UP_IND) |
 				 S(LM_E_ERROR_IND),
 		.out_state_mask = S(S_IDLE) |
-				  S(S_WAIT_NOTIFY),
+				  S(S_WAIT_ASP_UP) |
+				  S(S_WAIT_NOTIFY) |
+				  S(S_INACTIVE),
 		.name = "WAIT_ASP_UP",
 		.action = lm_wait_asp_up,
+		.onenter = lm_wait_asp_up_on_enter,
 	},
 	[S_WAIT_NOTIFY] = {
 		.in_event_mask = S(LM_E_AS_INACTIVE_IND) |
@@ -437,7 +520,9 @@ static const struct osmo_fsm_state lm_states[] = {
 				 S(LM_E_NOTIFY_IND) |
 				 S(LM_E_ASP_UP_CONF),
 		.out_state_mask = S(S_IDLE) |
+				  S(S_WAIT_ASP_UP) |
 				  S(S_RKM_REG) |
+				  S(S_INACTIVE) |
 				  S(S_ACTIVE),
 		.name = "WAIT_NOTIFY",
 		.action = lm_wait_notify,
@@ -450,14 +535,32 @@ static const struct osmo_fsm_state lm_states[] = {
 		.name = "RKM_REG",
 		.action = lm_rkm_reg,
 	},
-	[S_ACTIVE] = {
-		.in_event_mask = S(LM_E_ASP_ACT_IND) |
+	[S_INACTIVE] = {
+		.in_event_mask = S(LM_E_ASP_ACT_CONF) |
+				 S(LM_E_ASP_ACT_IND) |
 				 S(LM_E_ASP_INACT_CONF) |
 				 S(LM_E_AS_INACTIVE_IND) |
 				 S(LM_E_NOTIFY_IND) |
 				 S(LM_E_ERROR_IND),
 		.out_state_mask = S(S_IDLE) |
-				  S(S_WAIT_NOTIFY),
+				  S(S_WAIT_ASP_UP) |
+				  S(S_WAIT_NOTIFY) |
+				  S(S_ACTIVE),
+		.name = "INACTIVE",
+		.action = lm_inactive,
+		.onenter = lm_inactive_on_enter,
+	},
+	[S_ACTIVE] = {
+		.in_event_mask = S(LM_E_ASP_ACT_IND) |
+				 S(LM_E_ASP_INACT_CONF) |
+				 S(LM_E_ASP_INACT_IND) |
+				 S(LM_E_AS_INACTIVE_IND) |
+				 S(LM_E_NOTIFY_IND) |
+				 S(LM_E_ERROR_IND),
+		.out_state_mask = S(S_IDLE) |
+				  S(S_WAIT_ASP_UP) |
+				  S(S_WAIT_NOTIFY) |
+				  S(S_INACTIVE),
 		.name = "ACTIVE",
 		.action = lm_active,
 	},
@@ -469,7 +572,9 @@ static const struct osmo_prim_event_map lm_event_map[] = {
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_SCTP_RELEASE, PRIM_OP_INDICATION, LM_E_SCTP_DISC_IND },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_ASP_UP, PRIM_OP_CONFIRM, LM_E_ASP_UP_CONF },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_ASP_UP, PRIM_OP_INDICATION, LM_E_ASP_UP_IND },
+	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_ASP_DOWN, PRIM_OP_INDICATION, LM_E_ASP_DOWN_IND },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_INDICATION, LM_E_ASP_ACT_IND },
+	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_CONFIRM, LM_E_ASP_ACT_CONF },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_ASP_INACTIVE, PRIM_OP_CONFIRM, LM_E_ASP_INACT_CONF },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_ASP_INACTIVE, PRIM_OP_INDICATION, LM_E_ASP_INACT_IND },
 	{ XUA_SAP_LM, OSMO_XLM_PRIM_M_AS_STATUS, PRIM_OP_INDICATION, LM_E_AS_STATUS_IND },
@@ -488,7 +593,8 @@ struct osmo_fsm xua_default_lm_fsm = {
 	.num_states = ARRAY_SIZE(lm_states),
 	.timer_cb = lm_timer_cb,
 	.event_names = lm_event_names,
-	.allstate_event_mask = S(LM_E_SCTP_DISC_IND),
+	.allstate_event_mask = S(LM_E_ASP_DOWN_IND) |
+			       S(LM_E_SCTP_DISC_IND),
 	.allstate_action = lm_allstate,
 	.log_subsys = DLSS7,
 };
