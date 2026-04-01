@@ -693,7 +693,7 @@ ss7_asp_find_by_socket_addr(int fd, int trans_proto)
 	return NULL;
 }
 
-static void ss7_asp_xua_layer_manager_start(struct osmo_ss7_asp *asp)
+void ss7_asp_xua_layer_manager_start(struct osmo_ss7_asp *asp)
 {
 	OSMO_ASSERT(!asp->lm);
 	/* No LM in IPA */

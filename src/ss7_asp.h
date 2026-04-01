@@ -194,6 +194,7 @@ int ss7_asp_apply_drop_local_address(const struct osmo_ss7_asp *asp, unsigned in
 
 void ss7_asp_set_blocked(struct osmo_ss7_asp *asp, bool blocked);
 void ss7_asp_restart_after_reconfigure(struct osmo_ss7_asp *asp);
+void ss7_asp_xua_layer_manager_start(struct osmo_ss7_asp *asp);
 
 unsigned int ss7_asp_get_all_rctx(const struct osmo_ss7_asp *asp, uint32_t *rctx, unsigned int rctx_size,
 				  const struct osmo_ss7_as *excl_as);
