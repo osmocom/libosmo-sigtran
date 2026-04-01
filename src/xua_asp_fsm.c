@@ -78,6 +78,7 @@ static const struct value_string xua_asp_event_names[] = {
 
 	{ XUA_ASP_E_AS_ASSIGNED,	"AS_ASSIGNED" },
 	{ XUA_ASP_E_ADM_BLOCKED,	"ADM_BLOCKED" },
+	{ XUA_ASP_E_ADM_UNBLOCKED,	"ADM_UNBLOCKED" },
 
 	{ IPA_ASP_E_ID_RESP,		"IPA_CCM_ID_RESP" },
 	{ IPA_ASP_E_ID_GET,		"IPA_CCM_ID_GET" },
@@ -916,7 +917,13 @@ static void xua_asp_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 			/* nothing to be done, ASPAC will be rejected when received. */
 			return;
 		}
-		if (asp->cfg.role == OSMO_SS7_ASP_ROLE_SG) {
+		switch (asp->cfg.role) {
+		case OSMO_SS7_ASP_ROLE_ASP:
+		case OSMO_SS7_ASP_ROLE_IPSP:
+			/* Send M3UA_MSGT_ASPSM_ASPUP and start t_ack */
+			peer_send_and_start_t_ack(fi, XUA_ASP_E_ASPTM_ASPIA);
+			break;
+		case OSMO_SS7_ASP_ROLE_SG:
 			/* RFC4666 4.3.4.4: Transmit unsolicited ASPIA ACK no tnotify peer.
 			 * "If the ASP receives an ASP Inactive Ack without having sent an
 			 *  ASP Inactive message, the ASP should now consider itself to be
@@ -928,8 +935,32 @@ static void xua_asp_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 			/* transition state and inform layer manager */
 			osmo_fsm_inst_state_chg(fi, XUA_ASP_S_INACTIVE, 0, 0);
 			send_xlm_prim_simple(fi, OSMO_XLM_PRIM_M_ASP_INACTIVE, PRIM_OP_INDICATION);
+			break;
 		}
-		/* TODO: implement ASP and IPSP roles. */
+		break;
+	case XUA_ASP_E_ADM_UNBLOCKED:
+		if (fi->state != XUA_ASP_S_INACTIVE) {
+			/* nothing to be done, we are only interested in possible
+			 * transitioning INACTIVE->ACTIVE */
+			return;
+		}
+		switch (asp->cfg.role) {
+		case OSMO_SS7_ASP_ROLE_ASP:
+		case OSMO_SS7_ASP_ROLE_IPSP:
+			/* Forge a M-INACTIVE confirmation prim in order to give LM the opportunity
+			 * to figure out whether some change needs to be applied to the ASP now that
+			 * it is unblocked. */
+			send_xlm_prim_simple(fi, OSMO_XLM_PRIM_M_ASP_INACTIVE, PRIM_OP_CONFIRM);
+			break;
+		case OSMO_SS7_ASP_ROLE_SG:
+			/* Send an unsolicited ASPIA ACK to peer to give the opportunity to retry re-activation: */
+			xua_asp_tx_unsolicited_aspia_ack(asp);
+			/* Forge a M-INACTIVE indication prim in order to give LM the opportunity
+			 * to figure out whether some change needs to be applied to the ASP now that
+			 * it is unblocked. */
+			send_xlm_prim_simple(fi, OSMO_XLM_PRIM_M_ASP_INACTIVE, PRIM_OP_INDICATION);
+			break;
+		}
 		break;
 	default:
 		break;
@@ -1018,7 +1049,8 @@ struct osmo_fsm xua_asp_fsm = {
 			       S(XUA_ASP_E_ASPSM_BEAT_ACK) |
 			       S(XUA_ASP_E_MGMT_ERROR) |
 			       S(XUA_ASP_E_AS_ASSIGNED) |
-			       S(XUA_ASP_E_ADM_BLOCKED),
+			       S(XUA_ASP_E_ADM_BLOCKED) |
+			       S(XUA_ASP_E_ADM_UNBLOCKED),
 	.allstate_action = xua_asp_allstate,
 	.cleanup = xua_asp_fsm_cleanup,
 };

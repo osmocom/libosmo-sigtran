@@ -1535,6 +1535,7 @@ int ss7_asp_get_fd(const struct osmo_ss7_asp *asp)
  * A blocked ASP can't stay nor be turned into ACTIVE state. */
 void ss7_asp_set_blocked(struct osmo_ss7_asp *asp, bool blocked)
 {
+	uint32_t event;
 	if (asp->cfg.adm_state.blocked == blocked)
 		return;
 	LOGPASP(asp, DLSS7, LOGL_NOTICE, "Applying Adm State change: '%sblock' -> '%sblock'\n",
@@ -1542,8 +1543,8 @@ void ss7_asp_set_blocked(struct osmo_ss7_asp *asp, bool blocked)
 		blocked ? "" : "no ");
 	asp->cfg.adm_state.blocked = blocked;
 
-	if (asp->cfg.adm_state.blocked)
-		osmo_fsm_inst_dispatch(asp->fi, XUA_ASP_E_ADM_BLOCKED, NULL);
+	event = asp->cfg.adm_state.blocked ? XUA_ASP_E_ADM_BLOCKED : XUA_ASP_E_ADM_UNBLOCKED;
+	osmo_fsm_inst_dispatch(asp->fi, event, NULL);
 }
 
 /* Apply sane configs for unconfigured options and restart the ASP.  */

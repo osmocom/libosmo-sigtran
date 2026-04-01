@@ -714,11 +714,6 @@ DEFUN_ATTR(asp_block, asp_block_cmd,
 		return CMD_WARNING;
 	}
 
-	if (asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP) {
-		vty_out(vty, "%% 'block' not yet implemented in 'role asp'%s", VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-
 	ss7_asp_set_blocked(asp, true);
 	return CMD_SUCCESS;
 }

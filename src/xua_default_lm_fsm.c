@@ -199,6 +199,10 @@ static void reg_req_all_assoc_as(struct osmo_ss7_asp *asp)
 
 static bool asp_act_needed(const struct osmo_ss7_asp *asp)
 {
+	/* Avoid activating if ASP is adminsitratively blocked locally: */
+	if (asp->cfg.adm_state.blocked)
+		return false;
+
 	/* Don't change active ASP if there's already one active in the AS. */
 	if (ss7_asp_determine_traf_mode(asp) == OSMO_SS7_AS_TMOD_OVERRIDE) {
 		struct ss7_as_asp_assoc *assoc;
@@ -208,6 +212,13 @@ static bool asp_act_needed(const struct osmo_ss7_asp *asp)
 		}
 	}
 	return true;
+}
+
+static void submit_m_asp_active_req_if_needed(struct osmo_ss7_asp *asp)
+{
+	if (!asp_act_needed(asp))
+		return;
+	xlm_sap_down_simple(asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
 }
 
 static void lm_idle(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -342,10 +353,8 @@ static void lm_inactive_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 	struct xua_layer_manager_default_priv *lmp = fi->priv;
 
 	if (lmp->asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP ||
-	    lmp->asp->cfg.role == OSMO_SS7_ASP_ROLE_IPSP) {
-		if (asp_act_needed(lmp->asp))
-			xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
-	}
+	    lmp->asp->cfg.role == OSMO_SS7_ASP_ROLE_IPSP)
+		submit_m_asp_active_req_if_needed(lmp->asp);
 }
 
 static void lm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -360,22 +369,32 @@ static void lm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		 * until receipt of the ASP Active Ack message". */
 		lm_fsm_state_chg(fi, S_ACTIVE);
 		break;
+	case LM_E_ASP_INACT_CONF:
+		ENSURE_ASP_OR_IPSP(fi, event);
+		/* Local M3UA/SUA layer transmitted an ASPIA when local ASP became administratively
+		 * blocked, and we just received confirmation.
+		 * Request the ASP to go into active state if needed */
+		submit_m_asp_active_req_if_needed(lmp->asp);
+		break;
+	case LM_E_ASP_INACT_IND:
+		ENSURE_SG_OR_IPSP(fi, event);
+		/* Peer sent an ASPIA, or local M3UA/SUA layer informs us administrative block
+		 * status changed. Nothing to be done here. */
+		break;
 	case LM_E_ASP_ACT_IND:
 		ENSURE_SG_OR_IPSP(fi, event);
 		lm_fsm_state_chg(fi, S_ACTIVE);
 		break;
 	case LM_E_AS_INACTIVE_IND:
 		/* request the ASP to go into active state if needed */
-		if (asp_act_needed(lmp->asp))
-			xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
+		submit_m_asp_active_req_if_needed(lmp->asp);
 		break;
 	case LM_E_NOTIFY_IND:
 		ENSURE_ASP_OR_IPSP(fi, event);
 		OSMO_ASSERT(oxp->oph.primitive == OSMO_XLM_PRIM_M_NOTIFY);
 		OSMO_ASSERT(oxp->oph.operation == PRIM_OP_INDICATION);
 		/* request the ASP to go into active state if needed */
-		if (asp_act_needed(lmp->asp))
-			xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
+		submit_m_asp_active_req_if_needed(lmp->asp);
 		break;
 	case LM_E_ERROR_IND:
 		ENSURE_ASP_OR_IPSP(fi, event);
@@ -405,11 +424,18 @@ static void lm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		break;
 	case LM_E_ASP_INACT_CONF:
 		ENSURE_ASP_OR_IPSP(fi, event);
+		if (lmp->asp->cfg.adm_state.blocked) {
+			/* M3UA/SUA transmitted an ASPIA when local ASP became administratively blocked,
+			 * and we just received confirmation. Move to INACTIVE and wait for M3UA/SUA to
+			 * notify about status change (ie. forged M-INACTIVE.confirm) */
+			lm_fsm_state_chg(fi, S_INACTIVE);
+			return;
+		}
 		/* RFC 4666 RFC4666 4.3.4.4: Rx unsolicited ASPIA ACK, usually triggered because
 		 * peer's ASP became administratively blocked.
 		 * Try to re-activate, if peer's ASP is indeed blocked we'll probably receive an
 		 * ERR msg and continue from there in the case LM_E_ERROR_IND below. */
-		xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
+		submit_m_asp_active_req_if_needed(lmp->asp);
 		break;
 	case LM_E_ASP_INACT_IND:
 		ENSURE_SG_OR_IPSP(fi, event);
@@ -417,7 +443,7 @@ static void lm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		break;
 	case LM_E_AS_INACTIVE_IND:
 		/* request the ASP to go into active state */
-		xlm_sap_down_simple(lmp->asp, OSMO_XLM_PRIM_M_ASP_ACTIVE, PRIM_OP_REQUEST);
+		submit_m_asp_active_req_if_needed(lmp->asp);
 		break;
 	case LM_E_NOTIFY_IND:
 		ENSURE_ASP_OR_IPSP(fi, event);
@@ -538,6 +564,7 @@ static const struct osmo_fsm_state lm_states[] = {
 	[S_INACTIVE] = {
 		.in_event_mask = S(LM_E_ASP_ACT_CONF) |
 				 S(LM_E_ASP_ACT_IND) |
+				 S(LM_E_ASP_INACT_IND) |
 				 S(LM_E_ASP_INACT_CONF) |
 				 S(LM_E_AS_INACTIVE_IND) |
 				 S(LM_E_NOTIFY_IND) |
