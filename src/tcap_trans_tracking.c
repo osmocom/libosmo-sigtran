@@ -211,13 +211,13 @@ struct tcap_trans_track_entry *tcap_trans_track_entry_find(
 		return entry;
 	}
 
-	/* only check for remaining entries which don't have an own_tid */
-	hash_for_each_possible(as->tcap.trans_track_peer, entry, peer_tid.list, gen_hash_addr(*peer_tid, peer_addr)) {
-		if (entry->peer_tid.tid != *peer_tid)
+	/* only check for remaining entries which don't have a peer_tid */
+	hash_for_each_possible(as->tcap.trans_track_own, entry, own_tid.list, gen_hash_addr(*own_tid, own_addr)) {
+		if (entry->own_tid.tid != *own_tid)
 			continue;
 
-		/* can't be a match, otherwise already found by own_tid hash_for_each */
-		if (entry->own_tid.tid_valid)
+		/* can't be a match, otherwise already found by previous loop */
+		if (entry->peer_tid.tid_valid)
 			continue;
 
 		if (osmo_sccp_addr_cmp(entry->own_addr, own_addr, OSMO_SCCP_ADDR_T_SSN | OSMO_SCCP_ADDR_T_PC) ||
