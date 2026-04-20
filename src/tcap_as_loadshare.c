@@ -548,6 +548,10 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 		}
 
 		asp = tcap_trans_track_continue(as, &called_addr, &parsed.dtid, &calling_addr, &parsed.otid);
+		if (!asp) {
+			LOGPAS(as, DLTCAP, LOGL_INFO, "Couldn't find cached ASP for dtid %u/otid %u, using tcap route", parsed.dtid, parsed.otid);
+			asp = tcap_as_asp_find_by_tcap_id(as, &calling_addr, &called_addr, parsed.dtid);
+		}
 		rc = asp ? 0 : -ENOKEY;
 		break;
 	case TCAP_TCMessage_PR_abort:
@@ -559,6 +563,10 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 		}
 
 		asp = tcap_trans_track_end(as, &called_addr, &parsed.dtid, &calling_addr, NULL);
+		if (!asp) {
+			LOGPAS(as, DLTCAP, LOGL_INFO, "Couldn't find cached ASP for dtid %u/otid %u, using tcap route", parsed.dtid, parsed.otid);
+			asp = tcap_as_asp_find_by_tcap_id(as, &calling_addr, &called_addr, parsed.dtid);
+		}
 		rc = asp ? 0 : -ENOKEY;
 		break;
 	case TCAP_TCMessage_PR_unidirectional:
