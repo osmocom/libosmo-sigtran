@@ -350,7 +350,7 @@ int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32
 			return -8;
 		}
 
-		tcap_trans_track_entry_create(as, asp, &calling_addr, &parsed.otid, &called_addr, NULL);
+		tcap_trans_track_begin(as, asp, &calling_addr, &parsed.otid, &called_addr, NULL);
 		break;
 	case TCAP_TCMessage_PR_continue:
 		if (!((rc & OTID_SET) && (rc & DTID_SET))) {
