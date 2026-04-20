@@ -330,18 +330,6 @@ int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32
 		return 0;
 	}
 
-	/* TCAP transaction tracking requires point codes */
-	if (!(calling_addr.presence & OSMO_SCCP_ADDR_T_PC)) {
-		/* use M3UA OPC instead */
-		calling_addr.pc = opc;
-		calling_addr.presence |= OSMO_SCCP_ADDR_T_PC;
-	}
-	if (!(called_addr.presence & OSMO_SCCP_ADDR_T_PC)) {
-		/* use M3UA DPC instead */
-		called_addr.pc = dpc;
-		called_addr.presence |= OSMO_SCCP_ADDR_T_PC;
-	}
-
 	/* retrieve the SCCP payload (actual encoded TCAP data) */
 	ie_data = xua_msg_find_tag(sua, SUA_IEI_DATA);
 	if (!ie_data)
@@ -503,18 +491,6 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 		/* No tcap, return NULL */
 		rc = -EPROTONOSUPPORT;
 		goto out_free_sua;
-	}
-
-	/* TCAP transaction tracking requires point codes */
-	if (!(calling_addr.presence & OSMO_SCCP_ADDR_T_PC)) {
-		/* use M3UA OPC instead */
-		calling_addr.pc = mtp->opc;
-		calling_addr.presence |= OSMO_SCCP_ADDR_T_PC;
-	}
-	if (!(called_addr.presence & OSMO_SCCP_ADDR_T_PC)) {
-		/* use M3UA DPC instead */
-		called_addr.pc = mtp->dpc;
-		called_addr.presence |= OSMO_SCCP_ADDR_T_PC;
 	}
 
 	/* retrieve the SCCP payload (TCAP data) */
