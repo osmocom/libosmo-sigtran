@@ -252,7 +252,9 @@ static struct tcap_range *tcap_overlap_tid(struct osmo_ss7_as *as, uint32_t pc, 
 	return NULL;
 }
 
-static struct osmo_ss7_asp *find_asp_no_tcap_range(struct osmo_ss7_as *as)
+
+/* Select a TCAP-enabled ASP in round-robin fashion */
+static struct osmo_ss7_asp *select_asp_tcap_enabled_rr(struct osmo_ss7_as *as)
 {
 	struct ss7_as_asp_assoc *assoc;
 
@@ -526,7 +528,7 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 			rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_SELECTED);
 		} else {
 			/* if no ASP found for this TCAP, try to find a non-tcap-range ASP as fallback*/
-			asp = find_asp_no_tcap_range(as);
+			asp = select_asp_tcap_enabled_rr(as);
 			if (asp)
 				rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_FALLBACK);
 			else {
