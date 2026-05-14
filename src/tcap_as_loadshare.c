@@ -503,11 +503,12 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 	}
 
 	rc = parse_tcap(as, ie_data->dat, ie_data->len, &parsed);
-	LOGPAS(as, DLTCAP, LOGL_DEBUG, "TCAP decoded rc=%d otid=%u dtid=%u\n", rc, parsed.otid, parsed.dtid);
+	LOGPAS(as, DLTCAP, LOGL_DEBUG, "TCAP decoded rc=%d, msg=0x%02x, otid=%u dtid=%u\n",
+	       rc, parsed.present, parsed.otid, parsed.dtid);
 
 	if (rc <= 0) {
 		rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_TCAP_FAILED);
-		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Failed get TCAP otid/dtid.\n");
+		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Failed parse TCAP message to retrieve otid/dtid.\n");
 		rc = -EINVAL;
 		goto out_free_sua;
 	}
