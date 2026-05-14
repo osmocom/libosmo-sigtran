@@ -534,7 +534,7 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 			else {
 				/* couldn't find a suitable canditate for OTID */
 				rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_FAILED);
-				LOGPAS(as, DLTCAP, LOGL_DEBUG, "Couldn't find a suitable canditate for otid %u\n", parsed.otid);
+				LOGPAS(as, DLTCAP, LOGL_DEBUG, "Couldn't find a suitable canditate for TCAP Begin otid %u\n", parsed.otid);
 				rc = -ENOKEY;
 				goto out_free_sua;
 			}
@@ -551,7 +551,7 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 
 		asp = tcap_trans_track_continue(as, &called_addr, &parsed.dtid, &calling_addr, &parsed.otid);
 		if (!asp) {
-			LOGPAS(as, DLTCAP, LOGL_INFO, "Couldn't find cached ASP for dtid %u/otid %u, using tcap route", parsed.dtid, parsed.otid);
+			LOGPAS(as, DLTCAP, LOGL_INFO, "Couldn't find cached ASP for TCAP Continue, dtid %u/otid %u, using tcap route", parsed.dtid, parsed.otid);
 			asp = tcap_as_asp_find_by_tcap_id(as, &calling_addr, &called_addr, parsed.dtid);
 			if (asp)
 				tcap_trans_track_entry_create(as, asp, &called_addr, &parsed.dtid, &calling_addr, &parsed.otid);
@@ -568,7 +568,7 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 
 		asp = tcap_trans_track_end(as, &called_addr, &parsed.dtid, &calling_addr, NULL);
 		if (!asp) {
-			LOGPAS(as, DLTCAP, LOGL_INFO, "Couldn't find cached ASP for dtid %u/otid %u, using tcap route", parsed.dtid, parsed.otid);
+			LOGPAS(as, DLTCAP, LOGL_INFO, "Couldn't find cached ASP for TCAP End, dtid %u, using tcap route", parsed.dtid);
 			asp = tcap_as_asp_find_by_tcap_id(as, &calling_addr, &called_addr, parsed.dtid);
 		}
 		rc = asp ? 0 : -ENOKEY;
