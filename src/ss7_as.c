@@ -137,6 +137,7 @@ static const struct rate_ctr_desc ss7_as_rcd[] = {
 	[SS7_AS_CTR_TCAP_ASP_SELECTED] = {	"tcap:asp:selected",	"ASP selection successful for a TCAP-message (loadshare-tcap)" },
 	[SS7_AS_CTR_TCAP_ASP_FALLBACK] = {	"tcap:asp:fallback",	"Fallback ASP selected for a TCAP-message (loadshare-tcap)" },
 	[SS7_AS_CTR_TCAP_ASP_FAILED] = {	"tcap:asp:failed",	"ASP selection failed for a TCAP-message (loadshare-tcap)" },
+	[SS7_AS_CTR_TCAP_ASP_MISS] = {		"tcap:session:miss",	"A non-starting TCAP message (Continue, End, Abort) was missing a session entry, but routed successful. (loadshare-tcap)" },
 #endif /* WITH_TCAP_LOADSHARING */
 };
 
