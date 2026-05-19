@@ -528,7 +528,6 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 		} else {
 			/* Couldn't find a suitable canditate */
 			LOGPAS(as, DLTCAP, LOGL_DEBUG, "Couldn't find a suitable canditate for TCAP Begin otid %u\n", parsed.otid);
-			rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_FAILED);
 			rc = -ENOKEY;
 			goto out_free_sua;
 		}
@@ -574,6 +573,9 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 		break;
 	}
 out_free_sua:
+	if (rc == -ENOKEY)
+		rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_FAILED);
+
 	/* RFC3868 4.7.3: "If an ASP is not available, the SG may generate (X)UDTS "routing failure",
 	 * if the return option is used."
 	 * See also ITU Q.714 4.2 */
