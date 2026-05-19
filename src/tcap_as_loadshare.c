@@ -522,23 +522,15 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 			goto out_free_sua;
 		}
 
-		/* lookup a new ASP */
-		asp = tcap_as_asp_find_by_tcap_id(as, &calling_addr, &called_addr, parsed.otid);
-
+		asp = select_asp_tcap_enabled_rr(as);
 		if (asp) {
 			rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_SELECTED);
 		} else {
-			/* if no ASP found for this TCAP, try to find a non-tcap-range ASP as fallback*/
-			asp = select_asp_tcap_enabled_rr(as);
-			if (asp)
-				rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_FALLBACK);
-			else {
-				/* couldn't find a suitable canditate for OTID */
-				rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_FAILED);
-				LOGPAS(as, DLTCAP, LOGL_DEBUG, "Couldn't find a suitable canditate for TCAP Begin otid %u\n", parsed.otid);
-				rc = -ENOKEY;
-				goto out_free_sua;
-			}
+			/* Couldn't find a suitable canditate */
+			LOGPAS(as, DLTCAP, LOGL_DEBUG, "Couldn't find a suitable canditate for TCAP Begin otid %u\n", parsed.otid);
+			rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_FAILED);
+			rc = -ENOKEY;
+			goto out_free_sua;
 		}
 
 		tcap_trans_track_begin(as, asp, &called_addr, NULL, &calling_addr, &parsed.otid);
