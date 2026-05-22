@@ -93,6 +93,12 @@ struct value_string osmo_ss7_as_traffic_mode_vals[] = {
 	{ 0, NULL }
 };
 
+struct value_string osmo_ss7_as_tcap_unroutable_vals[] = {
+	{ SS7_AS_TCAP_UNROUTABLE_REJECT_UDTS,	"reject-udts" },
+	{ SS7_AS_TCAP_UNROUTABLE_LOAD_SHARE_AS,	"load-share-over-as" },
+	{ 0, NULL }
+};
+
 #define SS7_AS_CTR_RX_MSU_SLS_STR "Number of MSU received on SLS "
 #define SS7_AS_CTR_TX_MSU_SLS_STR "Number of MSU transmitted on SLS "
 static const struct rate_ctr_desc ss7_as_rcd[] = {
@@ -135,7 +141,7 @@ static const struct rate_ctr_desc ss7_as_rcd[] = {
 	[SS7_AS_CTR_RX_TCAP_DECODED] = {	"tcap:decoded",		"Number of TCAP-messages decoded successfully (loadshare-tcap)" },
 	[SS7_AS_CTR_RX_TCAP_FAILED] = {		"tcap:failed",		"Number of TCAP-messages that failed decoding (loadshare-tcap)" },
 	[SS7_AS_CTR_TCAP_ASP_SELECTED] = {	"tcap:asp:selected",	"ASP selection successful for a TCAP-message (loadshare-tcap)" },
-	[SS7_AS_CTR_TCAP_ASP_FALLBACK] = {	"tcap:asp:fallback",	"Fallback ASP selected for a TCAP-message (loadshare-tcap)" },
+	[SS7_AS_CTR_TCAP_ASP_FALLBACK] = {	"tcap:asp:fallback",	"A non-starting TCAP message had to be routed by round-robin over all ASP. (loadshare-tcap)" },
 	[SS7_AS_CTR_TCAP_ASP_FAILED] = {	"tcap:asp:failed",	"ASP selection failed for a TCAP-message (loadshare-tcap)" },
 	[SS7_AS_CTR_TCAP_ASP_MISS] = {		"tcap:session:miss",	"A non-starting TCAP message (Continue, End, Abort) was missing a session entry, but routed successful. (loadshare-tcap)" },
 #endif /* WITH_TCAP_LOADSHARING */
@@ -184,6 +190,7 @@ struct osmo_ss7_as *ss7_as_alloc(struct osmo_ss7_instance *inst, const char *nam
 
 	/* TODO: use Tdef */
 	as->cfg.loadshare.tcap.timeout_s = 30;
+	as->cfg.loadshare.tcap.unroutable_tcap_msg = SS7_AS_TCAP_UNROUTABLE_REJECT_UDTS;
 #endif /* WITH_TCAP_LOADSHARING */
 
 	as->fi = xua_as_fsm_start(as, LOGL_DEBUG);
