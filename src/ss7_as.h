@@ -75,6 +75,14 @@ enum ss7_as_ctr {
 #endif /* WITH_TCAP_LOADSHARING */
 };
 
+/* when receiving an TCAP Continue/End/Abort which can't be assosiated to a node (either by sesssion tracking or by DTID over TCAP ranges,
+ * how to handle those */
+enum ss7_as_tcap_unroutable {
+	SS7_AS_TCAP_UNROUTABLE_REJECT_UDTS, /*! reject the unroutable TCAP message with a UDTS */
+	SS7_AS_TCAP_UNROUTABLE_LOAD_SHARE_AS, /*! fallback to round robin load-share over all available ASP */
+};
+extern struct value_string osmo_ss7_as_tcap_unroutable_vals[];
+
 #define NUM_AS_EXT_SLS 128
 typedef uint8_t as_ext_sls_t; /* range: 0-127, 7 bit */
 struct osmo_ss7_as_esls_entry {
@@ -172,6 +180,7 @@ struct osmo_ss7_as {
 				bool enabled;
 				unsigned int timeout_s;
 				struct ss7_as_asp_assoc *last_asp_idx_sent;
+				enum ss7_as_tcap_unroutable unroutable_tcap_msg;
 			} tcap;
 #endif /* WITH_TCAP_LOADSHARING */
 		} loadshare;
