@@ -133,6 +133,7 @@ struct osmo_ss7_as {
 		/* TODO: the hash tables size might not be optimal */
 		DECLARE_HASHTABLE(trans_track_own, 10);
 		DECLARE_HASHTABLE(trans_track_peer, 10);
+		struct ss7_as_asp_assoc *last_asp_idx_sent;
 	} tcap;
 #endif /* WITH_TCAP_LOADSHARING */
 
@@ -179,7 +180,6 @@ struct osmo_ss7_as {
 			struct {
 				bool enabled;
 				unsigned int timeout_s;
-				struct ss7_as_asp_assoc *last_asp_idx_sent;
 				enum ss7_as_tcap_unroutable unroutable_tcap_msg;
 			} tcap;
 #endif /* WITH_TCAP_LOADSHARING */
