@@ -406,6 +406,20 @@ OsmoSTP(config-cs7-as)# list
   no point-code override (opc|dpc)
   point-code override patch-sccp (disabled|both)
 
+OsmoSTP(config-cs7-as)# ?
+...
+!r!  description [ ]+Save human-readable description of the object
+!r!  asp         [ ]+Specify that a given ASP is part of this AS
+!r!  no          [ ]+Negate a command or set its defaults
+!r!  traffic-mode[ ]+Specifies traffic mode of operation of the ASP within the AS
+!r!  sls-shift   [ ]+Shift SLS bits used during routing decision
+...
+!r!  binding-table   [ ]+AS Loadshare binding table operations
+!r!  recovery-timeout[ ]+Specifies RFC4666 recovery timer T\(r\) timeout
+!r!  qos-class       [ ]+Specity QoS Class of AS
+!r!  routing-key     [ ]+Define a routing key
+!r!  point-code      [ ]+Point Code Specific Features
+
 OsmoSTP(config-cs7-as)# no ?
   asp           Specify ASP to be removed from this AS
   traffic-mode  Remove explicit traffic mode of operation of this AS
