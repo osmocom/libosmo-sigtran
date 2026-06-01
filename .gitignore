@@ -55,6 +55,7 @@ tests/channel/channel_test
 tests/db/db_test
 tests/debug/debug_test
 tests/*/*_test
+tests/dscp/get_tos_diag
 
 tests/atconfig
 tests/package.m4

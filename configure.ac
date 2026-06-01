@@ -209,6 +209,7 @@ AC_OUTPUT(
     tests/ss7/Makefile
     tests/tcap/Makefile
     tests/vty/Makefile
+    tests/dscp/Makefile
     examples/Makefile
     stp/Makefile
     doc/Makefile

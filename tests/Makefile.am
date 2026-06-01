@@ -1,4 +1,4 @@
-SUBDIRS = xua m2ua ss7 vty
+SUBDIRS = xua m2ua ss7 vty dscp
 
 if BUILD_WITH_TCAP_LOADSHARING
 SUBDIRS += tcap

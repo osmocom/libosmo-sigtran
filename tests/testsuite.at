@@ -26,3 +26,9 @@ AT_SKIP_IF([test ! -e $abs_srcdir/tcap/tcap_transaction_tracking_test])
 cat $abs_srcdir/tcap/tcap_transaction_tracking_test.ok > expout
 AT_CHECK([$abs_top_builddir/tests/tcap/tcap_transaction_tracking_test], [], [expout], [ignore])
 AT_CLEANUP
+
+AT_SETUP([dscp])
+AT_KEYWORDS([dscp])
+cat $abs_srcdir/dscp/dscp_test.ok > expout
+AT_CHECK([python3 -u $abs_top_builddir/tests/dscp/dscp_test.py], [], [expout], [ignore])
+AT_CLEANUP

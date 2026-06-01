@@ -1,0 +1,9 @@
+starting osmo-stp
+started osmo-stp
+LISTEN 127.0.0.1:2905 0.0.0.0:0 23
+ESTAB 127.0.0.1:2905 127.0.0.2:2906 23
+OTHER 127.0.0.1:2905 127.0.0.2:2906 23
+ESTAB 127.0.0.2:2906 127.0.0.1:2905 42
+OTHER 127.0.0.2:2906 127.0.0.1:2905 42
+stopping osmo-stp
+stopped osmo-stp
