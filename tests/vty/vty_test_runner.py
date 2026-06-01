@@ -22,6 +22,7 @@ import unittest
 import socket
 import subprocess
 import time
+import struct
 
 import osmopy.obscvty as obscvty
 import osmopy.osmoutil as osmoutil
@@ -225,6 +226,148 @@ class TestVTYSTP(TestVTYBase):
             self.assertTrue(self.vty.verify("no as " + as_name,['']))
         self.assertTrue(self.vty.verify("no asp " + asp_name,['']))
 
+class TestDSCP(TestVTYBase):
+
+    def vty_command(self):
+        return ["./stp/osmo-stp", "-c",
+                "../doc/examples/osmo-stp.cfg"]
+
+    def vty_app(self):
+        return (4239, "./stp/osmo-stp", "OsmoSTP", "stp")
+
+    def testDSCPSettings(self):
+        self.vty.enable()
+        self.assertTrue(self.vty.verify("configure terminal",['']))
+        self.assertTrue(self.vty.verify("cs7 instance 0",['']))
+        self.assertTrue(self.vty.verify("no listen m3ua 2905",['']))
+        self.assertTrue(self.vty.verify("listen m3ua 2905",['']))
+        self.assertTrue(self.vty.verify("accept-asp-connections dynamic-permitted",['']))
+        self.assertTrue(self.vty.verify("local-ip 127.0.0.1",['']))
+        self.assertTrue(self.vty.verify("init-ip-dscp 23",['']))
+        self.assertTrue(self.vty.verify("exit",['']))
+        self.assertTrue(self.vty.verify("asp asp-srv-m3ua 2906 2905 m3ua",['']))
+        self.assertTrue(self.vty.verify("local-ip 127.0.0.1",['']))
+        self.assertTrue(self.vty.verify("remote-ip 127.0.0.2",['']))
+        self.assertTrue(self.vty.verify("ip-dscp 8",['']))
+        self.assertTrue(self.vty.verify("role asp",['']))
+        self.assertTrue(self.vty.verify("sctp-role server",['']))
+        self.assertTrue(self.vty.verify("no shutdown",['']))
+        self.assertTrue(self.vty.verify("exit",["% NOTE: Skipping automatic restart of ASP since an explicit '[no] shutdown' command was entered"]))
+        self.assertTrue(self.vty.verify("asp asp-clnt-m3ua 2905 2906 m3ua",['']))
+        self.assertTrue(self.vty.verify("local-ip 127.0.0.2",['']))
+        self.assertTrue(self.vty.verify("remote-ip 127.0.0.1",['']))
+        self.assertTrue(self.vty.verify("ip-dscp 42",['']))
+        self.assertTrue(self.vty.verify("role asp",['']))
+        self.assertTrue(self.vty.verify("sctp-role client",['']))
+        self.assertTrue(self.vty.verify("no shutdown",['']))
+        self.assertTrue(self.vty.verify("exit",["% NOTE: Skipping automatic restart of ASP since an explicit '[no] shutdown' command was entered"]))
+        time.sleep(1.0)
+
+        NETLINK_SOCK_DIAG = 4
+        INET_DIAG_TOS = 5
+        SOCK_DIAG_BY_FAMILY = 20
+        NLM_F_REQUEST = 0x01
+        NLM_F_ROOT = 0x100
+        NLM_F_MATCH = 0x200
+        NLM_F_DUMP = (NLM_F_ROOT | NLM_F_MATCH)
+        NLMSG_HDR_SIZE = 16
+        TCP_ESTABLISHED = 1
+        TCP_LISTEN = 10
+        NLMSG_ERROR = 2
+        NLMSG_DONE = 3
+
+        req_v2_data = struct.pack(
+            "BBBBI",
+            socket.AF_INET,
+            socket.IPPROTO_SCTP,
+            1 << (INET_DIAG_TOS - 1),
+            0, # pad,
+            0xFFFFFFFF,
+        )
+        inet_diag_sockid = struct.pack(
+            "2H11I",
+            0, # sport
+            0, # dport
+            0, 0, 0, 0, # source ip
+            0, 0, 0, 0, # dest ip
+            0, # idiag_if (interface index)
+            0xffffffff, 0xffffffff, # idiag_cookie[2]
+        )
+        nl_msg_hdr = struct.pack(
+            "IHHII",
+            NLMSG_HDR_SIZE + len(req_v2_data) + len(inet_diag_sockid),
+            SOCK_DIAG_BY_FAMILY,
+            NLM_F_REQUEST | NLM_F_DUMP,
+            1, # nlmsg_seq (sequence number - arbitrary)
+            os.getpid()
+        )
+        nl_request = nl_msg_hdr + req_v2_data + inet_diag_sockid
+
+        output = ""
+        expected_output = (
+            "ESTAB 127.0.0.1:2905 127.0.0.2:2906 8\n"
+            "ESTAB 127.0.0.2:2906 127.0.0.1:2905 42\n"
+            "LISTEN 127.0.0.1:2905 0.0.0.0:0 23\n"
+            "OTHER 127.0.0.1:2905 127.0.0.2:2906 8\n"
+            "OTHER 127.0.0.2:2906 127.0.0.1:2905 42"
+        )
+
+        try:
+            sock = socket.socket(socket.AF_NETLINK, socket.SOCK_RAW, NETLINK_SOCK_DIAG)
+        except Exception as msg:
+            self.fail("Failed to open netlink socket: %s" % msg)
+
+        try:
+            sock.sendto(nl_request, (0, 0))
+            sock.settimeout(5.0)
+
+            response = sock.recv(8192)
+
+            while len(response) >= NLMSG_HDR_SIZE:
+                nl_header_len, msg_type, flags, seq, pid = struct.unpack(
+                    "IHHII", response[:NLMSG_HDR_SIZE])
+                if msg_type == NLMSG_ERROR:
+                    error_code = struct.unpack(
+                        "i", response[NLMSG_HDR_SIZE: NLMSG_HDR_SIZE+4])
+                    self.fail(f"Netlink error response received. %s" % error_code)
+                    break
+                if msg_type == NLMSG_DONE:
+                    break;
+                family, state, timer, retrans = struct.unpack("4B", response[NLMSG_HDR_SIZE:NLMSG_HDR_SIZE+4])
+                sport, dport, src_ip, _, _, _, dst_ip, _, _, _, ifc, c1, c2 = struct.unpack(
+                    "2H11I", response[NLMSG_HDR_SIZE+4:NLMSG_HDR_SIZE+52])
+                state_str = (
+                   "ESTAB"
+                    if state == TCP_ESTABLISHED
+                    else "LISTEN" if state == TCP_LISTEN else "OTHER"
+                )
+                sport = socket.ntohs(sport);
+                dport = socket.ntohs(dport);
+                src_ip = socket.inet_ntop(socket.AF_INET, struct.pack("I", src_ip))
+                dst_ip = socket.inet_ntop(socket.AF_INET, struct.pack("I", dst_ip))
+                tos = 0
+                rtattr_data = response[NLMSG_HDR_SIZE+72:]
+                while len(rtattr_data) >= 4:
+                    rta_len, rta_type = struct.unpack("HH", rtattr_data[:4])
+                    if rta_len < 4 or rta_len > len(rtattr_data):
+                        break
+                    if rta_type == INET_DIAG_TOS:
+                        tos = rtattr_data[4]
+                        break
+                    rtattr_data = rtattr_data[(rta_len + 3) & ~3:]
+
+                output = output + f"{state_str} {src_ip}:{sport} {dst_ip}:{dport} {tos >> 2}\n"
+
+                response = response[(nl_header_len + 3) & ~3:]
+
+        except Exception as msg:
+            self.fail("Failed to talk to netlink socket: %s" % msg)
+        finally:
+            sock.close()
+
+        sorted_output = "\n".join(sorted(output.splitlines()))
+        self.assertEqual(sorted_output, expected_output)
+
 if __name__ == '__main__':
     import argparse
     import sys
@@ -256,6 +399,7 @@ if __name__ == '__main__':
     print("Running tests for specific VTY commands")
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestVTYSTP))
+    suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestDSCP))
 
     if args.test_name:
         osmoutil.pick_tests(suite, *args.test_name)
