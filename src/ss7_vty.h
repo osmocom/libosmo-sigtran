@@ -37,6 +37,9 @@ extern const struct value_string ipproto_vals[];
 	"SCTP (Stream Control Transmission Protocol)\n" \
 	"TCP (Transmission Control Protocol)\n"
 
+#define IP_DSCP_RANGE_STR "<0-63>"
+#define IP_DSCP_RANGE_HELP_STR "IP Differentiated Service Code Point\n"
+
 #define QOS_CLASS_RANGE_STR "<0-7>"
 #define QOS_CLASS_RANGE_HELP_STR "QoS Class\n"
 #define QOS_CLASS_VAR_STR "(" QOS_CLASS_RANGE_STR "|default)"

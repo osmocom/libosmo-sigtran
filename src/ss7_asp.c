@@ -816,6 +816,7 @@ static int ss7_asp_start_client(struct osmo_ss7_asp *asp)
 	osmo_stream_cli_set_local_addrs(asp->client, (const char **)asp->cfg.local.host, asp->cfg.local.host_cnt);
 	osmo_stream_cli_set_local_port(asp->client, asp->cfg.local.port);
 	osmo_stream_cli_set_proto(asp->client, asp->cfg.trans_proto);
+	osmo_stream_cli_set_ip_dscp(asp->client, asp->cfg.ip_dscp);
 	osmo_stream_cli_set_reconnect_timeout(asp->client, 5);
 	osmo_stream_cli_set_connect_cb(asp->client, xua_cli_connect_cb);
 	osmo_stream_cli_set_disconnect_cb(asp->client, xua_cli_disconnect_cb);

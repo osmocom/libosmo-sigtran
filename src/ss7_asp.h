@@ -138,6 +138,7 @@ struct osmo_ss7_asp {
 
 		struct osmo_ss7_asp_peer local;
 		struct osmo_ss7_asp_peer remote;
+		uint8_t ip_dscp;
 		uint8_t qos_class;
 		uint32_t quirks;
 

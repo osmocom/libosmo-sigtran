@@ -410,6 +410,17 @@ DEFUN_ATTR(asp_no_remote_ip, asp_no_remote_ip_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN_ATTR(asp_ip_dscps, asp_ip_dscp_cmd,
+	   "ip-dscp " IP_DSCP_RANGE_STR,
+	   "Specify IP DSCP of ASP\n"
+	   IP_DSCP_RANGE_HELP_STR,
+	   CMD_ATTR_NODE_EXIT)
+{
+	struct osmo_ss7_asp *asp = vty->index;
+	asp->cfg.ip_dscp = atoi(argv[0]);
+	return CMD_SUCCESS;
+}
+
 DEFUN_ATTR(asp_qos_clas, asp_qos_class_cmd,
 	   "qos-class " QOS_CLASS_RANGE_STR,
 	   "Specify QoS Class of ASP\n"
@@ -1381,6 +1392,8 @@ void ss7_vty_write_one_asp(struct vty *vty, struct osmo_ss7_asp *asp, bool show_
 			vty_out(vty, "  remote-ip %s%s%s", asp->cfg.remote.host[i],
 				asp->cfg.remote.idx_primary == i ? " primary" : "", VTY_NEWLINE);
 	}
+	if (asp->cfg.ip_dscp != 0)
+		vty_out(vty, "  ip-dscp %u%s", asp->cfg.ip_dscp, VTY_NEWLINE);
 	if (asp->cfg.qos_class)
 		vty_out(vty, "  qos-class %u%s", asp->cfg.qos_class, VTY_NEWLINE);
 	vty_out(vty, "  role %s%s", osmo_str_tolower(get_value_string(osmo_ss7_asp_role_names, asp->cfg.role)),
@@ -1490,6 +1503,7 @@ void ss7_vty_init_node_asp(void)
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_remote_ip_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_local_ip_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_local_ip_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_ip_dscp_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_qos_class_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_role_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_transport_role_cmd);
