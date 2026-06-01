@@ -148,6 +148,33 @@ DEFUN_ATTR(xua_no_local_ip, xua_no_local_ip_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN_ATTR(xua_init_ip_dscp, xua_init_ip_dscp_cmd,
+	   "init-ip-dscp " IP_DSCP_RANGE_STR,
+	   "Specify IP DSCP of Listener\n"
+	   IP_DSCP_RANGE_HELP_STR,
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct osmo_xua_server *xs = vty->index;
+
+	xs->cfg.ip_dscp = atoi(argv[0]);
+	ss7_xua_server_set_ip_dscp(xs);
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(xua_no_init_ip_dscp, xua_no_init_ip_dscp_cmd,
+	   "no init-ip-dscp",
+	   NO_STR "Specify IP DSCP of Listener\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct osmo_xua_server *xs = vty->index;
+
+	xs->cfg.ip_dscp = 0;
+	ss7_xua_server_set_ip_dscp(xs);
+
+	return CMD_SUCCESS;
+}
+
 DEFUN_ATTR(xua_accept_dyn_asp, xua_accept_dyn_asp_cmd,
 	   "accept-asp-connections (pre-configured|dynamic-permitted)",
 	   "Define what kind of ASP connections to accept\n"
@@ -225,6 +252,8 @@ void ss7_vty_write_one_oxs(struct vty *vty, struct osmo_xua_server *xs)
 		if (xs->cfg.local.host[i])
 			vty_out(vty, "  local-ip %s%s", xs->cfg.local.host[i], VTY_NEWLINE);
 	}
+	if (xs->cfg.ip_dscp)
+		vty_out(vty, "  init-ip-dscp %u%s", xs->cfg.ip_dscp, VTY_NEWLINE);
 	if (xs->cfg.accept_dyn_reg)
 		vty_out(vty, "  accept-asp-connections dynamic-permitted%s", VTY_NEWLINE);
 	if (xs->cfg.sctp_init.num_ostreams_present)
@@ -341,6 +370,8 @@ void ss7_vty_init_node_oxs(void)
 	install_lib_element(L_CS7_NODE, &no_cs7_xua_cmd);
 	install_lib_element(L_CS7_XUA_NODE, &xua_local_ip_cmd);
 	install_lib_element(L_CS7_XUA_NODE, &xua_no_local_ip_cmd);
+	install_lib_element(L_CS7_XUA_NODE, &xua_init_ip_dscp_cmd);
+	install_lib_element(L_CS7_XUA_NODE, &xua_no_init_ip_dscp_cmd);
 	install_lib_element(L_CS7_XUA_NODE, &xua_accept_dyn_asp_cmd);
 	install_lib_element(L_CS7_XUA_NODE, &xua_sctp_param_init_cmd);
 	install_lib_element(L_CS7_XUA_NODE, &xua_no_sctp_param_init_cmd);
