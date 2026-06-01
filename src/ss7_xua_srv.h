@@ -27,6 +27,7 @@ struct osmo_xua_server {
 	struct {
 		bool accept_dyn_reg;
 		struct osmo_ss7_asp_peer local;
+		uint8_t ip_dscp;
 		enum osmo_ss7_asp_protocol proto;
 		struct {
 			bool num_ostreams_present;
@@ -70,6 +71,7 @@ int
 ss7_xua_server_set_local_hosts(struct osmo_xua_server *xs, const char **local_hosts, size_t local_host_cnt);
 int ss7_xua_server_add_local_host(struct osmo_xua_server *xs, const char *local_host);
 int ss7_xua_server_del_local_host(struct osmo_xua_server *xs, const char *local_host);
+bool ss7_xua_server_set_ip_dscp(struct osmo_xua_server *oxs);
 void ss7_xua_server_destroy(struct osmo_xua_server *xs);
 
 bool ss7_xua_server_set_default_local_hosts(struct osmo_xua_server *oxs);

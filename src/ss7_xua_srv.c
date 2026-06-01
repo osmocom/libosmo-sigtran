@@ -402,6 +402,13 @@ bool ss7_xua_server_set_default_local_hosts(struct osmo_xua_server *oxs)
 	return false;
 }
 
+bool ss7_xua_server_set_ip_dscp(struct osmo_xua_server *xs)
+{
+	if (xs->cfg.ip_dscp != 0)
+		osmo_stream_srv_link_set_ip_dscp(xs->server, xs->cfg.ip_dscp);
+	return true;
+}
+
 void ss7_xua_server_destroy(struct osmo_xua_server *xs)
 {
 	struct osmo_ss7_asp *asp, *asp2;
