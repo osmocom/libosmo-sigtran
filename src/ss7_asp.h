@@ -138,6 +138,7 @@ struct osmo_ss7_asp {
 
 		struct osmo_ss7_asp_peer local;
 		struct osmo_ss7_asp_peer remote;
+		uint8_t ip_dscp;
 		uint8_t qos_class;
 		uint32_t quirks;
 
@@ -191,6 +192,7 @@ int ss7_asp_apply_peer_primary_address(const struct osmo_ss7_asp *asp);
 int ss7_asp_apply_primary_address(const struct osmo_ss7_asp *asp);
 int ss7_asp_apply_new_local_address(const struct osmo_ss7_asp *asp, unsigned int loc_idx);
 int ss7_asp_apply_drop_local_address(const struct osmo_ss7_asp *asp, unsigned int loc_idx);
+int ss7_asp_apply_ip_dscp(const struct osmo_ss7_asp *asp);
 
 void ss7_asp_set_blocked(struct osmo_ss7_asp *asp, bool blocked);
 void ss7_asp_restart_after_reconfigure(struct osmo_ss7_asp *asp);

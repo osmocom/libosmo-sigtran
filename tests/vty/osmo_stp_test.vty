@@ -285,6 +285,8 @@ OsmoSTP(config-cs7-asp)# list
   no remote-ip (A.B.C.D|X:X::X:X)
   local-ip (A.B.C.D|X:X::X:X) [primary]
   no local-ip (A.B.C.D|X:X::X:X)
+  ip-dscp <0-63>
+  no ip-dscp
   qos-class <0-7>
   role (sg|asp|ipsp)
   transport-role (client|server)
@@ -315,6 +317,7 @@ OsmoSTP(config-cs7-asp)# ?
   no                 Negate a command or set its defaults
   remote-ip          Specify Remote IP Address of ASP
   local-ip           Specify Local IP Address from which to contact ASP
+  ip-dscp            Specify IP DSCP of ASP
   qos-class          Specify QoS Class of ASP
   role               Specify the xUA role for this ASP
   transport-role     Specify the transport layer role for this ASP
@@ -329,6 +332,7 @@ OsmoSTP(config-cs7-asp)# ?
 
 OsmoSTP(config-cs7-asp)# no ?
 ...
+  ip-dscp            Reset IP DSCP of ASP to default
   sctp-param         Configure SCTP parameters
   tcp-param          Configure TCP parameters
   destination-audit  Configure ASP Auditing (xUA DAUD)

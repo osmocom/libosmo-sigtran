@@ -374,6 +374,23 @@ int ss7_asp_apply_drop_local_address(const struct osmo_ss7_asp *asp, unsigned in
 	return osmo_sock_multiaddr_del_local_addr(fd, &new_loc_addr, 1);
 }
 
+int ss7_asp_apply_ip_dscp(const struct osmo_ss7_asp *asp)
+{
+	int fd = -1;
+
+	LOGPASP(asp, DLSS7, LOGL_INFO, "Set IP DSCP %d\n", asp->cfg.ip_dscp);
+
+	if (asp->cfg.is_server && asp->server)
+		fd = osmo_stream_srv_get_fd(asp->server);
+	else if (asp->client)
+		fd = osmo_stream_cli_get_fd(asp->client);
+
+	if (fd < 0)
+		return fd;
+
+	return osmo_sock_set_dscp(fd, asp->cfg.ip_dscp);
+}
+
 int ss7_asp_apply_peer_primary_address(const struct osmo_ss7_asp *asp)
 {
 	struct osmo_sockaddr_str addr_str;
@@ -816,6 +833,8 @@ static int ss7_asp_start_client(struct osmo_ss7_asp *asp)
 	osmo_stream_cli_set_local_addrs(asp->client, (const char **)asp->cfg.local.host, asp->cfg.local.host_cnt);
 	osmo_stream_cli_set_local_port(asp->client, asp->cfg.local.port);
 	osmo_stream_cli_set_proto(asp->client, asp->cfg.trans_proto);
+	if (asp->cfg.ip_dscp != 0)
+		osmo_stream_cli_set_ip_dscp(asp->client, asp->cfg.ip_dscp);
 	osmo_stream_cli_set_reconnect_timeout(asp->client, 5);
 	osmo_stream_cli_set_connect_cb(asp->client, xua_cli_connect_cb);
 	osmo_stream_cli_set_disconnect_cb(asp->client, xua_cli_disconnect_cb);

@@ -105,6 +105,9 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
 			/* Dynamic ASPs (transport-role=server) may be destroyed as a consequence, re-fetch the ASP: */
 			asp = ss7_asp_find_by_socket_addr(fd, oxs->cfg.trans_proto);
 		}
+		/* If ASP uses individual DSCP setting, override the setting from the listener socket. */
+		if (asp->cfg.ip_dscp > 0)
+			osmo_sock_set_dscp(fd, asp->cfg.ip_dscp);
 	}
 
 	if (!asp && !oxs->cfg.accept_dyn_reg) {
