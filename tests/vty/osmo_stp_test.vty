@@ -423,6 +423,35 @@ OsmoSTP(config-cs7-asp)# timer lm ?
 
 OsmoSTP(config-cs7-asp)# exit
 % NOTE: Skipping automatic restart of ASP since an explicit '[no] shutdown' command was entered
+OsmoSTP(config-cs7)# listen m3ua 2905
+OsmoSTP(config-cs7-listen)# list
+...
+  local-ip (A.B.C.D|X:X::X:X)
+  no local-ip (A.B.C.D|X:X::X:X)
+  init-ip-dscp <0-63>
+  no init-ip-dscp
+  accept-asp-connections (pre-configured|dynamic-permitted)
+  sctp-param init (num-ostreams|max-instreams) <0-65535>
+  no sctp-param init (num-ostreams|max-instreams)
+...
+
+OsmoSTP(config-cs7-listen)# ?
+...
+  local-ip                Configure the Local IP Address for xUA
+  no                      Negate a command or set its defaults
+  init-ip-dscp            Specify IP DSCP of Listener
+  accept-asp-connections  Define what kind of ASP connections to accept
+  sctp-param              Configure SCTP parameters
+...
+
+OsmoSTP(config-cs7-listen)# no ?
+...
+  local-ip      Configure the Local IP Address for xUA
+  init-ip-dscp  Specify IP DSCP of Listener
+  sctp-param    Configure SCTP parameters
+...
+
+OsmoSTP(config-cs7-listen)# exit
 OsmoSTP(config-cs7)# as my-ass m3ua
 OsmoSTP(config-cs7-as)# list
 ...
