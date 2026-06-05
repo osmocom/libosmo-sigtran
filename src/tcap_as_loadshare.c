@@ -307,40 +307,49 @@ int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32
 	struct xua_msg *sua = osmo_sccp_to_xua(sccp_msg);
 	if (!sua) {
 		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Unable to parse SCCP message\n");
-		return -1;
+		rc = -1;
+		goto out;
 	}
 
 	/* TCAP uses only connectionless SCCP messages */
-	if (sua->hdr.msg_class != SUA_MSGC_CL && sua->hdr.msg_class != SUA_CL_CLDT)
-		return 0;
+	if (sua->hdr.msg_class != SUA_MSGC_CL && sua->hdr.msg_class != SUA_CL_CLDT) {
+		rc = 0;
+		goto out;
+	}
 
 	rc = sua_addr_parse(&calling_addr, sua, SUA_IEI_SRC_ADDR);
 	if (rc < 0) {
 		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Unable to parse SCCP Source Address\n");
-		return -3;
+		rc = -3;
+		goto out;
 	}
 
 	/* retrieve + decode destination address */
 	rc = sua_addr_parse(&called_addr, sua, SUA_IEI_DEST_ADDR);
 	if (rc < 0) {
 		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Unable to parse SCCP Destination Address\n");
-		return -4;
+		rc = -4;
+		goto out;
 	}
 
 	if (!ssn_contains_tcap(called_addr.ssn)) {
 		/* No TCAP */
-		return 0;
+		rc = 0;
+		goto out;
 	}
 
 	/* retrieve the SCCP payload (actual encoded TCAP data) */
 	ie_data = xua_msg_find_tag(sua, SUA_IEI_DATA);
-	if (!ie_data)
-		return -6;
+	if (!ie_data) {
+		rc = -6;
+		goto out;
+	}
 
 	rc = parse_tcap(as, ie_data->dat, ie_data->len, &parsed);
 	if (rc <= 0) {
 		LOGPAS(as, DLTCAP, LOGL_NOTICE, "Failed get TCAP otid/dtid.\n");
-		return -7;
+		rc = -7;
+		goto out;
 	}
 
 	LOGPAS(as, DLTCAP, LOGL_INFO, "Looking up transaction for type 0x%02x, otid=%u dtid=%u\n", parsed.present, parsed.otid, parsed.dtid);
@@ -349,7 +358,8 @@ int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32
 	case TCAP_TCMessage_PR_begin:
 		if (!(rc & OTID_SET)) {
 			/* FIXME: failure case */
-			return -8;
+			rc = -8;
+			goto out;
 		}
 
 		tcap_trans_track_begin(as, asp, &calling_addr, &parsed.otid, &called_addr, NULL);
@@ -357,7 +367,8 @@ int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32
 	case TCAP_TCMessage_PR_continue:
 		if (!((rc & OTID_SET) && (rc & DTID_SET))) {
 			/* FIXME: failure case */
-			return -8;
+			rc = -8;
+			goto out;
 		}
 
 		/* only hit/update the transaction tracking */
@@ -367,7 +378,8 @@ int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32
 	case TCAP_TCMessage_PR_end:
 		if (!(rc & DTID_SET)) {
 			/* FIXME: failure case */
-			return -8;
+			rc = -8;
+			goto out;
 		}
 
 		/* only hit/update the transaction tracking */
@@ -377,10 +389,15 @@ int tcap_as_rx_sccp_asp(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, uint32
 	case TCAP_TCMessage_PR_NOTHING:
 	default:
 		/* TODO: what to do with those messages? */
-		return -9;
+		rc = -9;
+		goto out;
 	}
 
-	return 0;
+	rc = 0;
+
+out:
+	xua_msg_free(sua);
+	return rc;
 }
 
 /** Send UDTS to indicate that the originating UDT could not be delivered to its destination
