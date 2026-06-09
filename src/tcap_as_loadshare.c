@@ -584,7 +584,7 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 
 		asp = tcap_trans_track_end(as, &called_addr, &parsed.dtid, &calling_addr, NULL);
 		if (!asp) {
-			LOGPAS(as, DLTCAP, LOGL_INFO, "Couldn't find cached ASP for TCAP End, dtid %u, using tcap route", parsed.dtid);
+			LOGPAS(as, DLTCAP, LOGL_INFO, "Couldn't find cached ASP for TCAP End, dtid %u, using tcap route\n", parsed.dtid);
 			rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_MISS);
 			asp = tcap_as_asp_find_by_tcap_id(as, &calling_addr, &called_addr, parsed.dtid);
 			if (!asp && as->cfg.loadshare.tcap.unroutable_tcap_msg == SS7_AS_TCAP_UNROUTABLE_LOAD_SHARE_AS) {
