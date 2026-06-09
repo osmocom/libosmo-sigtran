@@ -324,8 +324,8 @@ void m3ua_dh_to_xfer_param(struct osmo_mtp_transfer_param *param,
 	param->sls = mdh->sls;
 	/* re-construct SIO */
 	param->sio = (mdh->si & 0xF) |
-		     (mdh->mp & 0x3 << 4) |
-		     (mdh->ni & 0x3 << 6);
+		     ((mdh->mp & 0x3) << 4) |
+		     ((mdh->ni & 0x3) << 6);
 }
 
 struct msgb *m3ua_msgb_alloc(const char *name)
