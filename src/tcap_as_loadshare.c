@@ -419,8 +419,6 @@ static int send_back_udts(struct osmo_ss7_as *as,
 	struct osmo_mtp_transfer_param new_mtp;
 	uint32_t rctx;
 
-	OSMO_ASSERT(orig_sua->hdr.msg_class == SUA_MSGC_CL && orig_sua->hdr.msg_type == SUA_CL_CLDT);
-
 	if (!xua_msg_get_u32p(orig_sua, SUA_IEI_PROTO_CLASS, &spare_proto))
 		return -EINVAL;
 
@@ -487,8 +485,9 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 		goto out_free_msgb;
 	}
 
+	/* TODO: (How) should we route UDTS (CL/DR) messages containing TCAP? */
 	/* TCAP uses only connectionless SCCP messages */
-	if (sua->hdr.msg_class != SUA_MSGC_CL && sua->hdr.msg_class != SUA_CL_CLDT) {
+	if (!(sua->hdr.msg_class == SUA_MSGC_CL && sua->hdr.msg_type == SUA_CL_CLDT)) {
 		/* ignoring packets */
 		rc = -EPROTONOSUPPORT;
 		goto out_free_sua;
