@@ -454,6 +454,42 @@ free_sua:
 	return rc;
 }
 
+/*! When a TCAP MSU from an ongoing session (TCAP != Begin) could not routed either by the TCAP session tracking or
+ *  by the TID range, the message will be paths. 
+ *
+ * \param[out] rasp
+ * \param[in] as
+ * \param[in] mtp
+ * \param[in] sccp_msg
+ * \return 0 on success
+ */
+static int asp_loadshare_tcap_unroutable(struct osmo_ss7_asp **rasp,
+					 struct osmo_ss7_as *as,
+					 const struct osmo_mtp_transfer_param *mtp,
+					 const struct msgb *sccp_msg)
+{
+	struct osmo_ss7_asp *asp = NULL;
+	int rc = -ENOKEY;
+
+	OSMO_ASSERT(rasp);
+
+	switch (as->cfg.loadshare.tcap.unroutable_tcap_msg) {
+	case SS7_AS_TCAP_UNROUTABLE_LOAD_SHARE_AS:
+		asp = select_asp_tcap_enabled_rr(as);
+		if (asp)
+			rc = 0;
+		break;
+	case SS7_AS_TCAP_UNROUTABLE_REJECT_UDTS:
+	default:
+		/* default case, asp stays NULL, will reject when returning -ENOKEY */
+		rc = -ENOKEY;
+		break;
+	}
+
+	*rasp = asp;
+	return rc;
+}
+
 /*! Traffic STP -> AS -> ASP (Tx path) Loadshare towards the TCAP routing AS
  *
  * \param[out] rasp the selected ASP if any, can be NULL
@@ -562,8 +598,12 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 			LOGPAS(as, DLTCAP, LOGL_INFO, "Couldn't find cached ASP for TCAP Continue, dtid %u/otid %u, using tcap route", parsed.dtid, parsed.otid);
 			rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_MISS);
 			asp = tcap_as_asp_find_by_tcap_id(as, &calling_addr, &called_addr, parsed.dtid);
-			if (!asp && as->cfg.loadshare.tcap.unroutable_tcap_msg == SS7_AS_TCAP_UNROUTABLE_LOAD_SHARE_AS) {
-				asp = select_asp_tcap_enabled_rr(as);
+			if (!asp) {
+				/* Couldn't find a matching TCAP endpoint for an ongoing session */
+				rc = asp_loadshare_tcap_unroutable(&asp, as, mtp, sccp_msg);
+				if (rc)
+					goto out_free_sua;
+
 				if (asp)
 					rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_FALLBACK);
 			}
@@ -586,8 +626,12 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 			LOGPAS(as, DLTCAP, LOGL_INFO, "Couldn't find cached ASP for TCAP End, dtid %u, using tcap route\n", parsed.dtid);
 			rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_MISS);
 			asp = tcap_as_asp_find_by_tcap_id(as, &calling_addr, &called_addr, parsed.dtid);
-			if (!asp && as->cfg.loadshare.tcap.unroutable_tcap_msg == SS7_AS_TCAP_UNROUTABLE_LOAD_SHARE_AS) {
-				asp = select_asp_tcap_enabled_rr(as);
+			if (!asp) {
+				/* Couldn't find a matching TCAP endpoint for an ongoing session */
+				rc = asp_loadshare_tcap_unroutable(&asp, as, mtp, sccp_msg);
+				if (rc)
+					goto out_free_sua;
+
 				if (asp)
 					rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TCAP_ASP_FALLBACK);
 			}
