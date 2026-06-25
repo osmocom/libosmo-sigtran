@@ -34,7 +34,7 @@ OsmoSTP(config-cs7-as)# ?
   traffic-mode              Specifies traffic mode of operation of the ASP within the AS
   sls-shift                 Shift SLS bits used during routing decision
   tcap-routing              Enable TCAP-based routing when in traffic-mode loadshare
-  tcap-unroutable-sessions  When receiving a TCAP Continue/End/Abort message where no ASP can be assosiated (either via session tracking or by TCAP range for dtid). How should this message handled.
+  tcap-unroutable-sessions  When receiving a TCAP Continue/End/Abort message where no ASP can be associated (either via session tracking or by TCAP range for dtid). How should this message be handled.
   binding-table             AS Loadshare binding table operations
   recovery-timeout          Specifies RFC4666 recovery timer T(r) timeout
   qos-class                 Specity QoS Class of AS

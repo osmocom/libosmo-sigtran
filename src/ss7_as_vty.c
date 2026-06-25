@@ -249,9 +249,10 @@ DEFUN_USRATTR(as_no_tcap_routing, as_no_tcap_routing_cmd,
 DEFUN_USRATTR(as_tcap_unroutable_sessions, as_tcap_unroutable_sessions_cmd,
 	      OSMO_SCCP_LIB_ATTR_RSTRT_ASP,
 	      "tcap-unroutable-sessions (reject-udts | load-share-over-as)",
-	      "When receiving a TCAP Continue/End/Abort message where no ASP can be assosiated (either via session tracking or by TCAP range for dtid). How should this message handled.\n"
+	      "When receiving a TCAP Continue/End/Abort message where no ASP can be associated (either via session tracking or by TCAP range for dtid). How should this message be handled.\n"
 	      "Reject the message with a UDTS\n"
-	      "Fallback to load-share over AS by using all available AS (round robin)\n")
+	      "Fallback to load-share over AS by using all available AS (round robin)\n"
+	      "Route to a different M3UA PC\n")
 {
 	struct osmo_ss7_as *as = vty->index;
 	int value = get_string_value(osmo_ss7_as_tcap_unroutable_vals, argv[0]);
@@ -259,6 +260,25 @@ DEFUN_USRATTR(as_tcap_unroutable_sessions, as_tcap_unroutable_sessions_cmd,
 		return CMD_WARNING;
 
 	as->cfg.loadshare.tcap.unroutable_tcap_msg = value;
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(as_tcap_unroutable_sessions_fallback, as_tcap_unroutable_sessions_fallback_cmd,
+	      OSMO_SCCP_LIB_ATTR_RSTRT_ASP,
+	      "tcap-unroutable-sessions route-fallback DPC",
+	      "When receiving a TCAP Continue/End/Abort message where no ASP can be associated (either via session tracking or by TCAP range for dtid). How should this message be handled.\n"
+	      "Route to a different M3UA PC\n"
+	      "Destination Point Code\n")
+{
+	struct osmo_ss7_as *as = vty->index;
+	int pc = osmo_ss7_pointcode_parse(as->inst, argv[0]);
+	if (pc < 0) {
+		vty_out(vty, "Invalid point code (%s)%s", argv[0], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	as->cfg.loadshare.tcap.unroutable_tcap_msg = SS7_AS_TCAP_UNROUTABLE_ROUTE_FALLBACK;
+	as->cfg.loadshare.tcap.unroutable_tcap_fallback_dpc = pc;
 	return CMD_SUCCESS;
 }
 #endif /* WITH_TCAP_LOADSHARING */
@@ -524,12 +544,23 @@ void ss7_vty_write_one_as(struct vty *vty, struct osmo_ss7_as *as, bool show_dyn
 	if (as->cfg.loadshare.tcap.enabled)
 		vty_out(vty, "  tcap-routing%s", VTY_NEWLINE);
 
-	if (as->cfg.loadshare.tcap.unroutable_tcap_msg != SS7_AS_TCAP_UNROUTABLE_REJECT_UDTS) {
-		const char *str = get_value_string_or_null(osmo_ss7_as_tcap_unroutable_vals,
-							   as->cfg.loadshare.tcap.unroutable_tcap_msg);
-		if (str)
-			vty_out(vty, "  tcap-unroutable-sessions %s%s", str, VTY_NEWLINE);
+	const char *tcap_unroutable_str = get_value_string_or_null(osmo_ss7_as_tcap_unroutable_vals,
+						   as->cfg.loadshare.tcap.unroutable_tcap_msg);
+	switch (as->cfg.loadshare.tcap.unroutable_tcap_msg) {
+	case SS7_AS_TCAP_UNROUTABLE_REJECT_UDTS:
+		/* default value, no need to write it out */
+		break;
+	case SS7_AS_TCAP_UNROUTABLE_ROUTE_FALLBACK:
+		vty_out(vty, "  tcap-route-fallback %s%s%s", tcap_unroutable_str,
+			osmo_ss7_pointcode_print(as->inst, as->cfg.loadshare.tcap.unroutable_tcap_fallback_dpc),
+			VTY_NEWLINE);
+		break;
+	case SS7_AS_TCAP_UNROUTABLE_LOAD_SHARE_AS:
+		vty_out(vty, "  tcap-route-fallback %s%s", tcap_unroutable_str, VTY_NEWLINE);
+	default:
+		break;
 	}
+
 #endif /* WITH_TCAP_LOADSHARING */
 
 	if (as->cfg.recovery_timeout_msec != 2000) {
@@ -738,6 +769,7 @@ void ss7_vty_init_node_as(void)
 		install_lib_element(L_CS7_AS_NODE, &as_tcap_routing_cmd);
 		install_lib_element(L_CS7_AS_NODE, &as_no_tcap_routing_cmd);
 		install_lib_element(L_CS7_AS_NODE, &as_tcap_unroutable_sessions_cmd);
+		install_lib_element(L_CS7_AS_NODE, &as_tcap_unroutable_sessions_fallback_cmd);
 	}
 #endif /* WITH_TCAP_LOADSHARING */
 	install_lib_element(L_CS7_AS_NODE, &as_bindingtable_reset_cmd);

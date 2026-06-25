@@ -454,6 +454,30 @@ free_sua:
 	return rc;
 }
 
+/*! When a TCAP message can't be routed by TID or session cache and
+ *  unroutable_tcap_msg == SS7_AS_TCPA_UNROUTABLE_ROUTE_FALLBACK, route to a different DPC.
+ *
+ * \param[in] as
+ * \param[in] mtp MTP routing information
+ * \param[in] sccp_msg the SCCP message.
+ * \return 0 on success or -ENOKEY
+ */
+static int asp_loadshare_tcap_route_fallback(struct osmo_ss7_as *as,
+					     const struct osmo_mtp_transfer_param *orig_mtp,
+					     const struct msgb *sccp_msg)
+{
+	struct osmo_mtp_transfer_param new_mtp = *orig_mtp;
+	int rc = 0;
+	new_mtp.dpc = as->cfg.loadshare.tcap.unroutable_tcap_fallback_dpc;
+
+	/* l2 contains the sccp message */
+	rc = mtp3_hmrt_mtp_xfer_request_l4_to_l3(as->inst, &new_mtp, msgb_l2(sccp_msg), msgb_l2len(sccp_msg));
+	if (!rc)
+		return -ENOKEY;
+
+	return 0;
+}
+
 /*! When a TCAP MSU from an ongoing session (TCAP != Begin) could not be routed either by the TCAP session tracking or
  *  by the TID range, such messages will be passed to this function.
  *
@@ -461,7 +485,7 @@ free_sua:
  * \param[in] as the AS to which this MSU was routed to
  * \param[in] mtp
  * \param[in] sccp_msg
- * \return 0 on success
+ * \return 0 on success and asp is set, < 0 on error, > 0 when message is routed elsewhere
  */
 static int asp_loadshare_tcap_handle_unroutable(struct osmo_ss7_asp **rasp,
 						struct osmo_ss7_as *as,
@@ -478,6 +502,12 @@ static int asp_loadshare_tcap_handle_unroutable(struct osmo_ss7_asp **rasp,
 		asp = select_asp_tcap_enabled_rr(as);
 		if (asp)
 			rc = 0;
+		break;
+	case SS7_AS_TCAP_UNROUTABLE_ROUTE_FALLBACK:
+		/* No ASP selection. Try to route the SCCP msg to the fallback DPC */
+		rc = asp_loadshare_tcap_route_fallback(as, mtp, sccp_msg);
+		if (!rc) /* rc == 0 would require a valid asp, use > 0 to drop the msg, but don't send an error back if needed */
+			rc = 1;
 		break;
 	case SS7_AS_TCAP_UNROUTABLE_REJECT_UDTS:
 	default:
