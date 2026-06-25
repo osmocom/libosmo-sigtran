@@ -35,6 +35,7 @@ OsmoSTP(config-cs7-as)# ?
   sls-shift                 Shift SLS bits used during routing decision
   tcap-routing              Enable TCAP-based routing when in traffic-mode loadshare
   tcap-unroutable-sessions  When receiving a TCAP Continue/End/Abort message where no ASP can be assosiated (either via session tracking or by TCAP range for dtid). How should this message handled.
+  tcap-route-fallback       Fallback PC where to route TCAP message of an ongoing session where no valid destination can be found.
   binding-table             AS Loadshare binding table operations
   recovery-timeout          Specifies RFC4666 recovery timer T(r) timeout
   qos-class                 Specity QoS Class of AS

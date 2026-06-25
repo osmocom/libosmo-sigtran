@@ -80,6 +80,7 @@ enum ss7_as_ctr {
 enum ss7_as_tcap_unroutable {
 	SS7_AS_TCAP_UNROUTABLE_REJECT_UDTS, /*! reject the unroutable TCAP message with a UDTS */
 	SS7_AS_TCAP_UNROUTABLE_LOAD_SHARE_AS, /*! fallback to round robin load-share over all available ASP */
+	SS7_AS_TCAP_UNROUTABLE_ROUTE_FALLBACK, /*! route to a different destination */
 };
 extern struct value_string osmo_ss7_as_tcap_unroutable_vals[];
 
@@ -181,6 +182,8 @@ struct osmo_ss7_as {
 				bool enabled;
 				unsigned int timeout_s;
 				enum ss7_as_tcap_unroutable unroutable_tcap_msg;
+				/* when unroutable_tcap_msg == SS7_AS_TCPA_UNROUTABLE_ROUTE_FALLBACK, replace DPC with this */
+				uint32_t unroutable_tcap_fallback_dpc;
 			} tcap;
 #endif /* WITH_TCAP_LOADSHARING */
 		} loadshare;

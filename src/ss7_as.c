@@ -94,8 +94,9 @@ struct value_string osmo_ss7_as_traffic_mode_vals[] = {
 };
 
 struct value_string osmo_ss7_as_tcap_unroutable_vals[] = {
-	{ SS7_AS_TCAP_UNROUTABLE_REJECT_UDTS,	"reject-udts" },
-	{ SS7_AS_TCAP_UNROUTABLE_LOAD_SHARE_AS,	"load-share-over-as" },
+	{ SS7_AS_TCAP_UNROUTABLE_REJECT_UDTS,		"reject-udts" },
+	{ SS7_AS_TCAP_UNROUTABLE_LOAD_SHARE_AS,		"load-share-over-as" },
+	{ SS7_AS_TCAP_UNROUTABLE_ROUTE_FALLBACK,	"route-fallback" },
 	{ 0, NULL }
 };
 
