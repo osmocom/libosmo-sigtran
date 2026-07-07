@@ -485,9 +485,8 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 		goto out_free_msgb;
 	}
 
-	/* TODO: (How) should we route UDTS (CL/DR) messages containing TCAP? */
 	/* TCAP uses only connectionless SCCP messages */
-	if (!(sua->hdr.msg_class == SUA_MSGC_CL && sua->hdr.msg_type == SUA_CL_CLDT)) {
+	if (sua->hdr.msg_class != SUA_MSGC_CL) {
 		/* ignoring packets */
 		rc = -EPROTONOSUPPORT;
 		goto out_free_sua;
@@ -529,6 +528,27 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 		goto out_free_sua;
 	}
 	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_TCAP_DECODED);
+
+	/* Handle UDTS message */
+	if (sua->hdr.msg_type == SUA_CL_CLDR) {
+		uint32_t *otid = NULL, *dtid = NULL;
+		if (rc & OTID_SET)
+			otid = &parsed.otid;
+		if (rc & DTID_SET)
+			dtid = &parsed.dtid;
+
+		/* Do not error out - either forward the UDTS or drop it */
+		rc = 0;
+
+		/* Address/tid needs to be swapped since the UDTS contains the TCAP message we originally forwarded the other way, not an answer */
+		struct tcap_trans_track_entry *entry = tcap_trans_track_entry_find(as, &calling_addr, dtid, &called_addr, otid);
+		if (entry)
+			asp = entry->asp;
+		if (!asp && otid)
+			asp = tcap_as_asp_find_by_tcap_id(as, &called_addr, &calling_addr, *otid);
+		if (!asp)
+			LOGPAS(as, DLTCAP, LOGL_NOTICE, "Could not find an ASP for UDTS with otid %u/dtid %u\n", parsed.otid, parsed.dtid);
+	}
 
 	/* TCAP messages towards the IPA nodes */
 	switch (parsed.present) {
