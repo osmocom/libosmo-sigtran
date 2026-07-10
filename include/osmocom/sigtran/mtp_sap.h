@@ -44,6 +44,7 @@ struct osmo_mtp_transfer_param {
 	uint32_t dpc;
 	uint8_t sls;
 	uint8_t sio;
+	uint32_t in_as_group_mask;
 };
 
 struct osmo_mtp_pause_param {

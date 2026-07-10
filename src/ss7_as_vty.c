@@ -42,6 +42,7 @@
 #include "tcap_as_loadshare.h"
 #endif /* WITH_TCAP_LOADSHARING */
 #include "ss7_as.h"
+#include "ss7_as_group.h"
 #include "ss7_asp.h"
 #include "ss7_route.h"
 #include "ss7_route_table.h"
@@ -500,6 +501,72 @@ DEFUN_ATTR(as_pc_patch_sccp, as_pc_patch_sccp_cmd,
 	return CMD_SUCCESS;
 }
 
+#define AS_GROUP_STR \
+	"An AS can be part of a AS group which will be used to prevent loops.\n"
+
+DEFUN_ATTR(as_group, as_group_cmd,
+	   "group GROUPNAME",
+	   AS_GROUP_STR
+	   "The name of the group to add this AS to.",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct osmo_ss7_as *as = vty->index;
+	const char *group_name = argv[0];
+	int rc = ss7_as_group_add_as(as, group_name);
+	if (rc) {
+		if (rc == EALREADY)
+			vty_out(vty, "Failed to add AS to group %s. as is already part of the group %s", group_name, VTY_NEWLINE);
+		else
+			vty_out(vty, "Failed to add AS to group %s%s", group_name, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(as_no_group, as_no_group_cmd,
+	   "no group GROUPNAME",
+	   NO_STR AS_GROUP_STR
+	   "Remove this AS from the group",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct osmo_ss7_as *as = vty->index;
+	const char *group_name = argv[0];
+	int rc = ss7_as_group_del_as(as, group_name);
+	if (rc) {
+		if (rc == ENOENT)
+			vty_out(vty, "Failed to remove group %s from AS. Group does not exists.%s", group_name, VTY_NEWLINE);
+		else
+			vty_out(vty, "Failed to remove group %s from AS%s", group_name, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	return CMD_SUCCESS;
+}
+
+/*! Decode and print the group mask and print a group per line.
+ *
+ * \param vty
+ * \param prefix
+ * \param group_mask
+ */
+static void print_as_groups(struct osmo_ss7_instance *inst, struct vty *vty, const char *prefix, uint32_t group_mask)
+{
+	if (!group_mask)
+		return;
+
+	for (int i = 0; i < ARRAY_SIZE(inst->cfg.as_groups) && group_mask; i++) {
+		struct ss7_as_group *group = inst->cfg.as_groups[i];
+		if (!group)
+			continue;
+
+		if (group_mask & group->mask) {
+			vty_out(vty, "%s%s%s", prefix, group->name, VTY_NEWLINE);
+			group_mask &= ~group->mask;
+		}
+	}
+}
+
 void ss7_vty_write_one_as(struct vty *vty, struct osmo_ss7_as *as, bool show_dyn_config)
 {
 	struct osmo_ss7_routing_key *rkey;
@@ -538,6 +605,8 @@ void ss7_vty_write_one_as(struct vty *vty, struct osmo_ss7_as *as, bool show_dyn
 		if (as->cfg.loadshare.sls_shift != 0)
 			vty_out(vty, "  sls-shift %u%s", as->cfg.loadshare.sls_shift, VTY_NEWLINE);
 	}
+
+	print_as_groups(as->inst, vty, "  group ", as->cfg.as_group_mask);
 #ifdef WITH_TCAP_LOADSHARING
 	if (as->cfg.loadshare.tcap.enabled)
 		vty_out(vty, "  tcap-routing%s", VTY_NEWLINE);
@@ -764,6 +833,8 @@ void ss7_vty_init_node_as(void)
 		install_lib_element(L_CS7_AS_NODE, &as_tcap_unroutable_route_fallback_cmd);
 	}
 #endif /* WITH_TCAP_LOADSHARING */
+	install_lib_element(L_CS7_AS_NODE, &as_group_cmd);
+	install_lib_element(L_CS7_AS_NODE, &as_no_group_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_bindingtable_reset_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_recov_tout_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_qos_class_cmd);

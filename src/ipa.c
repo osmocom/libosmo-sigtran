@@ -338,6 +338,9 @@ static int ipa_rx_msg_up(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t sls
 	/* Update xua->mtp with values from data_hdr */
 	m3ua_dh_to_xfer_param(&xua->mtp, &data_hdr);
 
+	/* Add receiving AS group mask to xua */
+	xua->mtp.in_as_group_mask = asp->as_group_mask;
+
 	/* Pass on as if we had received it from an M3UA ASP.
 	 * xua ownership is passed here: */
 	rc = mtp3_hmdc_rx_from_l2(asp->inst, xua);

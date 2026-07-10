@@ -81,6 +81,15 @@ int mtp3_hmrt_message_for_routing(struct osmo_ss7_instance *inst, struct xua_msg
 				       dpc, osmo_ss7_pointcode_print(inst, dpc), rt_name);
 			}
 
+			if (as->cfg.as_group_mask & xua->mtp.in_as_group_mask) {
+				LOGSS7(inst, LOGL_DEBUG, "Dropping MSU to prevent loop. (AS group mask 0x%08x / MSU group mask 0x%08x.\n",
+				       as->cfg.as_group_mask, xua->mtp.in_as_group_mask);
+				// TODO: increase counter for the group and for the AS.
+				// maybe send back an Error?
+				xua_msg_free(xua);
+				return -2;
+			}
+
 			rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TX_MSU_TOTAL);
 			OSMO_ASSERT(xua->mtp.sls <= 0xf);
 			rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TX_MSU_SLS_0 + xua->mtp.sls);
@@ -117,6 +126,7 @@ int mtp3_hmrt_message_for_routing(struct osmo_ss7_instance *inst, struct xua_msg
 		mtp3_rtpc_rx_msg_for_inaccessible_sp(inst, xua);
 		/* Discard Message */
 	}
+
 	xua_msg_free(xua);
 	return -1;
 }

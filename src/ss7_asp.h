@@ -93,6 +93,9 @@ struct osmo_ss7_asp {
 	/*! Pending message for non-blocking IPA read */
 	struct msgb *pending_msg;
 
+	/*! The AS group association of this ASP. Inherit from all associated AS. */
+	uint32_t as_group_mask;
+
 	/* IPA proto ASP specific fields. */
 	struct {
 		/* Incoming IPA PDUs have no SLS field, hence a potentially

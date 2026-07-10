@@ -39,6 +39,7 @@
 #include "ss7_instance.h"
 #include "ss7_linkset.h"
 #include "ss7_route_table.h"
+#include "ss7_as_group.h"
 #include "sccp_internal.h"
 
 static int32_t next_rctx = 1;
@@ -141,6 +142,7 @@ void osmo_ss7_instance_destroy(struct osmo_ss7_instance *inst)
 	struct osmo_ss7_linkset *lset, *lset2;
 	struct osmo_ss7_as *as, *as2;
 	struct osmo_ss7_asp *asp, *asp2;
+	struct ss7_as_group *group;
 
 	OSMO_ASSERT(ss7_initialized);
 	LOGSS7(inst, LOGL_INFO, "Destroying SS7 Instance\n");
@@ -150,6 +152,14 @@ void osmo_ss7_instance_destroy(struct osmo_ss7_instance *inst)
 
 	llist_for_each_entry_safe(as, as2, &inst->as_list, list)
 		osmo_ss7_as_destroy(as);
+
+	for (int i = 0; i < SS7_AS_GROUP_MAX; i++) {
+		group = inst->cfg.as_groups[i];
+		if (group) {
+			ss7_as_group_free(inst, group);
+			inst->cfg.as_groups[i] = NULL;
+		}
+	}
 
 	llist_for_each_entry_safe(lset, lset2, &inst->linksets, list)
 		ss7_linkset_destroy(lset);

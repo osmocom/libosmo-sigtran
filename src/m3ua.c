@@ -677,6 +677,9 @@ static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		xua_msg_free_tag(xua, M3UA_IEI_ROUTE_CTX);
 	}
 
+	/* Add receiving AS group mask to xua */
+	xua->mtp.in_as_group_mask = asp->as_group_mask;
+
 	/* an IPSP by definition is a peer-to-peer service that doesn't
 	 * use a signaling gateway, and hence doesn't route messages.
 	 * See RFC 4666 Section 1.4.3.4. */

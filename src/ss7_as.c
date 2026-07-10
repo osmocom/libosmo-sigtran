@@ -68,6 +68,7 @@ static struct ss7_as_asp_assoc *ss7_as_asp_assoc_alloc(struct osmo_ss7_as *as, s
 	llist_add_tail(&assoc->asp_entry, &asp->assoc_as_list);
 	as->num_assoc_asps++;
 	asp->num_assoc_as++;
+	asp->as_group_mask = as->cfg.as_group_mask;
 
 	return assoc;
 }

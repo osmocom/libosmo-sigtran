@@ -13,6 +13,7 @@ noinst_HEADERS = \
 	sccp_internal.h \
 	sccp_user.h \
 	ss7_as.h \
+	ss7_as_group.h \
 	ss7_asp.h \
 	ss7_asp_peer.h \
 	ss7_combined_linkset.h \
@@ -75,6 +76,7 @@ libosmo_sigtran_la_SOURCES = \
 	sccp_vty.c \
 	ss7.c \
 	ss7_as.c \
+	ss7_as_group.c \
 	ss7_as_vty.c \
 	ss7_asp.c \
 	ss7_asp_vty.c \

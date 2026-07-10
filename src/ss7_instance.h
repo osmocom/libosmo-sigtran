@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ss7_as_group.h"
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <osmocom/core/linuxlist.h>
@@ -15,6 +17,7 @@
  ***********************************************************************/
 
 struct osmo_ss7_user;
+struct ss7_as_group;
 struct osmo_ss7_route_table;
 struct osmo_ss7_route_label;
 struct osmo_sccp_instance;
@@ -97,6 +100,7 @@ struct osmo_ss7_instance {
 
 		/* T_defs defined at instance level: */
 		struct osmo_tdef *T_defs_xua;
+		struct ss7_as_group *as_groups[SS7_AS_GROUP_MAX];
 	} cfg;
 };
 

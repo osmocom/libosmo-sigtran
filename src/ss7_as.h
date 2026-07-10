@@ -155,6 +155,7 @@ struct osmo_ss7_as {
 		bool mode_set_by_vty;
 		/* traffic mode was configured by RKM (routing key management) or first ASPAC */
 		bool mode_set_by_peer;
+
 		uint32_t recovery_timeout_msec;
 		uint8_t qos_class;
 		struct {
@@ -187,6 +188,9 @@ struct osmo_ss7_as {
 			} tcap;
 #endif /* WITH_TCAP_LOADSHARING */
 		} loadshare;
+
+		/* The assigned AS groups. (bitmask) */
+		uint32_t as_group_mask;
 	} cfg;
 };
 struct osmo_ss7_as *ss7_as_alloc(struct osmo_ss7_instance *inst, const char *name,
