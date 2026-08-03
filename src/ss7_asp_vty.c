@@ -814,20 +814,34 @@ DEFUN_ATTR(asp_no_quirk, asp_no_quirk_cmd,
 	return CMD_SUCCESS;
 }
 
-/* timer xua <name> <1-999999>
+/* timer xua <name> <0-999999>
  * (cmdstr and doc are dynamically generated from ss7_asp_xua_timer_names.) */
 DEFUN_ATTR(asp_timer_xua, asp_timer_xua_cmd,
 	   NULL, NULL, CMD_ATTR_IMMEDIATE)
 {
 	struct osmo_ss7_asp *asp = vty->index;
 	enum ss7_asp_xua_timer timer = get_string_value(ss7_asp_xua_timer_names, argv[0]);
+	int rc;
+	unsigned long new_val = atoi(argv[1]);
 
 	if (timer <= 0 || timer >= SS7_ASP_XUA_TIMERS_LEN) {
 		vty_out(vty, "%% Invalid timer: %s%s", argv[0], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
-	osmo_tdef_set(asp->cfg.T_defs_xua, timer, atoi(argv[1]), OSMO_TDEF_S);
+	rc = osmo_tdef_set(asp->cfg.T_defs_xua, timer, new_val, OSMO_TDEF_S);
+	if (rc < 0) {
+		struct osmo_tdef *t = osmo_tdef_get_entry(asp->cfg.T_defs_xua, timer);
+		if (!t)
+			return CMD_WARNING;
+		if (!osmo_tdef_val_in_range(t, new_val)) {
+			char range_str[64];
+			osmo_tdef_range_str_buf(range_str, sizeof(range_str), t);
+			vty_out(vty, "%% Timer %s value %lu is out of range %s%s",
+				argv[0], new_val, range_str, VTY_NEWLINE);
+		}
+		return CMD_WARNING;
+	}
 	return CMD_SUCCESS;
 }
 
@@ -861,7 +875,7 @@ static void gen_asp_timer_xua_cmd_strs(struct cmd_element *cmd)
 				     def->default_val);
 	}
 
-	osmo_talloc_asprintf(tall_vty_ctx, cmd_str, ") <1-999999>");
+	osmo_talloc_asprintf(tall_vty_ctx, cmd_str, ") <0-999999>");
 	osmo_talloc_asprintf(tall_vty_ctx, doc_str,
 			     "Timer value, in seconds\n");
 

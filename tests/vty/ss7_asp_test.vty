@@ -298,7 +298,7 @@ ss7_asp_vty_test(config-cs7-asp)# list
   no destination-audit asp-active
   quirk (no_notify|daud_in_asp|snm_inactive)
   no quirk (no_notify|daud_in_asp|snm_inactive)
-  timer xua (ack|beat) <1-999999>
+  timer xua (ack|beat) <0-999999>
   timer lm (wait_asp_up|wait_notify|wait_notify_rkm|wait_rk_reg_resp) <1-999999>
   block
   no block
@@ -383,6 +383,55 @@ ss7_asp_vty_test(config-cs7-asp)# show running-config
   remote-ip 127.0.0.201
 ...
 end
+
+ss7_asp_vty_test(config-cs7-asp)# ### Test ASP node timers
+ss7_asp_vty_test(config-cs7-asp)# timer ?
+  xua  Configure ASP default xua timer values
+  lm   Configure ASP default lm timer values
+ss7_asp_vty_test(config-cs7-asp)# timer xua ?
+  ack   T(ack): Resend ASP Up/Down/Active/Inactive after timeout waiting for ASP Up/Down/Active/Inactive ACK (ASP role) (s) (default: 2)
+  beat  T(beat): Heartbeat Timer (0 = disabled) (s) (default: 30)
+ss7_asp_vty_test(config-cs7-asp)# timer xua ack 1
+ss7_asp_vty_test(config-cs7-asp)# show running-config
+...
+ asp my-asp 12345 54321 m3ua
+...
+  timer xua ack 1
+...
+ss7_asp_vty_test(config-cs7-asp)# timer xua ack 2
+ss7_asp_vty_test(config-cs7-asp)# show running-config
+...
+ asp my-asp 12345 54321 m3ua
+... !timer xua ack 1
+...
+ss7_asp_vty_test(config-cs7-asp)# timer xua ack 0
+% Timer ack value 0 is out of range [1 .. inf]
+ss7_asp_vty_test(config-cs7-asp)# show running-config
+...
+ asp my-asp 12345 54321 m3ua
+... !timer xua ack 0
+...
+ss7_asp_vty_test(config-cs7-asp)# timer xua beat 0
+ss7_asp_vty_test(config-cs7-asp)# show running-config
+...
+ asp my-asp 12345 54321 m3ua
+...
+  timer xua beat 0
+...
+ss7_asp_vty_test(config-cs7-asp)# timer xua beat 5
+ss7_asp_vty_test(config-cs7-asp)# show running-config
+...
+ asp my-asp 12345 54321 m3ua
+...
+  timer xua beat 5
+...
+ss7_asp_vty_test(config-cs7-asp)# timer xua beat 30
+ss7_asp_vty_test(config-cs7-asp)# show running-config
+...
+ asp my-asp 12345 54321 m3ua
+... !timer xua beat 30
+...
+
 ss7_asp_vty_test(config-cs7-asp)# exit
 % NOTE: Make sure to use '[no] shutdown' command in 'asp' node in order to restart the ASP for new configs to be applied.
 

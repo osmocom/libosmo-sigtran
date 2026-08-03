@@ -121,9 +121,10 @@ static int _setsockopt_primary_addr(int fd, const struct osmo_sockaddr *saddr)
 
 const struct osmo_tdef ss7_asp_xua_timer_defaults[SS7_ASP_XUA_TIMERS_LEN] = {
 	{ .T = SS7_ASP_XUA_T_ACK,	.default_val = SS7_ASP_XUA_DEFAULT_T_ACK_SEC,	.unit = OSMO_TDEF_S,
-	  .desc = "Resend ASP Up/Down/Active/Inactive after timeout waiting for ASP Up/Down/Active/Inactive ACK (ASP role)(s)" },
+	  .desc = "T(ack): Resend ASP Up/Down/Active/Inactive after timeout waiting for ASP Up/Down/Active/Inactive ACK (ASP role) (s)",
+	  .min_val = 1 },
 	{ .T = SS7_ASP_XUA_T_BEAT,	.default_val = SS7_ASP_XUA_DEFAULT_T_BEAT_SEC,	.unit = OSMO_TDEF_S,
-	  .desc = "Heartbeat Timer (0 = disabled) (s)" },
+	  .desc = "T(beat): Heartbeat Timer (0 = disabled) (s)" },
 	{}
 };
 

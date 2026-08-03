@@ -302,7 +302,7 @@ OsmoSTP(config-cs7-asp)# list
   no destination-audit asp-active
   quirk (no_notify|daud_in_asp|snm_inactive)
   no quirk (no_notify|daud_in_asp|snm_inactive)
-  timer xua (ack|beat) <1-999999>
+  timer xua (ack|beat) <0-999999>
   timer lm (wait_asp_up|wait_notify|wait_notify_rkm|wait_rk_reg_resp) <1-999999>
   block
   no block
@@ -386,6 +386,36 @@ OsmoSTP(config-cs7-asp)# show running-config
 ...
 end
 OsmoSTP(config-cs7-asp)# no shutdown
+
+OsmoSTP(config-cs7-asp)# ### Test ASP node timers
+OsmoSTP(config-cs7-asp)# timer ?
+  xua  Configure ASP default xua timer values
+  lm   Configure ASP default lm timer values
+OsmoSTP(config-cs7-asp)# timer xua ?
+  ack   T(ack): Resend ASP Up/Down/Active/Inactive after timeout waiting for ASP Up/Down/Active/Inactive ACK (ASP role) (s) (default: 2)
+  beat  T(beat): Heartbeat Timer (0 = disabled) (s) (default: 30)
+OsmoSTP(config-cs7-asp)# timer xua beat 0
+OsmoSTP(config-cs7-asp)# show running-config
+...
+ asp my-asp 12345 54321 m3ua
+...
+  timer xua beat 0
+...
+OsmoSTP(config-cs7-asp)# timer xua beat 5
+OsmoSTP(config-cs7-asp)# show running-config
+...
+ asp my-asp 12345 54321 m3ua
+...
+  timer xua beat 5
+...
+OsmoSTP(config-cs7-asp)# timer xua beat 30
+OsmoSTP(config-cs7-asp)# show running-config
+...
+ asp my-asp 12345 54321 m3ua
+... !timer xua beat 30
+...
+
+
 OsmoSTP(config-cs7-asp)# exit
 % NOTE: Skipping automatic restart of ASP since an explicit '[no] shutdown' command was entered
 OsmoSTP(config-cs7)# as my-ass m3ua
