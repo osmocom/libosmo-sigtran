@@ -415,6 +415,11 @@ OsmoSTP(config-cs7-asp)# show running-config
 ... !timer xua beat 30
 ...
 
+OsmoSTP(config-cs7-asp)# timer lm ?
+  wait_asp_up       Restart ASP after timeout waiting for ASP UP (SG role) / ASP UP ACK (ASP role) (s) (default: 20)
+  wait_notify       Restart ASP after timeout waiting for NOTIFY (s) (default: 2)
+  wait_notify_rkm   Restart ASP after timeout waiting for NOTIFY after RKM registration (s) (default: 20)
+  wait_rk_reg_resp  Restart ASP after timeout waiting for RK_REG_RESP (s) (default: 10)
 
 OsmoSTP(config-cs7-asp)# exit
 % NOTE: Skipping automatic restart of ASP since an explicit '[no] shutdown' command was entered

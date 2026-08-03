@@ -432,6 +432,12 @@ ss7_asp_vty_test(config-cs7-asp)# show running-config
 ... !timer xua beat 30
 ...
 
+ss7_asp_vty_test(config-cs7-asp)# timer lm ?
+  wait_asp_up       Restart ASP after timeout waiting for ASP UP (SG role) / ASP UP ACK (ASP role) (s) (default: 20)
+  wait_notify       Restart ASP after timeout waiting for NOTIFY (s) (default: 2)
+  wait_notify_rkm   Restart ASP after timeout waiting for NOTIFY after RKM registration (s) (default: 20)
+  wait_rk_reg_resp  Restart ASP after timeout waiting for RK_REG_RESP (s) (default: 10)
+
 ss7_asp_vty_test(config-cs7-asp)# exit
 % NOTE: Make sure to use '[no] shutdown' command in 'asp' node in order to restart the ASP for new configs to be applied.
 

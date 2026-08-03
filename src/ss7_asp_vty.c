@@ -891,13 +891,27 @@ DEFUN_ATTR(asp_timer_lm, asp_timer_lm_cmd,
 {
 	struct osmo_ss7_asp *asp = vty->index;
 	enum ss7_asp_lm_timer timer = get_string_value(ss7_asp_lm_timer_names, argv[0]);
+	int rc;
+	unsigned long new_val = atoi(argv[1]);
 
 	if (timer <= 0 || timer >= SS7_ASP_LM_TIMERS_LEN) {
 		vty_out(vty, "%% Invalid timer: %s%s", argv[0], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
-	osmo_tdef_set(asp->cfg.T_defs_lm, timer, atoi(argv[1]), OSMO_TDEF_S);
+	rc = osmo_tdef_set(asp->cfg.T_defs_lm, timer, new_val, OSMO_TDEF_S);
+	if (rc < 0) {
+		struct osmo_tdef *t = osmo_tdef_get_entry(asp->cfg.T_defs_lm, timer);
+		if (!t)
+			return CMD_WARNING;
+		if (!osmo_tdef_val_in_range(t, new_val)) {
+			char range_str[64];
+			osmo_tdef_range_str_buf(range_str, sizeof(range_str), t);
+			vty_out(vty, "%% Timer %s value %lu is out of range %s%s",
+				argv[0], new_val, range_str, VTY_NEWLINE);
+		}
+		return CMD_WARNING;
+	}
 	return CMD_SUCCESS;
 }
 

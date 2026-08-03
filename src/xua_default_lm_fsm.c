@@ -102,13 +102,17 @@ static const struct value_string lm_event_names[] = {
 
 const struct osmo_tdef ss7_asp_lm_timer_defaults[SS7_ASP_LM_TIMERS_LEN] = {
 	{ .T = SS7_ASP_LM_T_WAIT_ASP_UP,	.default_val = 20,	.unit = OSMO_TDEF_S,
-	  .desc = "Restart ASP after timeout waiting for ASP UP (SG role) / ASP UP ACK (ASP role) (s)" },
+	  .desc = "Restart ASP after timeout waiting for ASP UP (SG role) / ASP UP ACK (ASP role) (s)",
+	  .min_val = 1 },
 	{ .T = SS7_ASP_LM_T_WAIT_NOTIFY,	.default_val = 2,	.unit = OSMO_TDEF_S,
-	  .desc = "Restart ASP after timeout waiting for NOTIFY (s)" },
+	  .desc = "Restart ASP after timeout waiting for NOTIFY (s)",
+	  .min_val = 1 },
 	{ .T = SS7_ASP_LM_T_WAIT_NOTIY_RKM,	.default_val = 20,	.unit = OSMO_TDEF_S,
-	  .desc = "Restart ASP after timeout waiting for NOTIFY after RKM registration (s)" },
+	  .desc = "Restart ASP after timeout waiting for NOTIFY after RKM registration (s)",
+	  .min_val = 1 },
 	{ .T = SS7_ASP_LM_T_WAIT_RK_REG_RESP,	.default_val = 10,	.unit = OSMO_TDEF_S,
-	  .desc = "Restart ASP after timeout waiting for RK_REG_RESP (s)" },
+	  .desc = "Restart ASP after timeout waiting for RK_REG_RESP (s)",
+	  .min_val = 1 },
 	{}
 };
 
