@@ -42,15 +42,35 @@ static void test_isup_parse(void)
 	char digits[23] = "";
 	int rc;
 
-	rc = osmo_isup_party_parse(digits, party0, ARRAY_SIZE(party0), false);
+	rc = osmo_isup_party_parse(digits, sizeof(digits),
+				   party0, ARRAY_SIZE(party0), false);
 	printf("digits='%s' (%d)\n", digits, rc);
 	OSMO_ASSERT(rc == 8);
 	OSMO_ASSERT(!strcmp(digits, "01234567"));
 
-	rc = osmo_isup_party_parse(digits, party0, ARRAY_SIZE(party0), true);
+	rc = osmo_isup_party_parse(digits, sizeof(digits),
+				   party0, ARRAY_SIZE(party0), true);
 	printf("digits='%s' (%d)\n", digits, rc);
 	OSMO_ASSERT(rc == 7);
 	OSMO_ASSERT(!strcmp(digits, "0123456"));
+
+	/* out_digits_size exactly matches what's needed for an odd
+	 * number of digits: must be accepted, not rejected with -E2BIG. */
+	rc = osmo_isup_party_parse(digits, 8, party0, ARRAY_SIZE(party0), true);
+	printf("digits='%s' (%d)\n", digits, rc);
+	OSMO_ASSERT(rc == 7);
+	OSMO_ASSERT(!strcmp(digits, "0123456"));
+
+	/* one byte too small: must be rejected. */
+	rc = osmo_isup_party_parse(digits, 7, party0, ARRAY_SIZE(party0), true);
+	printf("rc=%d\n", rc);
+	OSMO_ASSERT(rc == -E2BIG);
+
+	/* even number of digits, exact fit and one byte too small. */
+	rc = osmo_isup_party_parse(digits, 9, party0, ARRAY_SIZE(party0), false);
+	OSMO_ASSERT(rc == 8);
+	rc = osmo_isup_party_parse(digits, 8, party0, ARRAY_SIZE(party0), false);
+	OSMO_ASSERT(rc == -E2BIG);
 }
 
 /* SCCP Address Parsing */

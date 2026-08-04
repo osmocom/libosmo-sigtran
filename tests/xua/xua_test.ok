@@ -1,5 +1,7 @@
 digits='01234567' (8)
 digits='0123456' (7)
+digits='0123456' (7)
+rc=-7
 sccp_addr_parse test case 0
 expected: RI=1,SSN=6,GTI=4,GT=(TT=0,NPL=1,NAI=4,DIG=919969679389)
 parsed:   RI=1,SSN=6,GTI=4,GT=(TT=0,NPL=1,NAI=4,DIG=919969679389)

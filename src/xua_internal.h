@@ -140,8 +140,8 @@ struct msgb *ipa_to_msg(struct xua_msg *xua);
 int ipa_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua);
 int ipa_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg, uint8_t sls);
 
-int osmo_isup_party_parse(char *out_digits, const uint8_t *in,
-			unsigned int in_num_bytes, bool odd);
+int osmo_isup_party_parse(char *out_digits, size_t out_digits_size,
+			  const uint8_t *in, unsigned int in_num_bytes, bool odd);
 int osmo_sccp_addr_parse(struct osmo_sccp_addr *out,
 			const uint8_t *addr, unsigned int addrlen);
 int osmo_sccp_addr_encode(struct msgb *msg, const struct osmo_sccp_addr *in);

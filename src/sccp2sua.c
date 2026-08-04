@@ -57,16 +57,22 @@ static void msgb_put_u16le(struct msgb *msg, uint16_t val)
 
 /*! \brief Parse ISUP style address of BCD digets
  *  \param[out] out_digits user-allocated buffer for ASCII digits
+ *  \param[in] out_digits_size size of the user-allocated output buffer
  *  \param[in] in BCD-encoded digits
  *  \param[in] in_num_bytes Size of \ref in in bytes
  *  \param[in] odd Odd (true) or even (false) number of digits
- *  \returns number of digits generated
+ *  \returns number of digits generated; negative on error
  * */
-int osmo_isup_party_parse(char *out_digits, const uint8_t *in,
-			    unsigned int in_num_bytes, bool odd)
+int osmo_isup_party_parse(char *out_digits, size_t out_digits_size,
+			  const uint8_t *in, unsigned int in_num_bytes, bool odd)
 {
 	char *out = out_digits;
 	unsigned int i;
+
+	/* The output buffer must be large enough to accommodate for
+	 * the generated digits plus the '\0' symbol. */
+	if (in_num_bytes * 2 + (odd ? 0 : 1) > out_digits_size)
+		return -E2BIG;
 
 	for (i = 0; i < in_num_bytes; i++) {
 		*out_digits++ = osmo_bcd2char(in[i] & 0x0F);
@@ -203,7 +209,8 @@ int osmo_sccp_addr_parse(struct osmo_sccp_addr *out,
 			sca->global_title_indicator);
 		return -EINVAL;
 	}
-	rc = osmo_isup_party_parse(out->gt.digits, cur, (addr+addrlen-cur), odd);
+	rc = osmo_isup_party_parse(out->gt.digits, sizeof(out->gt.digits),
+				   cur, (addr+addrlen-cur), odd);
 	if (rc < 0)
 		return rc;
 
