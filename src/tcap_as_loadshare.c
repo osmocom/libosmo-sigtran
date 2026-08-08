@@ -614,6 +614,8 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 			asp = tcap_as_asp_find_by_tcap_id(as, &called_addr, &calling_addr, *otid);
 		if (!asp)
 			LOGPAS(as, DLTCAP, LOGL_NOTICE, "Could not find an ASP for UDTS with otid %u/dtid %u\n", parsed.otid, parsed.dtid);
+
+		goto out_free_sua;
 	}
 
 	/* TCAP messages towards the IPA nodes */
