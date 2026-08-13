@@ -42,6 +42,7 @@
 /* this is why we can use the M3UA constants below in a function shared between M3UA + SUA */
 osmo_static_assert(M3UA_ERR_INVAL_ROUT_CTX == SUA_ERR_INVAL_ROUT_CTX, _err_rctx);
 osmo_static_assert(M3UA_ERR_NO_CONFGD_AS_FOR_ASP == SUA_ERR_NO_CONFGD_AS_FOR_ASP, _err_as_for_asp);
+osmo_static_assert(M3UA_ERR_PARAM_FIELD_ERR == SUA_ERR_PARAM_FIELD_ERR, _err_param_field_err);
 
 /*! Find the AS for given ASP + optional routing context IE.
  *  if rctx_ie == NULL, we assume that this ASP is only part of a single AS;
@@ -58,6 +59,10 @@ int xua_find_as_for_asp(struct osmo_ss7_as **as, const struct osmo_ss7_asp *asp,
 	*as = NULL;
 
 	if (rctx_ie) {
+		if (rctx_ie->len < 4) {
+			LOGPASP(asp, log_ss, LOGL_ERROR, "%s(): Received Routing Context with len < 4\n", __func__);
+			return M3UA_ERR_PARAM_FIELD_ERR;
+		}
 		/* Use routing context IE to look up the AS for which the
 		 * message was received. */
 		uint32_t rctx = xua_msg_part_get_u32(rctx_ie);
