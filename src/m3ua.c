@@ -499,10 +499,9 @@ int m3ua_decode_notify(struct osmo_xlm_prim_notify *npar, void *ctx,
 		npar->presence |= NOTIFY_PAR_P_ROUTE_CTX;
 	}
 
-	if (info_ie) {
-		npar->info_string = talloc_size(ctx, info_ie->len);
-		memcpy(npar->info_string, info_ie->dat, info_ie->len);
-	} else
+	if (info_ie)
+		npar->info_string = talloc_strdup(ctx, xua_msg_part_get_str(info_ie));
+	else
 		npar->info_string = NULL;
 
 	return 0;
