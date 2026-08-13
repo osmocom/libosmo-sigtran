@@ -484,6 +484,8 @@ int m3ua_decode_notify(struct osmo_xlm_prim_notify *npar, void *ctx,
 	if (aspid_ie) {
 		npar->asp_id = xua_msg_part_get_u32(aspid_ie);
 		npar->presence |= NOTIFY_PAR_P_ASP_ID;
+	} else {
+		npar->asp_id = 0;
 	}
 
 	if (rctx_ie) {
@@ -502,6 +504,8 @@ int m3ua_decode_notify(struct osmo_xlm_prim_notify *npar, void *ctx,
 		for (unsigned int i = 0; i < npar->route_ctx_count; i++)
 			npar->route_ctx[i] = ntohl(*(uint32_t *)&rctx_ie->dat[i << 2]);
 		npar->presence |= NOTIFY_PAR_P_ROUTE_CTX;
+	} else {
+		npar->route_ctx_count = 0;
 	}
 
 	if (info_ie)
