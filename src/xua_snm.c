@@ -62,14 +62,17 @@ static uint8_t mask_from_affected_pc(const struct osmo_ss7_instance *s7i, uint32
 	return mask;
 }
 
-static const char *format_affected_pcs_c(void *ctx, const struct osmo_ss7_instance *s7i,
-					 const struct xua_msg_part *ie_aff_pc)
+#define UINT32_MAX_DIGITS 10
+#define AFFECTED_PCS_MAX_LEN ((2 + MAX_PC_STR_LEN + 1 + UINT32_MAX_DIGITS) * OSMO_SS7_MAX_RCTX_COUNT + 1)
+static const char *format_affected_pcs(const struct osmo_ss7_instance *s7i, const struct xua_msg_part *ie_aff_pc)
 {
+	static char buf[AFFECTED_PCS_MAX_LEN];
+	struct osmo_strbuf sb = { .buf = buf, .len = sizeof(buf) };
 	const uint32_t *aff_pc = (const uint32_t *) ie_aff_pc->dat;
 	unsigned int num_aff_pc = ie_aff_pc->len / sizeof(uint32_t);
-	char *out = talloc_strdup(ctx, "");
-	int i;
+	unsigned int i;
 
+	buf[0] = '\0';
 	for (i = 0; i < num_aff_pc; i++) {
 		uint32_t _aff_pc = ntohl(aff_pc[i]);
 		uint32_t pc = _aff_pc & 0xffffff;
@@ -77,10 +80,10 @@ static const char *format_affected_pcs_c(void *ctx, const struct osmo_ss7_instan
 		/* No need to call mask_from_affected_pc() here, we want to print what we actually received. */
 
 		/* append point code + mask */
-		out = talloc_asprintf_append(out, "%s%s/%u", i == 0 ? "" : ", ",
-					     osmo_ss7_pointcode_print(s7i, pc), mask);
+		OSMO_STRBUF_PRINTF(sb, "%s%s/%u", i == 0 ? "" : ", ",
+				   osmo_ss7_pointcode_print(s7i, pc), mask);
 	}
-	return out;
+	return buf;
 }
 
 void xua_tx_snm_available(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int num_rctx,
@@ -443,7 +446,7 @@ static void xua_snm_scon(struct osmo_ss7_as *as, const uint32_t *aff_pc, unsigne
 }
 
 /* receive DAUD from ASP; pc is 'affected PC' IE with mask in network byte order! */
-void xua_snm_rx_daud(struct osmo_ss7_asp *asp, struct xua_msg *xua)
+void xua_snm_rx_daud(struct osmo_ss7_asp *asp, const struct xua_msg *xua)
 {
 	struct xua_msg_part *ie_aff_pc = xua_msg_find_tag(xua, M3UA_IEI_AFFECTED_PC);
 	const char *info_str = xua_msg_get_str(xua, M3UA_IEI_INFO_STRING);
@@ -462,7 +465,7 @@ void xua_snm_rx_daud(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	num_rctx = ss7_asp_get_all_rctx_be(asp, rctx, ARRAY_SIZE(rctx), NULL);
 
 	LOGPASP(asp, log_ss, LOGL_INFO, "Rx DAUD(%s) for %s\n", info_str ? info_str : "",
-		format_affected_pcs_c(xua, asp->inst, ie_aff_pc));
+		format_affected_pcs(asp->inst, ie_aff_pc));
 
 	/* iterate over list of point codes, generate DAVA/DUPU */
 	for (i = 0; i < num_aff_pc; i++) {
@@ -531,7 +534,7 @@ void xua_snm_rx_daud(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 }
 
 /* an incoming xUA DUNA was received from a remote SG */
-void xua_snm_rx_duna(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xua_msg *xua)
+void xua_snm_rx_duna(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const struct xua_msg *xua)
 {
 	struct xua_msg_part *ie_aff_pc = xua_msg_find_tag(xua, M3UA_IEI_AFFECTED_PC);
 	struct xua_msg_part *ie_ssn = xua_msg_find_tag(xua, SUA_IEI_SSN);
@@ -544,7 +547,7 @@ void xua_snm_rx_duna(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xu
 	OSMO_ASSERT(asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP);
 
 	LOGPASP(asp, log_ss, LOGL_NOTICE, "Rx DUNA(%s) for %s\n", info_str ? info_str : "",
-		format_affected_pcs_c(xua, asp->inst, ie_aff_pc));
+		format_affected_pcs(asp->inst, ie_aff_pc));
 
 	if (asp->cfg.proto == OSMO_SS7_ASP_PROT_SUA && ie_ssn) {
 		/* when the SSN is included, DUNA corresponds to the SCCP N-STATE primitive */
@@ -564,7 +567,7 @@ void xua_snm_rx_duna(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xu
 }
 
 /* an incoming xUA DAVA was received from a remote SG */
-void xua_snm_rx_dava(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xua_msg *xua)
+void xua_snm_rx_dava(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const struct xua_msg *xua)
 {
 	struct xua_msg_part *ie_aff_pc = xua_msg_find_tag(xua, M3UA_IEI_AFFECTED_PC);
 	struct xua_msg_part *ie_ssn = xua_msg_find_tag(xua, SUA_IEI_SSN);
@@ -577,7 +580,7 @@ void xua_snm_rx_dava(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xu
 	OSMO_ASSERT(asp->cfg.role == OSMO_SS7_ASP_ROLE_ASP);
 
 	LOGPASP(asp, log_ss, LOGL_NOTICE, "Rx DAVA(%s) for %s\n", info_str ? info_str : "",
-		format_affected_pcs_c(xua, asp->inst, ie_aff_pc));
+		format_affected_pcs(asp->inst, ie_aff_pc));
 
 	if (asp->cfg.proto == OSMO_SS7_ASP_PROT_SUA && ie_ssn) {
 		/* when the SSN is included, DAVA corresponds to the SCCP N-STATE primitive */
@@ -597,7 +600,7 @@ void xua_snm_rx_dava(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xu
 }
 
 /* an incoming SUA/M3UA DUPU was received from a remote SG */
-void xua_snm_rx_dupu(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xua_msg *xua)
+void xua_snm_rx_dupu(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const struct xua_msg *xua)
 {
 	uint32_t aff_pc = xua_msg_get_u32(xua, M3UA_IEI_AFFECTED_PC);
 	const char *info_str = xua_msg_get_str(xua, M3UA_IEI_INFO_STRING);
@@ -630,7 +633,7 @@ void xua_snm_rx_dupu(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xu
 }
 
 /* an incoming SUA/M3UA SCON was received from a remote ASP/SG/IPSP */
-void xua_snm_rx_scon(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xua_msg *xua)
+void xua_snm_rx_scon(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const struct xua_msg *xua)
 {
 	struct xua_msg_part *ie_aff_pc = xua_msg_find_tag(xua, M3UA_IEI_AFFECTED_PC);
 	const char *info_str = xua_msg_get_str(xua, M3UA_IEI_INFO_STRING);
@@ -642,7 +645,7 @@ void xua_snm_rx_scon(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xu
 	OSMO_ASSERT(ie_aff_pc);
 
 	LOGPASP(asp, log_ss, LOGL_NOTICE, "RX SCON(%s) for %s level=%u\n", info_str ? info_str : "",
-		format_affected_pcs_c(xua, asp->inst, ie_aff_pc), cong_level ? *cong_level : 0);
+		format_affected_pcs(asp->inst, ie_aff_pc), cong_level ? *cong_level : 0);
 
 	xua_snm_scon(as, (const uint32_t *) ie_aff_pc->dat, ie_aff_pc->len / sizeof(uint32_t),
 		     concerned_dpc, (const uint8_t *) cong_level, info_str);

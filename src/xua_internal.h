@@ -68,11 +68,11 @@ void xua_tx_snm_available(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsign
 			  const uint32_t *aff_pc, unsigned int num_aff_pc,
 			  const char *info_str, bool available);
 
-void xua_snm_rx_daud(struct osmo_ss7_asp *asp, struct xua_msg *xua);
-void xua_snm_rx_duna(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xua_msg *xua);
-void xua_snm_rx_dava(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xua_msg *xua);
-void xua_snm_rx_dupu(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xua_msg *xua);
-void xua_snm_rx_scon(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xua_msg *xua);
+void xua_snm_rx_daud(struct osmo_ss7_asp *asp, const struct xua_msg *xua);
+void xua_snm_rx_duna(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const struct xua_msg *xua);
+void xua_snm_rx_dava(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const struct xua_msg *xua);
+void xua_snm_rx_dupu(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const struct xua_msg *xua);
+void xua_snm_rx_scon(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const struct xua_msg *xua);
 int m3ua_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg);
 
 struct msgb *m3ua_msgb_alloc(const char *name);
