@@ -383,12 +383,14 @@ int sua_tx_xua_as(struct osmo_ss7_as *as, struct xua_msg *xua)
  *  \param[out] gt User-allocated structure for decoded output
  *  \param[in] data binary-encoded data
  *  \param[in] datalen length of \ref data in octets
+ *  \returns 0 on success; negative on error
  */
 int sua_parse_gt(struct osmo_sccp_gt *gt, const uint8_t *data, unsigned int datalen)
 {
 	uint8_t num_digits;
 	char *out_digits;
 	unsigned int i;
+	int rc = 0;
 
 	/* 8 byte header at minimum, plus digits */
 	if (datalen < 8)
@@ -400,6 +402,15 @@ int sua_parse_gt(struct osmo_sccp_gt *gt, const uint8_t *data, unsigned int data
 	gt->tt = data[5];
 	gt->npi = data[6];
 	gt->nai = data[7];
+
+	/* XXX: RFC 3868 does not impose a limit on the Number of Digits, so
+	 * ideally we should be able to parse up to 255 digits.  However, our
+	 * gt->digits[] can only fit up to 31 digits + a terminating NUL. */
+	if (num_digits > sizeof(gt->digits) - 1) {
+		/* Parse as much as we can; return -ENOSPC */
+		num_digits = sizeof(gt->digits) - 1;
+		rc = -ENOSPC;
+	}
 
 	/* parse digits */
 	out_digits = gt->digits;
@@ -414,7 +425,7 @@ int sua_parse_gt(struct osmo_sccp_gt *gt, const uint8_t *data, unsigned int data
 	}
 	*out_digits++ = '\0';
 
-	return 0;
+	return rc;
 }
 
 /*! \brief parse SCCP address from given xUA message part
