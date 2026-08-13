@@ -453,7 +453,12 @@ struct xua_msg *m3ua_encode_notify(const struct osmo_xlm_prim_notify *npar)
 	return xua;
 }
 
-/* RFC4666 Ch. 3.8.2. Notify */
+/*! \brief RFC4666 Ch. 3.8.2. Notify.
+ *  \param[in] npar Primitive to fill
+ *  \param[in] ctx talloc context where a decoded INFO String may be allocated
+ *  \param[in] xua xUA message to be decoded
+ *  \return 0 on success; positive xUA error code otherwise
+ */
 int m3ua_decode_notify(struct osmo_xlm_prim_notify *npar, void *ctx,
 			const struct xua_msg *xua)
 {
@@ -464,7 +469,7 @@ int m3ua_decode_notify(struct osmo_xlm_prim_notify *npar, void *ctx,
 	status_ie = xua_msg_find_tag(xua, M3UA_IEI_STATUS);
 	if (!status_ie) {
 		LOGP(DLM3UA, LOGL_ERROR, "M3UA NOTIFY without Status IE\n");
-		return -1;
+		return M3UA_ERR_MISSING_PARAM;
 	}
 	status = *(uint32_t *) status_ie->dat;
 
@@ -485,13 +490,13 @@ int m3ua_decode_notify(struct osmo_xlm_prim_notify *npar, void *ctx,
 		if (rctx_ie->len & 0x03) {
 			LOGP(DLM3UA, LOGL_ERROR,
 			     "M3UA NOTIFY with Routing Context IE length non-multiple of 4!\n");
-			return -1;
+			return M3UA_ERR_PARAM_FIELD_ERR;
 		}
 		if (rctx_ie->len > sizeof(npar->route_ctx)) {
 			LOGP(DLM3UA, LOGL_ERROR,
 			     "M3UA NOTIFY with Routing Context IE containing > %zu items not supported!\n",
 			     ARRAY_SIZE(npar->route_ctx));
-			return -1;
+			return M3UA_ERR_UNEXP_PARAM;
 		}
 		npar->route_ctx_count = rctx_ie->len >> 2;
 		for (unsigned int i = 0; i < npar->route_ctx_count; i++)
@@ -711,8 +716,11 @@ static int m3ua_rx_mgmt_ntfy(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	struct osmo_xlm_prim_notify ntfy;
 	const char *type_name, *info_name;
 	struct osmo_xlm_prim *prim;
+	int rc;
 
-	m3ua_decode_notify(&ntfy, asp, xua);
+	rc = m3ua_decode_notify(&ntfy, asp, xua);
+	if (rc != 0)
+		return rc;
 
 	type_name = get_value_string(m3ua_ntfy_type_names, ntfy.status_type);
 	info_name = m3ua_ntfy_info_name(ntfy.status_type, ntfy.status_info);

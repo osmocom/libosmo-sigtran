@@ -655,8 +655,11 @@ static int sua_rx_mgmt_ntfy(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	struct osmo_xlm_prim_notify ntfy;
 	const char *type_name, *info_name;
 	struct osmo_xlm_prim *prim;
+	int rc;
 
-	m3ua_decode_notify(&ntfy, asp, xua);
+	rc = m3ua_decode_notify(&ntfy, asp, xua);
+	if (rc != 0)
+		return rc;
 
 	type_name = get_value_string(m3ua_ntfy_type_names, ntfy.status_type);
 	info_name = m3ua_ntfy_info_name(ntfy.status_type, ntfy.status_info);
