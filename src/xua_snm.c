@@ -552,8 +552,8 @@ void xua_snm_rx_dava(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xu
 /* an incoming SUA/M3UA DUPU was received from a remote SG */
 void xua_snm_rx_dupu(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, struct xua_msg *xua)
 {
-	uint32_t aff_pc = xua_msg_get_u32(xua, SUA_IEI_AFFECTED_PC);
-	const char *info_str = xua_msg_get_str(xua, SUA_IEI_INFO_STRING);
+	uint32_t aff_pc = xua_msg_get_u32(xua, M3UA_IEI_AFFECTED_PC);
+	const char *info_str = xua_msg_get_str(xua, M3UA_IEI_INFO_STRING);
 	/* TODO: should our processing depend on the RCTX included? I somehow don't think so */
 	//struct xua_msg_part *ie_rctx = xua_msg_find_tag(xua, SUA_IEI_ROUTE_CTX);
 	int log_ss = osmo_ss7_asp_get_log_subsys(asp);
