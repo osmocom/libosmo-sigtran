@@ -34,7 +34,6 @@
 #include <osmocom/core/fsm.h>
 
 #include <osmocom/netif/stream.h>
-#include "xua_msg.h"
 
 #include <osmocom/sigtran/sccp_sap.h>
 #include <osmocom/sigtran/protocol/mtp.h>
@@ -50,6 +49,8 @@
 #include "ss7_as.h"
 #include "ss7_asp.h"
 #include "ss7_internal.h"
+#include "xua_msg.h"
+#include "xua_lm_sap.h"
 
 /* Appendix C.4 of Q.714 (all in milliseconds) */
 #define CONNECTION_TIMER	( 1 * 60 * 100)
@@ -653,6 +654,7 @@ static int sua_rx_mgmt_ntfy(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
 	struct osmo_xlm_prim_notify ntfy;
 	const char *type_name, *info_name;
+	struct osmo_xlm_prim *prim;
 
 	m3ua_decode_notify(&ntfy, asp, xua);
 
@@ -662,10 +664,13 @@ static int sua_rx_mgmt_ntfy(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		type_name, info_name,
 		ntfy.info_string ? ntfy.info_string : "");
 
+	/* report this to layer manager */
+	prim = xua_xlm_prim_alloc_m_notify_ind(&ntfy);
+	xua_asp_send_xlm_prim(asp, prim);
+
 	if (ntfy.info_string)
 		talloc_free(ntfy.info_string);
 
-	/* TODO: should we report this somewhere? */
 	return 0;
 }
 
