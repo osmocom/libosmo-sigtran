@@ -397,6 +397,27 @@ static void test_sua_parse_gt_overflow(void)
 	printf("OUT:%s\n", osmo_sccp_gt_dump(&gt));
 }
 
+static void test_sua_parse_gt_truncated(void)
+{
+	/* 8-byte header + only 2 digit octets (4 digits worth of data) */
+	uint8_t data[8 + 2];
+	struct osmo_sccp_gt gt = {};
+
+	memset(data, 0x11, sizeof(data));
+	data[3] = 0x42;		/* gti */
+	data[5] = 0x00;		/* tt */
+	data[6] = 0x01;		/* npi */
+	data[7] = 0x04;		/* nai */
+
+	/* num_digits fits into gt->digits[], but claims more digits than the
+	 * given blob actually carries */
+	data[4] = 10;
+	printf("Testing sua_parse_gt() with num_digits=%u, datalen=%zu\n", data[4], sizeof(data));
+	OSMO_ASSERT(sua_parse_gt(&gt, data, sizeof(data)) == -EINVAL);
+	OSMO_ASSERT(strlen(gt.digits) == (sizeof(data) - 8) * 2);
+	printf("OUT:%s\n", osmo_sccp_gt_dump(&gt));
+}
+
 /* SCCP Message Transcoding */
 
 struct sccp2sua_testcase {
@@ -705,6 +726,7 @@ int main(int argc, char **argv)
 	test_sccp_addr_parser();
 	test_helpers();
 	test_sua_parse_gt_overflow();
+	test_sua_parse_gt_truncated();
 	test_sccp2sua();
 	test_rkm();
 	test_sccp_addr_encdec();

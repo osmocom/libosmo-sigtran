@@ -20,6 +20,8 @@ Testing sua_parse_gt() with num_digits=32
 OUT:DIG=1111111111111111111111111111111
 Testing sua_parse_gt() with num_digits=255
 OUT:DIG=1111111111111111111111111111111
+Testing sua_parse_gt() with num_digits=10, datalen=10
+OUT:DIG=1111
 
 => BSSMAP-RESET
 SCCP Input: [L2]> 09 00 03 05 07 02 42 fe 02 42 fe 06 00 04 30 04 01 20 

@@ -740,16 +740,20 @@ int sua_parse_gt(struct osmo_sccp_gt *gt, const uint8_t *data, unsigned int data
 		rc = -ENOSPC;
 	}
 
-	/* parse digits: bounded by num_digits (already clamped above), so this
-	 * can never write more than sizeof(gt->digits)-1 nibbles into gt->digits[] */
+	/* claimed num_digits must fit into the remaining input octets */
+	if (num_digits > (datalen - 8) * 2) {
+		/* Parse as much as we can; return -EINVAL */
+		num_digits = (datalen - 8) * 2;
+		rc = -EINVAL;
+	}
+
+	/* parse digits: bounded by num_digits
+	 * (already clamped above to fit both gt->digits[] and the input data) */
 	out_digits = gt->digits;
 	for (i = 0; i < num_digits; i++) {
 		unsigned int byte_off = 8 + i / 2;
-		uint8_t byte;
+		uint8_t byte = data[byte_off];
 
-		if (byte_off >= datalen)
-			break;
-		byte = data[byte_off];
 		if (i & 1)
 			*out_digits++ = osmo_bcd2char(byte >> 4);
 		else
