@@ -1,3 +1,152 @@
+libosmo-sigtran (2.3.0) unstable; urgency=medium
+
+  [ Pau Espin Pedrol ]
+  * cosmetic: tcap: Fix wrong msgb ownership documentation
+  * tcap: Forbid tcap-routing in ASP mode
+  * vty: Forbid deleting ASP currently configured in an AS
+  * tests/vty: Run ss7_asp_test.vty
+  * xua: Implement User Part Unavailable HMDT -> HMRT
+  * xua_snm: Fix typo in comment
+  * cosmetic: xua_as_fsm.c: Improve spec documentation
+  * sccp_scrc: Improve logging unable to find SCCP user
+  * xua_asp_fsm: Remove duplicated role field
+  * xua_rkm: Add checks for ASP role in rx msg path
+  * cosmetic: Fix typo in comment
+  * tcap: Log vty msg in CS7_ROLE_SG
+  * cosmetic: xua_rkm: Improve description of adding ASP to AS
+  * vty: Allow configuring xua timers in ASP mode
+  * vty: Allow configuring xua server in ASP mode
+  * Move osmo_xua_layer_manager definition to ss7_asp.h
+  * Document osmo_xua_layer_manager prim_cb
+  * ss7_asp: remove lm during ASP destroy
+  * Move osmo_xlm_sap_down to ss7_asp.c
+  * Refactor xua_layer_manager object
+  * xua_default_lm_fsm: Move timer_cb further below
+  * lm: Use layer manager also on transport-role=server
+  * lm: Initialize layer manager also on role=SG
+  * vty: Prohibit configuring an ASP as IPSP in an SG node
+  * m3ua: Allow rx SCON in IPSP role
+  * vty: Prohibit configuring an IPA ASP as IPSP
+  * xua_rkm: Adapt RKM code to support IPSP
+  * xua_asp_fsm: Improvements to support IPSP
+  * xua_default_fsm: Support IPSP role
+  * xua_as_fsm: Trigger PC (un)availability to upper layers in IPSP
+  * xua_aspm_fsm: Remove unneeded workaround submitting XUA_ASP_E_M_ASP_ACTIVE_REQ
+  * sua: Support rx SCON in role=ASP
+  * sua: Support rx SCON in role=SG
+  * sua: Support rx SCON in role=IPSP
+  * xua: Allow rx DAUD in IPSP with quirk daud_in_asp
+  * xua: Improve logging around unexpected snm messages
+  * xua_snm: assert for unexpected condition
+  * cosmetic: ss7_asp.h: Drop comment no longer valid
+  * m3ua: Fix missing break in m3a_rx_snm for IPSP
+  * Introduce struct osmo_ss7_as_asp_assoc
+  * ss7_as: Optimize ASP Tx selection in Override traffic mode
+  * tests/vty: Introduce testTonsOfASP
+  * tests/vty: Introduce testASPservesTonsOfAS
+  * asp: Introduce asp->assoc_as_list
+  * ss7_as: Optimize ss7_as_asp_assoc_find()
+  * xua_default_lm_fsm: Submit RKM REG REQ for all AS in ASP
+  * xua_as_fsm: Remove TODO no longer valid
+  * Allow configuring local ASP Identifier
+  * xua_asp_fsm: Remove obvious comments
+  * xua_asp_fsm: Error on ASP UP (ACK) with non-unique ASP Identifier
+  * cosmetic: xua_as_fsm: Fix mixed brace/no-brace blocks in if/else
+  * xua_asp_fsm: Validate remote ASP Id matching config in SG role
+  * tcap: vty: Fix writing tcap-routing command
+  * tcap: Avoid updating trans_track if AS doesn't have tcap-routing enabled
+  * tcap: Fix return code in tcap_as_rx_sccp_asp()
+  * tcap: Lower log level failing to parse msg
+  * tcap: Support TID with length 1..4
+  * stp: Enable tracking of NULL memory context
+  * tcap: Fix wrong address type printed in log line
+  * Use new libosmo-asn1-tcap API osmo_asn1_tcap_TCMessage_decode()
+  * cosmetic: xua_snm: Add spec reference regarding no SSNM tx
+  * Implement ITU Q.704 T10 timer
+  * asp_vty: Fix wrong vty write 'blocked' command
+  * sigtran_sap.h: Document spec specifying xUA<->LM primitive
+  * asp: Configure block and shutdown adm state independently
+  * xua: Split traffic mode readonly validation from internal state update
+  * xua_asp_fsm: XUA_ASP_E_ASPTM_ASPAC: Validate RCTX AS is associated to ASP
+  * xua_rkm: handle_rkey_reg(): Skip AS ilookup of known free RCTX
+  * xua_find_as_for_asp(): Optimize lookup
+  * handle_rkey_dereg(): Optimize lookup
+  * osmo_ss7_find_free_{rctx,l_rk_id}(): Make more robust to wrap-around
+  * m3ua: m3ua_gen_error_msg(): include Routing Context IE in cause Invalid Routing Context
+  * xua_asp_fsm: Include Routing Context IE in Err msg cuase Invalid Routing Context
+  * xua_as_fsm: Remove FIXME regarding queueing of msgs during state PENDING
+  * xua asp block: SGP/IPSP: Answer ASPAC with Err if blocked
+  * xua asp block: SG: turn asp inactive when administratively blocked
+  * Move xUA<->LM SAP logic to its own file
+  * xua_lm: Use XLM SAP to send M-ASP_{UP, ACTIVE}.req
+  * xua_lm: Use XLM SAP to send M-SCTP_RELEASE.req
+  * sigtran_sap.h: Fix comment stating RK(DE)_REG prims are not implemented
+  * xua_lm: Fix ending up from active to idle forever
+  * xua_lm: Handle M-Error.ind
+  * xua_asp_fsm: Stop T(ack) when receiving an Error msg as response
+  * xua_lm: Handle rx of unsolicited ASPIA ACK
+  * xua_rkm: send_reg_req: Avoid adding Routing Context with value 0
+  * Use osmo_ss7_asp_active() in several places
+  * xua_lm: Add S_INACTIVE state and improve state transitions
+  * cosmetic: xua_asp_fsm: Fix wrong indentation
+  * Support administrative block in role ASP
+  * Create missing LayerManager fsm in dynamic srv xua asps
+  * asp: Fix wrong variable logged in ss7_asp_xua_srv_conn_rx_cb()
+  * asp: Support setting timer xua beat 0 through VTY
+  * asp: vty: Explicitly test timer lm value ranges
+  * m3ua: Fix potential OOB read in rx NOTIFY INFO String IE
+  * xua_snm.c: Use M3UA IE define when shared with SUA IE
+  * sua: Use helper function m3ua_ntfy_info_name()
+  * sua: Dispatch M-NOTIFY.ind to ASP
+  * xUA: Avoid sending M-NOTIFY.ind with garbage if decoding xUA NOTIFY fails
+  * m3ua: always initialize asp_id and route_ctx_count in m3ua_decode_notify()
+  * xua: Avoid OOB read of Routing Context with len < 4
+
+  [ Daniel Willmann ]
+  * tcap_as_loadshare: Fix asp selection if no tcap-range was found
+  * tcap_as_loadshare: Don't fill in PC from M3UA
+  * tcap_as_loadshare: Use tcap_trans_track_begin instead of *_entry_create
+  * tcap_as_loadshare: Route msg based on TCAP route if cache lookup fails
+  * tcap_as_loadshare: Clarify name of tcap asp selection function
+  * tcap_as_loadshare: Fix newline on log message
+  * tcap_as_loadshare: Fix compare ignoring non-TCAP messages and remove assert
+  * tcap_as_loadshare: Forward UDTS to the correct tcap-loadshare ASP
+
+  [ Harald Welte ]
+  * IPSP: don't route any incoming M3UA messages in IPSP case
+  * IPSP: Add a comment that it's intentional to drop all M3UA SNM for IPSP
+  * IPSP: Allow vty-configuration of IPSP role "ASPs"
+
+  [ Alexander Couzens ]
+  * tcap_as_loadshare: improve logging of lookup failures
+  * tcap_as_loadshare: improve log lines
+  * tcap loadshare: Rework initial selection of a node
+  * tcap loadshare: count all ENOKEY as a FAILED
+  * ss7_as: fix indention
+  * tcap loadshare: Add session miss counter
+  * vty-tests: remove help from expected output
+  * tcap loadshare: allow to define the fallback mechanism for unroutable TCAP messages
+  * tcap loadshare: move last_asp_idx_sent from cfg to runtime struct
+  * vty-tests: Re-introduce the check on the help
+  * tcap loadsharing: tcap_as_rx_sccp_asp: Fix memory leak
+  * m3ua: fix missing decoding of message priority & network indicator flag
+  * TCAP: Refactoring unroutable messages into own function
+  * TCAP: implement fallback routing when no TCAP ASP can be found.
+  * TCAP: UDTS routing: stop overwriting ASP when routing UDTS
+  * TCAP: LOG: fix missing newlines in log messages
+
+  [ Andreas Eversberg ]
+  * Add DSCP configuration support for server transport role
+  * Add DSCP configuration support for each individual ASP
+  * Add test case to verify proper DSCP settings
+  * Add VTY test for "listen" node of osmo-stp VTY config
+
+  [ Vadim Yanitskiy ]
+  * sccp2sua: fix buffer overrun in osmo_isup_party_parse()
+  * sua: fix buffer overflow in sua_parse_gt()
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Thu, 20 Aug 2026 11:45:10 +0200
+
 libosmo-sigtran (2.2.1) unstable; urgency=medium
 
   * tcap: use libosmo-asn1-tcap public API
