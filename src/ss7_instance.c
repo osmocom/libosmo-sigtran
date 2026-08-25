@@ -671,15 +671,15 @@ const char *osmo_ss7_pointcode_print2(const struct osmo_ss7_instance *inst, uint
 
 int osmo_ss7_pointcode_parse_mask_or_len(const struct osmo_ss7_instance *inst, const char *in)
 {
-	unsigned int width = osmo_ss7_pc_width(inst ? &inst->cfg.pc_fmt : &default_pc_fmt);
-
 	if (in[0] == '/') {
 		/* parse mask by length */
+		unsigned int width;
 		int masklen = atoi(in+1);
 		if (masklen < 0 || masklen > 32)
 			return -EINVAL;
 		if (masklen == 0)
 			return 0;
+		width = osmo_ss7_pc_width(inst ? &inst->cfg.pc_fmt : &default_pc_fmt);
 		return (0xFFFFFFFF << (width - masklen)) & ((1 << width)-1);
 	}
 	/* parse mask as point code */
