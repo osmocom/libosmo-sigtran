@@ -462,19 +462,33 @@ static int handle_rkey_dereg(struct osmo_ss7_asp *asp, uint32_t rctx,
 /* SG: receive a De-Registration request from ASP */
 static int m3ua_rx_rkm_dereg_req(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
-	struct xua_msg_part *part = xua_msg_find_tag(xua, M3UA_IEI_ROUTE_CTX);
+	struct xua_msg_part *rctx_ie = xua_msg_find_tag(xua, M3UA_IEI_ROUTE_CTX);
 	struct msgb *resp = m3ua_msgb_alloc(__func__);
-	uint32_t *rctx;
 
-	if (!part)
-		return -1;
+	OSMO_ASSERT(rctx_ie);
 
-	for (rctx = (uint32_t *)part->dat; (uint8_t *)rctx < part->dat + part->len; rctx++)
-		handle_rkey_dereg(asp, ntohl(*rctx), resp);
+	if (rctx_ie->len == 0) {
+		LOGPASP(asp, DLSS7, LOGL_ERROR, "%s(): Received Routing Context with len 0\n", __func__);
+		msgb_append_dereg_res(resp, M3UA_RKM_DEREG_ERR_INVAL_RCTX, 0);
+		goto send_resp;
+	}
 
+	if (rctx_ie->len & 0x03) {
+		LOGPASP(asp, DLSS7, LOGL_ERROR,
+			"%s(): Received Routing Context IE length non-multiple of 4!\n", __func__);
+		msgb_append_dereg_res(resp, M3UA_RKM_DEREG_ERR_INVAL_RCTX, 0);
+		goto send_resp;
+	}
+
+	for (unsigned int i = 0; i < rctx_ie->len / sizeof(uint32_t); i++) {
+		uint8_t *rctx_raw = &rctx_ie->dat[i * sizeof(uint32_t)];
+		uint32_t rctx = osmo_load32be(rctx_raw);
+		handle_rkey_dereg(asp, rctx, resp);
+	}
+
+send_resp:
 	msgb_push_m3ua_hdr(resp, M3UA_MSGC_RKM, M3UA_RKM_DEREG_RSP);
 	osmo_ss7_asp_send(asp, resp);
-
 	return 0;
 }
 
