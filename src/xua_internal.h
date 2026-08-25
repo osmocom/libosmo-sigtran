@@ -90,6 +90,9 @@ extern const struct xua_msg_class m3ua_msg_class_snm;
 extern const struct xua_msg_class m3ua_msg_class_rkm;
 extern const struct xua_msg_class m3ua_msg_class_aspsm;
 extern const struct xua_msg_class m3ua_msg_class_asptm;
+extern const struct xua_msg_part_class m3ua_rkm_reg_req_routing_key_ies[];
+extern const struct xua_msg_part_class m3ua_rkm_reg_rsp_registration_result_ies[];
+extern const struct xua_msg_part_class m3ua_rkm_dereg_rsp_deregistration_result_ies[];
 
 extern const struct xua_msg_part_class m3ua_ntfy_req_ies[];
 extern const struct xua_msg_part_class m3ua_asp_inact_ies[];

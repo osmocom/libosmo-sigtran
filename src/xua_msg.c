@@ -536,9 +536,9 @@ char *xua_hdr_dump(const struct xua_msg *xua, const struct xua_dialect *dialect)
 }
 
 /* Validate incoming xua_msg. returns 0 on success, M3UA_ERR_* on failure. */
-static int xua_dialect_check_all_ies_ext(const struct xua_dialect *dialect, const struct xua_msg_class *xmc,
-					 uint8_t msg_type, const struct xua_msg_part_class *ies,
-					 const struct xua_msg *xua)
+int xua_dialect_check_all_ies_ext(const struct xua_dialect *dialect, const struct xua_msg_class *xmc,
+				  uint8_t msg_type, const struct xua_msg_part_class *ies,
+				  const struct xua_msg *xua)
 {
 	const struct xua_msg_part_class *ie;
 

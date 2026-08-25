@@ -207,8 +207,29 @@ static const struct value_string m3ua_iei_names[] = {
 #define M3UA_MSG_PART_CLASS_DEREG_RESULT(mandatory) \
 	XUA_MSG_PART_CLASS(M3UA_IEI_DEREG_RESULT, (mandatory), true, 16, XUA_MSG_PART_CLASS_MAX_LEN)
 
+#define M3UA_MSG_PART_CLASS_LOC_RKEY_ID(mandatory) \
+	XUA_MSG_PART_CLASS_U32(M3UA_IEI_LOC_RKEY_ID, (mandatory))
+
+/* Only used (up to multiple times) inside Routing Key group IE: */
+#define M3UA_MSG_PART_CLASS_DEST_PC \
+	XUA_MSG_PART_CLASS(M3UA_IEI_DEST_PC, true, true, sizeof(uint32_t), sizeof(uint32_t))
+
+/* Only used (up to multiple times) inside Routing Key group IE: */
+#define M3UA_MSG_PART_CLASS_SVC_IND \
+	XUA_MSG_PART_CLASS(M3UA_IEI_SVC_IND, false, true, 0, XUA_MSG_PART_CLASS_MAX_LEN)
+
+/* Only used (up to multiple times) inside Routing Key group IE: */
+#define M3UA_MSG_PART_CLASS_ORIG_PC \
+	XUA_MSG_PART_CLASS(M3UA_IEI_ORIG_PC, false, true, 0, XUA_MSG_PART_CLASS_MAX_LEN)
+
 #define M3UA_MSG_PART_CLASS_PROT_DATA(mandatory) \
 	XUA_MSG_PART_CLASS_UNBOUND(M3UA_IEI_PROT_DATA, (mandatory))
+
+#define M3UA_MSG_PART_CLASS_REG_STATUS(mandatory) \
+	XUA_MSG_PART_CLASS_U32(M3UA_IEI_REG_STATUS, (mandatory))
+
+#define M3UA_MSG_PART_CLASS_DEREG_STATUS(mandatory) \
+	XUA_MSG_PART_CLASS_U32(M3UA_IEI_DEREG_STATUS, (mandatory))
 
 /* XFER */
 static const struct xua_msg_part_class data_ies[] = {
@@ -454,6 +475,33 @@ const struct xua_msg_class m3ua_msg_class_rkm = {
 		IES(M3UA_RKM_DEREG_REQ, dereg_req_ies),
 		IES(M3UA_RKM_DEREG_RSP, dereg_rsp_ies),
 	},
+};
+
+/* Inner RKM messages: RKM REG REQ "Routing Key" */
+const struct xua_msg_part_class m3ua_rkm_reg_req_routing_key_ies[] = {
+	M3UA_MSG_PART_CLASS_LOC_RKEY_ID(true),
+	M3UA_MSG_PART_CLASS_ROUTE_CTX1(false),
+	M3UA_MSG_PART_CLASS_TRAF_MODE_TYP(false),
+	M3UA_MSG_PART_CLASS_DEST_PC,
+	M3UA_MSG_PART_CLASS_NET_APPEAR(false),
+	M3UA_MSG_PART_CLASS_SVC_IND,
+	M3UA_MSG_PART_CLASS_ORIG_PC,
+	XUA_MSG_PART_CLASS_EOF
+};
+
+/* Inner RKM messages: RKM REG RSP "Registration Result" */
+const struct xua_msg_part_class m3ua_rkm_reg_rsp_registration_result_ies[] = {
+	M3UA_MSG_PART_CLASS_LOC_RKEY_ID(true),
+	M3UA_MSG_PART_CLASS_ROUTE_CTX1(true),
+	M3UA_MSG_PART_CLASS_REG_STATUS(true),
+	XUA_MSG_PART_CLASS_EOF
+};
+
+/* Inner RKM messages: RKM DEREG RSP "Deregistration Result" */
+const struct xua_msg_part_class m3ua_rkm_dereg_rsp_deregistration_result_ies[] = {
+	M3UA_MSG_PART_CLASS_ROUTE_CTX1(true),
+	M3UA_MSG_PART_CLASS_DEREG_STATUS(true),
+	XUA_MSG_PART_CLASS_EOF
 };
 
 /* M3UA dialect of XUA, MGMT,XFER,SNM,ASPSM,ASPTM,RKM */

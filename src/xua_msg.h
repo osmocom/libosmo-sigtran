@@ -132,6 +132,9 @@ const char *xua_class_iei_name(const struct xua_msg_class *xmc, uint16_t iei);
 char *xua_hdr_dump(const struct xua_msg *xua, const struct xua_dialect *dialect);
 char *xua_msg_dump(const struct xua_msg *xua, const struct xua_dialect *dialect);
 int xua_dialect_check_all_ies(const struct xua_dialect *dialect, const struct xua_msg *xua);
+int xua_dialect_check_all_ies_ext(const struct xua_dialect *dialect, const struct xua_msg_class *xmc,
+				  uint8_t msg_type, const struct xua_msg_part_class *ies,
+				  const struct xua_msg *xua);
 
 int xua_msg_event_map(const struct xua_msg *xua,
 		      const struct xua_msg_event_map *maps,

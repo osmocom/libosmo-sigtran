@@ -349,6 +349,7 @@ static int m3ua_rx_rkm_reg_req(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	struct msgb *resp = m3ua_msgb_alloc(__func__);
 	struct osmo_ss7_as *newly_assigned_as[MAX_NEW_AS];
 	unsigned int i, num_newly_assigned_as = 0;
+	int rc;
 
 	memset(newly_assigned_as, 0, sizeof(newly_assigned_as));
 
@@ -362,7 +363,17 @@ static int m3ua_rx_rkm_reg_req(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		inner = xua_from_nested(part);
 		if (!inner) {
 			LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: Unable to parse "
-				"nested IE for Routing Key\n");
+				"nested IEs in Routing Key\n");
+			/* FIXME: ERROR to peer */
+			continue;
+		}
+		rc = xua_dialect_check_all_ies_ext(&xua_dialect_m3ua, &m3ua_msg_class_rkm, M3UA_RKM_REG_REQ,
+						   m3ua_rkm_reg_req_routing_key_ies, inner);
+		if (rc > 0) {
+			LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: Unable to parse "
+				"nested IEs in Routing Key\n");
+			xua_msg_free(inner);
+			/* FIXME: ERROR to peer */
 			continue;
 		}
 		/* handle single registration and append result to
@@ -502,6 +513,7 @@ static int m3ua_rx_rkm_reg_rsp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
 	struct xua_msg_part *part;
 	struct xua_msg *inner = NULL;
+	int rc;
 
 	llist_for_each_entry(part, &xua->headers, entry) {
 		/* skip other IEs and/or short REG_RES IEs */
@@ -512,8 +524,22 @@ static int m3ua_rx_rkm_reg_rsp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		 * registration result (we only support one AS per ASP
 		 * for now) */
 		inner = xua_from_nested(part);
-		if (!inner)
+		if (!inner) {
+			LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: Unable to parse "
+				"nested IEs in Registration Result\n");
+			/* FIXME: ERROR to peer */
 			continue;
+		}
+
+		rc = xua_dialect_check_all_ies_ext(&xua_dialect_m3ua, &m3ua_msg_class_rkm, M3UA_RKM_REG_RSP,
+						   m3ua_rkm_reg_rsp_registration_result_ies, inner);
+		if (rc > 0) {
+			LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: Unable to parse "
+				"nested IEs in Registration Result\n");
+			xua_msg_free(inner);
+			/* FIXME: ERROR to peer */
+			continue;
+		}
 
 		handle_rkey_reg_resp(asp, inner);
 		xua_msg_free(inner);
@@ -525,13 +551,6 @@ static int m3ua_rx_rkm_reg_rsp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 static int handle_rkey_dereg_resp(struct osmo_ss7_asp *asp, struct xua_msg *inner)
 {
 	struct osmo_xlm_prim *oxp;
-
-	if (!xua_msg_find_tag(inner, M3UA_IEI_DEREG_STATUS) ||
-	    !xua_msg_find_tag(inner, M3UA_IEI_ROUTE_CTX)) {
-		LOGPASP(asp, DLSS7, LOGL_NOTICE, "Missing Inner IE in DEREG RESP\n");
-		/* FIXME: ERROR to peer */
-		return -1;
-	}
 
 	oxp = xua_xlm_prim_alloc_m_rk_dereg_cfm(xua_msg_get_u32(inner, M3UA_IEI_ROUTE_CTX),
 						xua_msg_get_u32(inner, M3UA_IEI_DEREG_STATUS));
@@ -551,6 +570,7 @@ static int m3ua_rx_rkm_dereg_rsp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
 	struct xua_msg_part *part;
 	struct xua_msg *inner = NULL;
+	int rc;
 
 	llist_for_each_entry(part, &xua->headers, entry) {
 		/* skip other IEs and/or short REG_RES IEs */
@@ -561,8 +581,22 @@ static int m3ua_rx_rkm_dereg_rsp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		 * registration result (we only support one AS per ASP
 		 * for now) */
 		inner = xua_from_nested(part);
-		if (!inner)
+		if (!inner) {
+			LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: Unable to parse "
+				"nested IEs in Deregistration Result\n");
+			/* FIXME: ERROR to peer */
 			continue;
+		}
+
+		rc = xua_dialect_check_all_ies_ext(&xua_dialect_m3ua, &m3ua_msg_class_rkm, M3UA_RKM_DEREG_RSP,
+						   m3ua_rkm_dereg_rsp_deregistration_result_ies, inner);
+		if (rc > 0) {
+			LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: Unable to parse "
+				"nested IEs in Deregistration Result\n");
+			xua_msg_free(inner);
+			/* FIXME: ERROR to peer */
+			continue;
+		}
 
 		handle_rkey_dereg_resp(asp, inner);
 		xua_msg_free(inner);
