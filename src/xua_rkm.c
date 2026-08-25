@@ -175,7 +175,7 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 			   struct msgb *resp, struct osmo_ss7_as **newly_assigned_as,
 			   unsigned int max_nas_idx, unsigned int *nas_idx)
 {
-	struct xua_msg_part *rctx_ie;
+	struct xua_msg_part *rctx_ie, *tmode_ie;
 	uint32_t rk_id, rctx, _tmode, dpc;
 	enum osmo_ss7_as_traffic_mode tmode;
 	struct osmo_ss7_as *as = NULL;
@@ -189,13 +189,22 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 	/* ASP may already include a routing context value here */
 	rctx_ie = xua_msg_find_tag(inner, M3UA_IEI_ROUTE_CTX);
 
-	/* traffic mode type (0 = undefined) */
-	_tmode = xua_msg_get_u32(inner, M3UA_IEI_TRAF_MODE_TYP);
-	if (xua_msg_find_tag(inner, M3UA_IEI_TRAF_MODE_TYP) && _tmode != M3UA_TMOD_OVERRIDE &&
-	    _tmode != M3UA_TMOD_LOADSHARE && _tmode != M3UA_TMOD_BCAST) {
-		LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: Invalid Traffic Mode %u\n", _tmode);
-		msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_UNSUPP_TRAF_MODE, 0);
-		return -1;
+	/* traffic mode type */
+	tmode_ie = xua_msg_find_tag(inner, M3UA_IEI_TRAF_MODE_TYP);
+	if (tmode_ie) {
+		_tmode = xua_msg_part_get_u32(tmode_ie);
+		switch (_tmode) {
+		case M3UA_TMOD_OVERRIDE:
+		case M3UA_TMOD_LOADSHARE:
+		case M3UA_TMOD_BCAST:
+			break;
+		default:
+			LOGPASP(asp, DLSS7, LOGL_NOTICE, "RKM: Invalid Traffic Mode %u\n", _tmode);
+			msgb_append_reg_res(resp, rk_id, M3UA_RKM_REG_ERR_UNSUPP_TRAF_MODE, 0);
+			return -1;
+		}
+	} else {
+		_tmode = 0; /* (0 = undefined) */
 	}
 
 	/* destination point code (mandatory) */
