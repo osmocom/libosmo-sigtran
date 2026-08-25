@@ -163,6 +163,12 @@ static const struct value_string m3ua_iei_names[] = {
 #define M3UA_MSG_PART_CLASS_DIAG_INFO(mandatory) \
 	XUA_MSG_PART_CLASS_UNBOUND(M3UA_IEI_DIAG_INFO, (mandatory))
 
+#define M3UA_MSG_PART_CLASS_HEARDBT_DATA(mandatory) \
+	XUA_MSG_PART_CLASS_UNBOUND(M3UA_IEI_HEARDBT_DATA, (mandatory))
+
+#define M3UA_MSG_PART_CLASS_TRAF_MODE_TYP(mandatory) \
+	XUA_MSG_PART_CLASS_U32(M3UA_IEI_TRAF_MODE_TYP, (mandatory))
+
 #define M3UA_MSG_PART_CLASS_ERR_CODE(mandatory) \
 	XUA_MSG_PART_CLASS_U32(M3UA_IEI_ERR_CODE, (mandatory))
 
@@ -295,6 +301,28 @@ const struct xua_msg_class m3ua_msg_class_snm = {
 };
 
 /* ASPSM */
+static const struct xua_msg_part_class m3ua_asp_up_ies[] = {
+	M3UA_MSG_PART_CLASS_ASP_ID(false),
+	M3UA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_part_class m3ua_asp_down_ies[] = {
+	M3UA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_part_class m3ua_beat_ies[] = {
+	M3UA_MSG_PART_CLASS_HEARDBT_DATA(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_part_class m3ua_asp_up_ack_ies[] = {
+	M3UA_MSG_PART_CLASS_ASP_ID(false),
+	M3UA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_part_class m3ua_asp_down_ack_ies[] = {
+	M3UA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
+};
 static const struct value_string m3ua_aspsm_msgt_names[] = {
 	{ M3UA_ASPSM_UP,	"UP" },
 	{ M3UA_ASPSM_DOWN,	"DOWN" },
@@ -308,9 +336,39 @@ const struct xua_msg_class m3ua_msg_class_aspsm = {
 	.name = "ASPSM",
 	.msgt_names = m3ua_aspsm_msgt_names,
 	.iei_names = m3ua_iei_names,
+	.ies = {
+		IES(M3UA_ASPSM_UP, m3ua_asp_up_ies),
+		IES(M3UA_ASPSM_DOWN, m3ua_asp_down_ies),
+		IES(M3UA_ASPSM_BEAT, m3ua_beat_ies),
+		IES(M3UA_ASPSM_UP_ACK, m3ua_asp_up_ack_ies),
+		IES(M3UA_ASPSM_DOWN_ACK, m3ua_asp_down_ack_ies),
+		/* M3UA_ASPSM_BEAT_ACK has no IEs */
+	},
 };
 
 /* ASPTM */
+static const struct xua_msg_part_class m3ua_asp_act_ies[] = {
+	M3UA_MSG_PART_CLASS_TRAF_MODE_TYP(false),
+	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
+	M3UA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_part_class m3ua_asp_inact_ies[] = {
+	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
+	M3UA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_part_class m3ua_asp_act_ack_ies[] = {
+	M3UA_MSG_PART_CLASS_TRAF_MODE_TYP(false),
+	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
+	M3UA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_part_class m3ua_asp_inact_ack_ies[] = {
+	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
+	M3UA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
+};
 const struct value_string m3ua_asptm_msgt_names[] = {
 	{ M3UA_ASPTM_ACTIVE,	"ACTIVE" },
 	{ M3UA_ASPTM_INACTIVE,	"INACTIVE" },
@@ -322,6 +380,12 @@ const struct xua_msg_class m3ua_msg_class_asptm = {
 	.name = "ASPTM",
 	.msgt_names = m3ua_asptm_msgt_names,
 	.iei_names = m3ua_iei_names,
+	.ies = {
+		IES(M3UA_ASPTM_ACTIVE, m3ua_asp_act_ies),
+		IES(M3UA_ASPTM_INACTIVE, m3ua_asp_inact_ies),
+		IES(M3UA_ASPTM_ACTIVE_ACK, m3ua_asp_act_ack_ies),
+		IES(M3UA_ASPTM_INACTIVE_ACK, m3ua_asp_inact_ack_ies),
+	},
 };
 
 /* MGMT */
