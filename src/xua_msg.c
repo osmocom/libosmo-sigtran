@@ -32,6 +32,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
 
 static void *tall_xua = NULL;
 
@@ -535,36 +536,63 @@ char *xua_hdr_dump(const struct xua_msg *xua, const struct xua_dialect *dialect)
 }
 
 /* Validate incoming xua_msg. returns 0 on success, M3UA_ERR_* on failure. */
-int xua_dialect_check_all_mand_ies(const struct xua_dialect *dialect, const struct xua_msg *xua)
+static int xua_dialect_check_all_ies_ext(const struct xua_dialect *dialect, const struct xua_msg_class *xmc,
+					 uint8_t msg_type, const struct xua_msg_part_class *ies,
+					 const struct xua_msg *xua)
 {
-	uint8_t msg_class = xua->hdr.msg_class;
-	uint8_t msg_type = xua->hdr.msg_type;
-	const struct xua_msg_class *xmc = dialect->class[msg_class];
-	const uint16_t *ies;
-	uint16_t ie;
+	const struct xua_msg_part_class *ie;
 
-	/* unknown class? */
-	if (!xmc)
-		return 0;
-
-	ies = xmc->mand_ies[msg_type];
-	/* no mandatory IEs? */
-	if (!ies)
-		return 0;
-
-	for (ie = *ies; ie; ie = *ies++) {
-		if (!xua_msg_find_tag(xua, ie)) {
+	for (ie = ies; ie->tag; ie++) {
+		struct xua_msg_part *part;
+		bool found = false;
+		llist_for_each_entry(part, &xua->headers, entry) {
+			if (part->tag != ie->tag)
+				continue;
+			found = true;
+			if (part->len < ie->len_min || part->len > ie->len_max) {
+				LOGP(dialect->log_subsys, LOGL_ERROR,
+					"%s Message %s:%s IE %s length %" PRIu16
+					" out of range [%" PRIu16 ", %" PRIu16 "]\n",
+					dialect->name, xmc->name,
+					xua_class_msg_name(xmc, msg_type),
+					xua_class_iei_name(xmc, ie->tag),
+					part->len, ie->len_min, ie->len_max);
+				return M3UA_ERR_PARAM_FIELD_ERR;
+			}
+			if (!ie->multiple)
+				break;
+		}
+		if (ie->mandatory && !found) {
 			LOGP(dialect->log_subsys, LOGL_ERROR,
-				"%s Message %s:%s should "
-				"contain IE %s, but doesn't\n",
+				"%s Message %s:%s should contain IE %s, but doesn't\n",
 				dialect->name, xmc->name,
 				xua_class_msg_name(xmc, msg_type),
-				xua_class_iei_name(xmc, ie));
+				xua_class_iei_name(xmc, ie->tag));
 			return M3UA_ERR_MISSING_PARAM;
 		}
 	}
 
 	return 0;
+}
+
+/* Validate incoming xua_msg. returns 0 on success, M3UA_ERR_* on failure. */
+int xua_dialect_check_all_ies(const struct xua_dialect *dialect, const struct xua_msg *xua)
+{
+	uint8_t msg_class = xua->hdr.msg_class;
+	uint8_t msg_type = xua->hdr.msg_type;
+	const struct xua_msg_class *xmc = dialect->class[msg_class];
+	const struct xua_msg_part_class *ies;
+
+	/* unknown class? */
+	if (!xmc)
+		return 0;
+
+	ies = &xmc->ies[msg_type][0];
+	/* no mandatory IEs? */
+	if (!ies)
+		return 0;
+
+	return xua_dialect_check_all_ies_ext(dialect, xmc, msg_type, ies, xua);
 }
 
 char *xua_msg_dump(const struct xua_msg *xua, const struct xua_dialect *dialect)

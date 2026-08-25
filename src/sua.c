@@ -121,15 +121,111 @@ static const struct value_string sua_iei_names[] = {
 	{ 0, NULL }
 };
 
-#define MAND_IES(msgt, ies)	[msgt] = (ies)
+#define IES(msgt, ies) \
+	[msgt] = (ies)
 
-static const uint16_t cldt_mand_ies[] = {
-	SUA_IEI_ROUTE_CTX, SUA_IEI_PROTO_CLASS, SUA_IEI_SRC_ADDR,
-	SUA_IEI_DEST_ADDR, SUA_IEI_SEQ_CTRL, SUA_IEI_DATA, 0
+/* M3UA/SUA shared: */
+
+#define SUA_MSG_PART_CLASS_INFO_STRING(mandatory) \
+	XUA_MSG_PART_CLASS_UNBOUND(SUA_IEI_ROUTE_CTX, (mandatory))
+
+#define SUA_MSG_PART_CLASS_ROUTE_CTX(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_ROUTE_CTX, (mandatory))
+
+#define SUA_MSG_PART_CLASS_ROUTE_CTX1(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_ROUTE_CTX, (mandatory))
+
+#define SUA_MSG_PART_CLASS_DIAG_INFO(mandatory) \
+	XUA_MSG_PART_CLASS_UNBOUND(SUA_IEI_DIAG_INFO, (mandatory))
+
+#define SUA_MSG_PART_CLASS_ERR_CODE(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_ERR_CODE, (mandatory))
+
+#define SUA_MSG_PART_CLASS_STATUS(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_STATUS, (mandatory))
+
+#define SUA_MSG_PART_CLASS_ASP_ID(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_ASP_ID, (mandatory))
+
+#define SUA_MSG_PART_CLASS_AFFECTED_PC(mandatory) \
+	XUA_MSG_PART_CLASS_UNBOUND(SUA_IEI_AFFECTED_PC, (mandatory))
+
+#define SUA_MSG_PART_CLASS_CORR_ID(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_CORR_ID, (mandatory))
+
+/* SUA specific: */
+
+#define SUA_MSG_PART_CLASS_HOP_CTR(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_S7_HOP_CTR, (mandatory))
+
+#define SUA_MSG_PART_CLASS_SRC_ADDR(mandatory) \
+	XUA_MSG_PART_CLASS_UNBOUND(SUA_IEI_SRC_ADDR, (mandatory))
+
+#define SUA_MSG_PART_CLASS_DEST_ADDR(mandatory) \
+	XUA_MSG_PART_CLASS_UNBOUND(SUA_IEI_DEST_ADDR, (mandatory))
+
+#define SUA_MSG_PART_CLASS_SEQ_CTRL(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_SEQ_CTRL, (mandatory))
+
+#define SUA_MSG_PART_CLASS_SEQ_NR(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_SEQ_NR, (mandatory))
+
+#define SUA_MSG_PART_CLASS_RX_SEQ_NR(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_RX_SEQ_NR, (mandatory))
+
+#define SUA_MSG_PART_CLASS_CREDIT(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_CREDIT, (mandatory))
+
+#define SUA_MSG_PART_CLASS_SRC_REF(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_SRC_REF, (mandatory))
+
+#define SUA_MSG_PART_CLASS_DEST_REF(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_DEST_REF, (mandatory))
+
+#define SUA_MSG_PART_CLASS_CAUSE(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_CAUSE, (mandatory))
+
+#define SUA_MSG_PART_CLASS_DATA(mandatory) \
+	XUA_MSG_PART_CLASS_UNBOUND(SUA_IEI_DATA, (mandatory))
+
+#define SUA_MSG_PART_CLASS_IMPORTANCE(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_IMPORTANCE, (mandatory))
+
+#define SUA_MSG_PART_CLASS_MSG_PRIO(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_MSG_PRIO, (mandatory))
+
+#define SUA_MSG_PART_CLASS_PROTO_CLASS(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_PROTO_CLASS, (mandatory))
+
+#define SUA_MSG_PART_CLASS_SEGMENTATION(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_SEGMENTATION, (mandatory))
+
+static const struct xua_msg_part_class cldt_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(true),
+	SUA_MSG_PART_CLASS_PROTO_CLASS(true),
+	SUA_MSG_PART_CLASS_SRC_ADDR(true),
+	SUA_MSG_PART_CLASS_DEST_ADDR(true),
+	SUA_MSG_PART_CLASS_SEQ_CTRL(true),
+	SUA_MSG_PART_CLASS_HOP_CTR(false),
+	SUA_MSG_PART_CLASS_IMPORTANCE(false),
+	SUA_MSG_PART_CLASS_MSG_PRIO(false),
+	SUA_MSG_PART_CLASS_CORR_ID(false),
+	SUA_MSG_PART_CLASS_SEGMENTATION(false),
+	SUA_MSG_PART_CLASS_DATA(true),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t cldr_mand_ies[] = {
-	SUA_IEI_ROUTE_CTX, SUA_IEI_CAUSE, SUA_IEI_SRC_ADDR,
-	SUA_IEI_DEST_ADDR, 0
+static const struct xua_msg_part_class cldr_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(true),
+	SUA_MSG_PART_CLASS_CAUSE(true),
+	SUA_MSG_PART_CLASS_SRC_ADDR(true),
+	SUA_MSG_PART_CLASS_DEST_ADDR(true),
+	SUA_MSG_PART_CLASS_HOP_CTR(false),
+	SUA_MSG_PART_CLASS_IMPORTANCE(false),
+	SUA_MSG_PART_CLASS_MSG_PRIO(false),
+	SUA_MSG_PART_CLASS_CORR_ID(false),
+	SUA_MSG_PART_CLASS_SEGMENTATION(false),
+	SUA_MSG_PART_CLASS_DATA(false),
+	XUA_MSG_PART_CLASS_EOF
 };
 static const struct value_string sua_cl_msgt_names[] = {
 	{ SUA_CL_CLDT,		"CLDT" },
@@ -140,49 +236,110 @@ static const struct xua_msg_class sua_msg_class_cl = {
 	.name = "CL",
 	.msgt_names = sua_cl_msgt_names,
 	.iei_names = sua_iei_names,
-	.mand_ies = {
-		MAND_IES(SUA_CL_CLDT, cldt_mand_ies),
-		MAND_IES(SUA_CL_CLDR, cldr_mand_ies),
+	.ies = {
+		IES(SUA_CL_CLDT, cldt_ies),
+		IES(SUA_CL_CLDR, cldr_ies),
 	},
 };
 
-static const uint16_t codt_mand_ies[] = {
-	SUA_IEI_ROUTE_CTX, SUA_IEI_DEST_REF, SUA_IEI_DATA, 0
+static const struct xua_msg_part_class codt_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(true),
+	SUA_MSG_PART_CLASS_SEQ_NR(false),
+	SUA_MSG_PART_CLASS_DEST_REF(true),
+	SUA_MSG_PART_CLASS_MSG_PRIO(false),
+	SUA_MSG_PART_CLASS_CORR_ID(false),
+	SUA_MSG_PART_CLASS_DATA(true),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t coda_mand_ies[] = {
-	SUA_IEI_ROUTE_CTX, SUA_IEI_DEST_REF, 0
+static const struct xua_msg_part_class coda_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(true),
+	SUA_MSG_PART_CLASS_DEST_REF(true),
+	SUA_MSG_PART_CLASS_RX_SEQ_NR(false),
+	SUA_MSG_PART_CLASS_RX_SEQ_NR(false),
+	SUA_MSG_PART_CLASS_CREDIT(false),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t core_mand_ies[] = {
-	SUA_IEI_ROUTE_CTX, SUA_IEI_PROTO_CLASS, SUA_IEI_SRC_REF,
-	SUA_IEI_DEST_ADDR, SUA_IEI_SEQ_CTRL, 0
+static const struct xua_msg_part_class core_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(true),
+	SUA_MSG_PART_CLASS_PROTO_CLASS(true),
+	SUA_MSG_PART_CLASS_SRC_REF(true),
+	SUA_MSG_PART_CLASS_SEQ_CTRL(true),
+	SUA_MSG_PART_CLASS_SEQ_NR(false),
+	SUA_MSG_PART_CLASS_SRC_ADDR(false),
+	SUA_MSG_PART_CLASS_HOP_CTR(false),
+	SUA_MSG_PART_CLASS_IMPORTANCE(false),
+	SUA_MSG_PART_CLASS_MSG_PRIO(false),
+	SUA_MSG_PART_CLASS_CREDIT(false),
+	SUA_MSG_PART_CLASS_DATA(false),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t coak_mand_ies[] = {
-	SUA_IEI_ROUTE_CTX, SUA_IEI_PROTO_CLASS, SUA_IEI_DEST_REF,
-	SUA_IEI_SRC_REF, SUA_IEI_SEQ_CTRL, 0
+static const struct xua_msg_part_class coak_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(true),
+	SUA_MSG_PART_CLASS_PROTO_CLASS(true),
+	SUA_MSG_PART_CLASS_DEST_REF(true),
+	SUA_MSG_PART_CLASS_SRC_REF(true),
+	SUA_MSG_PART_CLASS_SEQ_CTRL(true),
+	SUA_MSG_PART_CLASS_CREDIT(false),
+	SUA_MSG_PART_CLASS_SRC_ADDR(false),
+	SUA_MSG_PART_CLASS_IMPORTANCE(false),
+	SUA_MSG_PART_CLASS_MSG_PRIO(false),
+	SUA_MSG_PART_CLASS_DEST_ADDR(false),
+	SUA_MSG_PART_CLASS_DATA(false),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t coref_mand_ies[] = {
-	SUA_IEI_ROUTE_CTX, SUA_IEI_DEST_REF, SUA_IEI_CAUSE, 0
+static const struct xua_msg_part_class coref_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(true),
+	SUA_MSG_PART_CLASS_DEST_REF(true),
+	SUA_MSG_PART_CLASS_CAUSE(true),
+	SUA_MSG_PART_CLASS_SRC_ADDR(false),
+	SUA_MSG_PART_CLASS_DEST_ADDR(false),
+	SUA_MSG_PART_CLASS_IMPORTANCE(false),
+	SUA_MSG_PART_CLASS_DATA(false),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t relre_mand_ies[] = {
-	SUA_IEI_ROUTE_CTX, SUA_IEI_DEST_REF, SUA_IEI_SRC_REF,
-	SUA_IEI_CAUSE, 0
+static const struct xua_msg_part_class relre_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(true),
+	SUA_MSG_PART_CLASS_DEST_REF(true),
+	SUA_MSG_PART_CLASS_SRC_REF(true),
+	SUA_MSG_PART_CLASS_CAUSE(true),
+	SUA_MSG_PART_CLASS_IMPORTANCE(false),
+	SUA_MSG_PART_CLASS_DATA(false),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t relco_mand_ies[] = {
-	SUA_IEI_ROUTE_CTX, SUA_IEI_DEST_REF, SUA_IEI_SRC_REF, 0
+static const struct xua_msg_part_class relco_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(true),
+	SUA_MSG_PART_CLASS_DEST_REF(true),
+	SUA_MSG_PART_CLASS_SRC_REF(true),
+	SUA_MSG_PART_CLASS_IMPORTANCE(false),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t resre_mand_ies[] = {
-	SUA_IEI_ROUTE_CTX, SUA_IEI_DEST_REF, SUA_IEI_SRC_REF,
-	SUA_IEI_CAUSE, 0
+static const struct xua_msg_part_class resre_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(true),
+	SUA_MSG_PART_CLASS_DEST_REF(true),
+	SUA_MSG_PART_CLASS_SRC_REF(true),
+	SUA_MSG_PART_CLASS_CAUSE(true),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t resco_mand_ies[] = {
-	SUA_IEI_ROUTE_CTX, SUA_IEI_DEST_REF, SUA_IEI_SRC_REF, 0
+static const struct xua_msg_part_class resco_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(true),
+	SUA_MSG_PART_CLASS_DEST_REF(true),
+	SUA_MSG_PART_CLASS_SRC_REF(true),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t coerr_mand_ies[] = {
-	SUA_IEI_ROUTE_CTX, SUA_IEI_DEST_REF, SUA_IEI_CAUSE, 0
+static const struct xua_msg_part_class coerr_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(true),
+	SUA_MSG_PART_CLASS_DEST_REF(true),
+	SUA_MSG_PART_CLASS_CAUSE(true),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t coit_mand_ies[] = {
-	SUA_IEI_ROUTE_CTX, SUA_IEI_PROTO_CLASS, SUA_IEI_SRC_REF,
-	SUA_IEI_DEST_REF, 0
+static const struct xua_msg_part_class coit_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(true),
+	SUA_MSG_PART_CLASS_PROTO_CLASS(true),
+	SUA_MSG_PART_CLASS_SRC_REF(true),
+	SUA_MSG_PART_CLASS_DEST_REF(true),
+	SUA_MSG_PART_CLASS_SEQ_NR(false),
+	SUA_MSG_PART_CLASS_CREDIT(false),
+	XUA_MSG_PART_CLASS_EOF
 };
 
 /* ITU-T Rec Q.713 */
@@ -204,18 +361,18 @@ static const struct xua_msg_class sua_msg_class_co = {
 	.name = "CO",
 	.msgt_names = sua_co_msgt_names,
 	.iei_names = sua_iei_names,
-	.mand_ies = {
-		MAND_IES(SUA_CO_CODT, codt_mand_ies),
-		MAND_IES(SUA_CO_CODA, coda_mand_ies),
-		MAND_IES(SUA_CO_CORE, core_mand_ies),
-		MAND_IES(SUA_CO_COAK, coak_mand_ies),
-		MAND_IES(SUA_CO_COREF, coref_mand_ies),
-		MAND_IES(SUA_CO_RELRE, relre_mand_ies),
-		MAND_IES(SUA_CO_RELCO, relco_mand_ies),
-		MAND_IES(SUA_CO_RESRE, resre_mand_ies),
-		MAND_IES(SUA_CO_RESCO, resco_mand_ies),
-		MAND_IES(SUA_CO_COERR, coerr_mand_ies),
-		MAND_IES(SUA_CO_COIT, coit_mand_ies),
+	.ies = {
+		IES(SUA_CO_CODT, codt_ies),
+		IES(SUA_CO_CODA, coda_ies),
+		IES(SUA_CO_CORE, core_ies),
+		IES(SUA_CO_COAK, coak_ies),
+		IES(SUA_CO_COREF, coref_ies),
+		IES(SUA_CO_RELRE, relre_ies),
+		IES(SUA_CO_RELCO, relco_ies),
+		IES(SUA_CO_RESRE, resre_ies),
+		IES(SUA_CO_RESCO, resco_ies),
+		IES(SUA_CO_COERR, coerr_ies),
+		IES(SUA_CO_COIT, coit_ies),
 	},
 };
 
@@ -225,13 +382,13 @@ const struct xua_dialect xua_dialect_sua = {
 	.port = SUA_PORT,
 	.log_subsys = DLSUA,
 	.class = {
-		[SUA_MSGC_MGMT] = &m3ua_msg_class_mgmt,
-		[SUA_MSGC_SNM] = &m3ua_msg_class_snm,
-		[SUA_MSGC_ASPSM] = &m3ua_msg_class_aspsm,
-		[SUA_MSGC_ASPTM] = &m3ua_msg_class_asptm,
+		[SUA_MSGC_MGMT] = &m3ua_msg_class_mgmt, /* TODO: different than M3UA */
+		[SUA_MSGC_SNM] = &m3ua_msg_class_snm, /* TODO: different than M3UA */
+		[SUA_MSGC_ASPSM] = &m3ua_msg_class_aspsm, /* Same as M3UA */
+		[SUA_MSGC_ASPTM] = &m3ua_msg_class_asptm, /* TODO: different than M3UA */
 		[SUA_MSGC_CL] = &sua_msg_class_cl,
 		[SUA_MSGC_CO] = &sua_msg_class_co,
-		[SUA_MSGC_RKM] = &m3ua_msg_class_rkm,
+		[SUA_MSGC_RKM] = &m3ua_msg_class_rkm, /* TODO: different than M3UA */
 	},
 };
 
@@ -780,7 +937,7 @@ int sua_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg)
 	LOGPASP(asp, DLSUA, LOGL_DEBUG, "Received SUA Message (%s)\n",
 		xua_hdr_dump(xua, &xua_dialect_sua));
 
-	rc = xua_dialect_check_all_mand_ies(&xua_dialect_sua, xua);
+	rc = xua_dialect_check_all_ies(&xua_dialect_sua, xua);
 	if (rc > 0) {
 		err = sua_gen_error_msg(rc, msg);
 		goto out;

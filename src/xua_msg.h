@@ -21,6 +21,8 @@
 
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/sigtran/mtp_sap.h>
+#include <stdint.h>
+#include <stdint.h>
 
 #define XUA_HDR(class, type)	((struct xua_common_hdr) { .spare = 0, .msg_class = (class), .msg_type = (type) })
 
@@ -46,11 +48,35 @@ struct xua_msg_part {
 	/* TODO: keep small data in the struct for perf reasons */
 };
 
+#define XUA_MSG_PART_CLASS_MAX_LEN UINT16_MAX
+struct xua_msg_part_class {
+	uint16_t tag;
+	bool mandatory;
+	bool multiple; /* whether more than one IE are possible in the msg */
+	uint16_t len_min;
+	uint16_t len_max;
+};
+#define XUA_MSG_PART_CLASS(tag_, mandatory_, multiple_, len_min_, len_max_) \
+	{ .tag = (tag_), \
+	  .mandatory = (mandatory_), \
+	  .multiple = (multiple_), \
+	  .len_min = (len_min_), \
+	  .len_max = (len_max_) \
+	}
+#define XUA_MSG_PART_CLASS_UNBOUND(tag, mandatory) \
+	XUA_MSG_PART_CLASS((tag), (mandatory), false, 0, XUA_MSG_PART_CLASS_MAX_LEN)
+#define XUA_MSG_PART_CLASS_FIXED(tag, mandatory, len) \
+	XUA_MSG_PART_CLASS((tag), (mandatory), false, (len), (len))
+#define XUA_MSG_PART_CLASS_U32(tag, mandatory) \
+	XUA_MSG_PART_CLASS_FIXED((tag), (mandatory), sizeof(uint32_t))
+#define XUA_MSG_PART_CLASS_EOF \
+	XUA_MSG_PART_CLASS(0, false, false, 0, 0)
+
 struct xua_msg_class {
 	const char *name;
 	const struct value_string *msgt_names;
 	const struct value_string *iei_names;
-	const uint16_t *mand_ies[256];
+	const struct xua_msg_part_class *ies[256];
 };
 
 struct xua_dialect {
@@ -105,7 +131,7 @@ const char *xua_class_msg_name(const struct xua_msg_class *xmc, uint16_t msg_typ
 const char *xua_class_iei_name(const struct xua_msg_class *xmc, uint16_t iei);
 char *xua_hdr_dump(const struct xua_msg *xua, const struct xua_dialect *dialect);
 char *xua_msg_dump(const struct xua_msg *xua, const struct xua_dialect *dialect);
-int xua_dialect_check_all_mand_ies(const struct xua_dialect *dialect, const struct xua_msg *xua);
+int xua_dialect_check_all_ies(const struct xua_dialect *dialect, const struct xua_msg *xua);
 
 int xua_msg_event_map(const struct xua_msg *xua,
 		      const struct xua_msg_event_map *maps,

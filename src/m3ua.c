@@ -146,11 +146,71 @@ static const struct value_string m3ua_iei_names[] = {
 	{ 0, NULL }
 };
 
-#define MAND_IES(msgt, ies)	[msgt] = (ies)
+#define IES(msgt, ies) \
+	[msgt] = (ies)
+
+/* M3UA/SUA shared: */
+
+#define M3UA_MSG_PART_CLASS_INFO_STRING(mandatory) \
+	XUA_MSG_PART_CLASS_UNBOUND(M3UA_IEI_ROUTE_CTX, (mandatory))
+
+#define M3UA_MSG_PART_CLASS_ROUTE_CTX(mandatory) \
+	XUA_MSG_PART_CLASS_U32(M3UA_IEI_ROUTE_CTX, (mandatory))
+
+#define M3UA_MSG_PART_CLASS_ROUTE_CTX1(mandatory) \
+	XUA_MSG_PART_CLASS_U32(M3UA_IEI_ROUTE_CTX, (mandatory))
+
+#define M3UA_MSG_PART_CLASS_DIAG_INFO(mandatory) \
+	XUA_MSG_PART_CLASS_UNBOUND(M3UA_IEI_DIAG_INFO, (mandatory))
+
+#define M3UA_MSG_PART_CLASS_ERR_CODE(mandatory) \
+	XUA_MSG_PART_CLASS_U32(M3UA_IEI_ERR_CODE, (mandatory))
+
+#define M3UA_MSG_PART_CLASS_STATUS(mandatory) \
+	XUA_MSG_PART_CLASS_U32(M3UA_IEI_STATUS, (mandatory))
+
+#define M3UA_MSG_PART_CLASS_ASP_ID(mandatory) \
+	XUA_MSG_PART_CLASS_U32(M3UA_IEI_ASP_ID, (mandatory))
+
+#define M3UA_MSG_PART_CLASS_AFFECTED_PC(mandatory) \
+	XUA_MSG_PART_CLASS_UNBOUND(M3UA_IEI_AFFECTED_PC, (mandatory))
+
+#define M3UA_MSG_PART_CLASS_CORR_ID(mandatory) \
+	XUA_MSG_PART_CLASS_U32(M3UA_IEI_CORR_ID, (mandatory))
+
+/* M3UA specific: */
+
+#define M3UA_MSG_PART_CLASS_NET_APPEAR(mandatory) \
+	XUA_MSG_PART_CLASS_U32(M3UA_IEI_NET_APPEAR, (mandatory))
+
+#define M3UA_MSG_PART_CLASS_USER_CAUSE(mandatory) \
+	XUA_MSG_PART_CLASS_U32(M3UA_IEI_USER_CAUSE, (mandatory))
+
+#define M3UA_MSG_PART_CLASS_CONG_IND(mandatory) \
+	XUA_MSG_PART_CLASS_U32(M3UA_IEI_CONG_IND, (mandatory))
+
+#define M3UA_MSG_PART_CLASS_CONC_DEST(mandatory) \
+	XUA_MSG_PART_CLASS_U32(M3UA_IEI_CONC_DEST, (mandatory))
+
+#define M3UA_MSG_PART_CLASS_ROUT_KEY(mandatory) \
+	XUA_MSG_PART_CLASS(M3UA_IEI_ROUT_KEY, (mandatory), true, 0, XUA_MSG_PART_CLASS_MAX_LEN)
+
+#define M3UA_MSG_PART_CLASS_REG_RESULT(mandatory) \
+	XUA_MSG_PART_CLASS(M3UA_IEI_REG_RESULT, (mandatory), true, 24, XUA_MSG_PART_CLASS_MAX_LEN)
+
+#define M3UA_MSG_PART_CLASS_DEREG_RESULT(mandatory) \
+	XUA_MSG_PART_CLASS(M3UA_IEI_DEREG_RESULT, (mandatory), true, 16, XUA_MSG_PART_CLASS_MAX_LEN)
+
+#define M3UA_MSG_PART_CLASS_PROT_DATA(mandatory) \
+	XUA_MSG_PART_CLASS_UNBOUND(M3UA_IEI_PROT_DATA, (mandatory))
 
 /* XFER */
-static const uint16_t data_mand_ies[] = {
-	M3UA_IEI_PROT_DATA, 0
+static const struct xua_msg_part_class data_ies[] = {
+	M3UA_MSG_PART_CLASS_NET_APPEAR(false),
+	M3UA_MSG_PART_CLASS_ROUTE_CTX1(false),
+	M3UA_MSG_PART_CLASS_PROT_DATA(true),
+	M3UA_MSG_PART_CLASS_CORR_ID(false),
+	XUA_MSG_PART_CLASS_EOF
 };
 static const struct value_string m3ua_xfer_msgt_names[] = {
 	{ M3UA_XFER_DATA,	"DATA" },
@@ -160,29 +220,56 @@ static const struct xua_msg_class msg_class_xfer = {
 	.name = "XFER",
 	.msgt_names = m3ua_xfer_msgt_names,
 	.iei_names = m3ua_iei_names,
-	.mand_ies = {
-		MAND_IES(M3UA_XFER_DATA, data_mand_ies),
+	.ies = {
+		IES(M3UA_XFER_DATA, data_ies),
 	},
 };
 
 /* SNM */
-static const uint16_t duna_mand_ies[] = {
-	M3UA_IEI_AFFECTED_PC, 0
+static const struct xua_msg_part_class duna_ies[] = {
+	M3UA_MSG_PART_CLASS_NET_APPEAR(false),
+	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
+	M3UA_MSG_PART_CLASS_AFFECTED_PC(true),
+	M3UA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t dava_mand_ies[] = {
-	M3UA_IEI_AFFECTED_PC, 0
+static const struct xua_msg_part_class dava_ies[] = {
+	M3UA_MSG_PART_CLASS_NET_APPEAR(false),
+	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
+	M3UA_MSG_PART_CLASS_AFFECTED_PC(true),
+	M3UA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t daud_mand_ies[] = {
-	M3UA_IEI_AFFECTED_PC, 0
+static const struct xua_msg_part_class daud_ies[] = {
+	M3UA_MSG_PART_CLASS_NET_APPEAR(false),
+	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
+	M3UA_MSG_PART_CLASS_AFFECTED_PC(true),
+	M3UA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t scon_mand_ies[] = {
-	M3UA_IEI_AFFECTED_PC, 0
+static const struct xua_msg_part_class scon_ies[] = {
+	M3UA_MSG_PART_CLASS_NET_APPEAR(false),
+	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
+	M3UA_MSG_PART_CLASS_AFFECTED_PC(true),
+	M3UA_MSG_PART_CLASS_CONC_DEST(false),
+	M3UA_MSG_PART_CLASS_CONG_IND(false),
+	M3UA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t dupu_mand_ies[] = {
-	M3UA_IEI_AFFECTED_PC, M3UA_IEI_USER_CAUSE, 0
+static const struct xua_msg_part_class dupu_ies[] = {
+	M3UA_MSG_PART_CLASS_NET_APPEAR(false),
+	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
+	M3UA_MSG_PART_CLASS_AFFECTED_PC(true),
+	M3UA_MSG_PART_CLASS_USER_CAUSE(true),
+	M3UA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t drst_mand_ies[] = {
-	M3UA_IEI_AFFECTED_PC, 0
+static const struct xua_msg_part_class drst_ies[] = {
+	M3UA_MSG_PART_CLASS_NET_APPEAR(false),
+	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
+	M3UA_MSG_PART_CLASS_AFFECTED_PC(true),
+	M3UA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
 };
 const struct value_string m3ua_snm_msgt_names[] = {
 	{ M3UA_SNM_DUNA,	"DUNA" },
@@ -197,13 +284,13 @@ const struct xua_msg_class m3ua_msg_class_snm = {
 	.name = "SNM",
 	.msgt_names = m3ua_snm_msgt_names,
 	.iei_names = m3ua_iei_names,
-	.mand_ies = {
-		MAND_IES(M3UA_SNM_DUNA, duna_mand_ies),
-		MAND_IES(M3UA_SNM_DAVA, dava_mand_ies),
-		MAND_IES(M3UA_SNM_DAUD, daud_mand_ies),
-		MAND_IES(M3UA_SNM_SCON, scon_mand_ies),
-		MAND_IES(M3UA_SNM_DUPU, dupu_mand_ies),
-		MAND_IES(M3UA_SNM_DRST, drst_mand_ies),
+	.ies = {
+		IES(M3UA_SNM_DUNA, duna_ies),
+		IES(M3UA_SNM_DAVA, dava_ies),
+		IES(M3UA_SNM_DAUD, daud_ies),
+		IES(M3UA_SNM_SCON, scon_ies),
+		IES(M3UA_SNM_DUPU, dupu_ies),
+		IES(M3UA_SNM_DRST, drst_ies),
 	},
 };
 
@@ -238,11 +325,20 @@ const struct xua_msg_class m3ua_msg_class_asptm = {
 };
 
 /* MGMT */
-static const uint16_t err_req_ies[] = {
-	M3UA_IEI_ERR_CODE, 0
+static const struct xua_msg_part_class err_req_ies[] = {
+	M3UA_MSG_PART_CLASS_ERR_CODE(true),
+	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
+	M3UA_MSG_PART_CLASS_NET_APPEAR(false),
+	M3UA_MSG_PART_CLASS_AFFECTED_PC(false),
+	M3UA_MSG_PART_CLASS_DIAG_INFO(false),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t ntfy_req_ies[] = {
-	M3UA_IEI_STATUS, 0
+static const struct xua_msg_part_class ntfy_req_ies[] = {
+	M3UA_MSG_PART_CLASS_STATUS(true),
+	M3UA_MSG_PART_CLASS_ASP_ID(false),
+	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
+	M3UA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
 };
 static const struct value_string m3ua_mgmt_msgt_names[] = {
 	{ M3UA_MGMT_ERR,	"ERROR" },
@@ -253,24 +349,28 @@ const struct xua_msg_class m3ua_msg_class_mgmt = {
 	.name = "MGMT",
 	.msgt_names = m3ua_mgmt_msgt_names,
 	.iei_names = m3ua_iei_names,
-	.mand_ies = {
-		MAND_IES(M3UA_MGMT_ERR, err_req_ies),
-		MAND_IES(M3UA_MGMT_NTFY, ntfy_req_ies),
+	.ies = {
+		IES(M3UA_MGMT_ERR, err_req_ies),
+		IES(M3UA_MGMT_NTFY, ntfy_req_ies),
 	},
 };
 
 /* RKM */
-static const uint16_t reg_req_ies[] = {
-	M3UA_IEI_ROUT_KEY, 0
+static const struct xua_msg_part_class reg_req_ies[] = {
+	M3UA_MSG_PART_CLASS_ROUT_KEY(true),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t reg_rsp_ies[] = {
-	M3UA_IEI_REG_RESULT, 0
+static const struct xua_msg_part_class reg_rsp_ies[] = {
+	M3UA_MSG_PART_CLASS_REG_RESULT(true),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t dereg_req_ies[] = {
-	M3UA_IEI_ROUTE_CTX, 0
+static const struct xua_msg_part_class dereg_req_ies[] = {
+	M3UA_MSG_PART_CLASS_ROUTE_CTX(true),
+	XUA_MSG_PART_CLASS_EOF
 };
-static const uint16_t dereg_rsp_ies[] = {
-	M3UA_IEI_DEREG_RESULT, 0
+static const struct xua_msg_part_class dereg_rsp_ies[] = {
+	M3UA_MSG_PART_CLASS_DEREG_RESULT(true),
+	XUA_MSG_PART_CLASS_EOF
 };
 const struct value_string m3ua_rkm_msgt_names[] = {
 	{ M3UA_RKM_REG_REQ,	"REG-REQ" },
@@ -283,11 +383,11 @@ const struct xua_msg_class m3ua_msg_class_rkm = {
 	.name = "RKM",
 	.msgt_names = m3ua_rkm_msgt_names,
 	.iei_names = m3ua_iei_names,
-	.mand_ies = {
-		MAND_IES(M3UA_RKM_REG_REQ, reg_req_ies),
-		MAND_IES(M3UA_RKM_REG_RSP, reg_rsp_ies),
-		MAND_IES(M3UA_RKM_DEREG_REQ, dereg_req_ies),
-		MAND_IES(M3UA_RKM_DEREG_RSP, dereg_rsp_ies),
+	.ies = {
+		IES(M3UA_RKM_REG_REQ, reg_req_ies),
+		IES(M3UA_RKM_REG_RSP, reg_rsp_ies),
+		IES(M3UA_RKM_DEREG_REQ, dereg_req_ies),
+		IES(M3UA_RKM_DEREG_RSP, dereg_rsp_ies),
 	},
 };
 
@@ -615,7 +715,7 @@ static int m3ua_rx_xfer_validate_data_ie(struct osmo_ss7_asp *asp, const struct 
 	struct m3ua_data_hdr *dh;
 	uint32_t pc;
 
-	/* As already checked by xua_dialect_check_all_mand_ies(): */
+	/* As already checked by xua_dialect_check_all_ies(): */
 	OSMO_ASSERT(data_ie);
 
 	if (data_ie->len < sizeof(struct m3ua_data_hdr)) {
@@ -702,14 +802,10 @@ static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	/* Reject unsupported Network Appearance IE. */
 	if (na_ie) {
 		uint32_t na = xua_msg_part_get_u32(na_ie);
-
 		LOGPASP(asp, DLM3UA, LOGL_NOTICE,
 			"Unsupported 'Network Appearance' IE '0x%08x' in message type '%s', sending 'Error'.\n",
 			na, get_value_string(m3ua_xfer_msgt_names, xua->hdr.msg_type));
-		if (na_ie->len != 4)
-			rc = M3UA_ERR_PARAM_FIELD_ERR;
-		else
-			rc = M3UA_ERR_INVAL_NET_APPEAR;
+		rc = M3UA_ERR_INVAL_NET_APPEAR;
 		goto ret_free;
 	}
 
@@ -897,7 +993,7 @@ int m3ua_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg)
 	LOGPASP(asp, DLM3UA, LOGL_DEBUG, "Received M3UA Message (%s)\n",
 		xua_hdr_dump(xua, &xua_dialect_m3ua));
 
-	rc = xua_dialect_check_all_mand_ies(&xua_dialect_m3ua, xua);
+	rc = xua_dialect_check_all_ies(&xua_dialect_m3ua, xua);
 	if (rc > 0) {
 		xua_msg_free(xua);
 		goto out;
