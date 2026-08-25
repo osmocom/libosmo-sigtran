@@ -534,7 +534,7 @@ char *xua_hdr_dump(const struct xua_msg *xua, const struct xua_dialect *dialect)
 	return buf;
 }
 
-int xua_dialect_check_all_mand_ies(const struct xua_dialect *dialect, struct xua_msg *xua)
+int xua_dialect_check_all_mand_ies(const struct xua_dialect *dialect, const struct xua_msg *xua)
 {
 	uint8_t msg_class = xua->hdr.msg_class;
 	uint8_t msg_type = xua->hdr.msg_type;
