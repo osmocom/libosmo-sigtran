@@ -175,6 +175,7 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 			   struct msgb *resp, struct osmo_ss7_as **newly_assigned_as,
 			   unsigned int max_nas_idx, unsigned int *nas_idx)
 {
+	struct xua_msg_part *rctx_ie;
 	uint32_t rk_id, rctx, _tmode, dpc;
 	enum osmo_ss7_as_traffic_mode tmode;
 	struct osmo_ss7_as *as = NULL;
@@ -186,7 +187,7 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 	/* mandatory local routing key ID */
 	rk_id = xua_msg_get_u32(inner, M3UA_IEI_LOC_RKEY_ID);
 	/* ASP may already include a routing context value here */
-	rctx = xua_msg_get_u32(inner, M3UA_IEI_ROUTE_CTX);
+	rctx_ie = xua_msg_find_tag(inner, M3UA_IEI_ROUTE_CTX);
 
 	/* traffic mode type (0 = undefined) */
 	_tmode = xua_msg_get_u32(inner, M3UA_IEI_TRAF_MODE_TYP);
@@ -229,8 +230,9 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 	 *    all AS/RK in situations where the peers are trusted.
 	 */
 
-	if (rctx) {
+	if (rctx_ie) {
 		/* check if there is already an AS for this routing key */
+		rctx = xua_msg_part_get_u32(rctx_ie);
 		as = osmo_ss7_as_find_by_rctx(asp->inst, rctx);
 	} else {
 		/* if the ASP did not include a routing context number, allocate
