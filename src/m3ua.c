@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <osmocom/core/utils.h>
 #include <osmocom/core/linuxlist.h>
@@ -606,6 +607,74 @@ struct m3ua_data_hdr *data_hdr_from_m3ua(const struct xua_msg *xua)
 	return data_hdr;
 }
 
+static int m3ua_rx_xfer_validate_data_ie(struct osmo_ss7_asp *asp, const struct xua_msg_part *data_ie)
+{
+	struct m3ua_data_hdr *dh;
+	uint32_t pc;
+
+	/* As already checked by xua_dialect_check_all_mand_ies(): */
+	OSMO_ASSERT(data_ie);
+
+	if (data_ie->len < sizeof(struct m3ua_data_hdr)) {
+		LOGPASP(asp, DLM3UA, LOGL_NOTICE,
+			"Discarding received M3UA XFER:DATA: Wrong Protocol Data parameter IE len=%" PRIu16 "\n",
+			data_ie->len);
+		return M3UA_ERR_INVAL_PARAM_VAL;
+	}
+
+	dh = (struct m3ua_data_hdr *) data_ie->dat;
+	OSMO_ASSERT(dh);
+
+	pc = ntohl(dh->opc);
+	if (!osmo_ss7_pc_is_valid(pc)) {
+		LOGPASP(asp, DLM3UA, LOGL_NOTICE,
+			"Discarding received M3UA XFER:DATA: Invalid OPC=%" PRIu32 "\n",
+			pc);
+		return M3UA_ERR_INVAL_PARAM_VAL;
+	}
+
+	pc = ntohl(dh->dpc);
+	if (!osmo_ss7_pc_is_valid(pc)) {
+		LOGPASP(asp, DLM3UA, LOGL_NOTICE,
+			"Discarding received M3UA XFER:DATA: Invalid DPC=%" PRIu32 "\n",
+			pc);
+		return M3UA_ERR_INVAL_PARAM_VAL;
+	}
+
+	if (dh->si & ~0x0F) {
+		LOGPASP(asp, DLM3UA, LOGL_NOTICE,
+			"Discarding received M3UA XFER:DATA: Invalid SI=%" PRIu8 "\n",
+			dh->si);
+		return M3UA_ERR_INVAL_PARAM_VAL;
+	}
+
+	/* Drop packets not matching our configured Network Indicator: */
+	if (dh->ni != asp->inst->cfg.network_indicator) {
+		LOGPASP(asp, DLM3UA, LOGL_NOTICE,
+			"Discarding received M3UA XFER:DATA: NI=%u not matching ss7 instance configured NI=%u\n",
+			dh->ni, asp->inst->cfg.network_indicator);
+		rate_ctr_inc2(asp->inst->ctrg, SS7_INST_CTR_PKT_RX_NI_MISMATCH);
+		rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_NI_MISMATCH);
+		return M3UA_ERR_UNEXPECTED_MSG;
+	}
+
+	if (dh->mp & ~0x03) {
+		LOGPASP(asp, DLM3UA, LOGL_NOTICE,
+			"Discarding received M3UA XFER:DATA: Invalid MP=%" PRIu8 "\n",
+			dh->mp);
+		return M3UA_ERR_INVAL_PARAM_VAL;
+	}
+
+	if (dh->sls & ~0x0F) {
+		LOGPASP(asp, DLM3UA, LOGL_NOTICE,
+			"Discarding received M3UA XFER:DATA: Invalid SLS=%" PRIu8 "\n",
+			dh->sls);
+		return M3UA_ERR_INVAL_PARAM_VAL;
+	}
+
+	return 0;
+}
+
 /* This function takes ownership of xua msg passed to it. */
 static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
@@ -641,28 +710,19 @@ static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		goto ret_free;
 	}
 
+	rc = m3ua_rx_xfer_validate_data_ie(asp, data_ie);
+	if (rc)
+		goto ret_free;
+
 	/* store the MTP-level information in the xua_msg for use by
 	 * higher layer protocols */
-	OSMO_ASSERT(data_ie);
 	dh = (struct m3ua_data_hdr *) data_ie->dat;
-	OSMO_ASSERT(dh);
 	m3ua_dh_to_xfer_param(&xua->mtp, dh);
 	LOGPASP(asp, DLM3UA, LOGL_DEBUG,
 		"%s(): M3UA data header: opc=%u=%s dpc=%u=%s sls=%u\n",
 		__func__, xua->mtp.opc, osmo_ss7_pointcode_print(asp->inst, xua->mtp.opc),
 		xua->mtp.dpc, osmo_ss7_pointcode_print2(asp->inst, xua->mtp.dpc),
 		xua->mtp.sls);
-
-	/* Drop packets not matching our configured Network Indicator: */
-	if (dh->ni != asp->inst->cfg.network_indicator) {
-		LOGPASP(asp, DLM3UA, LOGL_NOTICE,
-			"Discarding received XUA Message %s: NI=%u not matching ss7 instance configured NI=%u\n",
-			xua_hdr_dump(xua, &xua_dialect_sua), dh->ni, asp->inst->cfg.network_indicator);
-		rate_ctr_inc2(asp->inst->ctrg, SS7_INST_CTR_PKT_RX_NI_MISMATCH);
-		rate_ctr_inc2(asp->ctrg, SS7_ASP_CTR_PKT_RX_NI_MISMATCH);
-		rc = M3UA_ERR_UNEXPECTED_MSG;
-		goto ret_free;
-	}
 
 	rc = xua_find_as_for_asp(&as, asp, rctx_ie);
 	if (rc)
