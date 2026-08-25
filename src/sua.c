@@ -191,6 +191,12 @@ static const struct value_string sua_iei_names[] = {
 #define SUA_MSG_PART_CLASS_DATA(mandatory) \
 	XUA_MSG_PART_CLASS_UNBOUND(SUA_IEI_DATA, (mandatory))
 
+#define SUA_MSG_PART_CLASS_USER_CAUSE(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_USER_CAUSE, (mandatory))
+
+#define SUA_MSG_PART_CLASS_SMI(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_SMI, (mandatory))
+
 #define SUA_MSG_PART_CLASS_IMPORTANCE(mandatory) \
 	XUA_MSG_PART_CLASS_U32(SUA_IEI_IMPORTANCE, (mandatory))
 
@@ -202,6 +208,76 @@ static const struct value_string sua_iei_names[] = {
 
 #define SUA_MSG_PART_CLASS_SEGMENTATION(mandatory) \
 	XUA_MSG_PART_CLASS_U32(SUA_IEI_SEGMENTATION, (mandatory))
+
+#define SUA_MSG_PART_CLASS_CONG_LEVEL(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_CONG_LEVEL, (mandatory))
+
+#define SUA_MSG_PART_CLASS_SSN(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_SSN, (mandatory))
+
+/* SNM */
+static const struct xua_msg_part_class duna_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(false),
+	SUA_MSG_PART_CLASS_AFFECTED_PC(true),
+	SUA_MSG_PART_CLASS_SSN(false),
+	SUA_MSG_PART_CLASS_SMI(false),
+	SUA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_part_class dava_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(false),
+	SUA_MSG_PART_CLASS_AFFECTED_PC(true),
+	SUA_MSG_PART_CLASS_SSN(false),
+	SUA_MSG_PART_CLASS_SMI(false),
+	SUA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_part_class daud_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(false),
+	SUA_MSG_PART_CLASS_AFFECTED_PC(true),
+	SUA_MSG_PART_CLASS_SSN(false),
+	SUA_MSG_PART_CLASS_USER_CAUSE(false),
+	SUA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_part_class scon_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(false),
+	SUA_MSG_PART_CLASS_AFFECTED_PC(true),
+	SUA_MSG_PART_CLASS_SSN(false),
+	SUA_MSG_PART_CLASS_CONG_LEVEL(true),
+	SUA_MSG_PART_CLASS_SMI(false),
+	SUA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_part_class dupu_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(false),
+	SUA_MSG_PART_CLASS_AFFECTED_PC(true),
+	SUA_MSG_PART_CLASS_USER_CAUSE(true),
+	SUA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_part_class drst_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(false),
+	SUA_MSG_PART_CLASS_AFFECTED_PC(true),
+	SUA_MSG_PART_CLASS_SSN(false),
+	SUA_MSG_PART_CLASS_SMI(false),
+	SUA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+const struct xua_msg_class sua_msg_class_snm = {
+	.name = "SNM",
+	/* message types are same as m3ua: */
+	.msgt_names = m3ua_snm_msgt_names,
+	.iei_names = sua_iei_names,
+	.ies = {
+		IES(SUA_SNM_DUNA, duna_ies),
+		IES(SUA_SNM_DAVA, dava_ies),
+		IES(SUA_SNM_DAUD, daud_ies),
+		IES(SUA_SNM_SCON, scon_ies),
+		IES(SUA_SNM_DUPU, dupu_ies),
+		IES(SUA_SNM_DRST, drst_ies),
+	},
+};
 
 static const struct xua_msg_part_class cldt_ies[] = {
 	SUA_MSG_PART_CLASS_ROUTE_CTX(true),
@@ -406,7 +482,7 @@ const struct xua_dialect xua_dialect_sua = {
 	.log_subsys = DLSUA,
 	.class = {
 		[SUA_MSGC_MGMT] = &sua_msg_class_mgmt,
-		[SUA_MSGC_SNM] = &m3ua_msg_class_snm, /* TODO: different than M3UA */
+		[SUA_MSGC_SNM] = &sua_msg_class_snm,
 		[SUA_MSGC_ASPSM] = &m3ua_msg_class_aspsm, /* Same as M3UA */
 		[SUA_MSGC_ASPTM] = &m3ua_msg_class_asptm, /* TODO: different than M3UA */
 		[SUA_MSGC_CL] = &sua_msg_class_cl,
