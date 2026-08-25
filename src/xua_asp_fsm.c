@@ -640,6 +640,7 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 	struct osmo_ss7_as *as;
 	struct ss7_as_asp_assoc *assoc;
 	struct xua_msg_part *asp_id_ie;
+	struct xua_msg_part *traf_mode_ie;
 	struct xua_msg *xua_in;
 	uint32_t traf_mode = 0;
 	struct xua_msg_part *rctx_ie;
@@ -689,8 +690,8 @@ static void xua_asp_fsm_inactive(struct osmo_fsm_inst *fi, uint32_t event, void 
 	case XUA_ASP_E_ASPTM_ASPAC:
 		xua_in = data;
 		ENSURE_SG_OR_IPSP(fi, event);
-		if (xua_msg_find_tag(xua_in, M3UA_IEI_TRAF_MODE_TYP)) {
-			traf_mode = xua_msg_get_u32(xua_in, M3UA_IEI_TRAF_MODE_TYP);
+		if ((traf_mode_ie = xua_msg_find_tag(xua_in, M3UA_IEI_TRAF_MODE_TYP))) {
+			traf_mode = xua_msg_part_get_u32(traf_mode_ie);
 			if (traf_mode != M3UA_TMOD_OVERRIDE &&
 			    traf_mode != M3UA_TMOD_LOADSHARE &&
 			    traf_mode != M3UA_TMOD_BCAST) {
