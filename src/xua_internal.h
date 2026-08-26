@@ -92,9 +92,13 @@ extern const struct xua_msg_class m3ua_msg_class_aspsm;
 extern const struct xua_msg_class m3ua_msg_class_asptm;
 
 extern const struct xua_msg_part_class m3ua_ntfy_req_ies[];
+extern const struct xua_msg_part_class m3ua_asp_inact_ies[];
+extern const struct xua_msg_part_class m3ua_asp_act_ack_ies[];
+extern const struct xua_msg_part_class m3ua_asp_inact_ack_ies[];
 
 extern const struct value_string m3ua_snm_msgt_names[];
 extern const struct value_string m3ua_mgmt_msgt_names[];
+extern const struct value_string m3ua_asptm_msgt_names[];
 extern const struct value_string m3ua_err_names[];
 extern const struct value_string m3ua_ntfy_type_names[];
 extern const struct value_string m3ua_ntfy_stchg_names[];

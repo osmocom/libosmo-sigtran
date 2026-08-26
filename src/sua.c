@@ -138,6 +138,9 @@ static const struct value_string sua_iei_names[] = {
 #define SUA_MSG_PART_CLASS_DIAG_INFO(mandatory) \
 	XUA_MSG_PART_CLASS_UNBOUND(SUA_IEI_DIAG_INFO, (mandatory))
 
+#define SUA_MSG_PART_CLASS_TRAF_MODE_TYP(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_TRAF_MODE_TYP, (mandatory))
+
 #define SUA_MSG_PART_CLASS_ERR_CODE(mandatory) \
 	XUA_MSG_PART_CLASS_U32(SUA_IEI_ERR_CODE, (mandatory))
 
@@ -193,6 +196,12 @@ static const struct value_string sua_iei_names[] = {
 
 #define SUA_MSG_PART_CLASS_USER_CAUSE(mandatory) \
 	XUA_MSG_PART_CLASS_U32(SUA_IEI_USER_CAUSE, (mandatory))
+
+#define SUA_MSG_PART_CLASS_DRN(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_DRN, (mandatory))
+
+#define SUA_MSG_PART_CLASS_TID(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_TID, (mandatory))
 
 #define SUA_MSG_PART_CLASS_SMI(mandatory) \
 	XUA_MSG_PART_CLASS_U32(SUA_IEI_SMI, (mandatory))
@@ -276,6 +285,27 @@ const struct xua_msg_class sua_msg_class_snm = {
 		IES(SUA_SNM_SCON, scon_ies),
 		IES(SUA_SNM_DUPU, dupu_ies),
 		IES(SUA_SNM_DRST, drst_ies),
+	},
+};
+
+/* ASPTM: Only "ASP Active" IEs differ between SUA and M3UA: */
+static const struct xua_msg_part_class sua_asp_act_ies[] = {
+	SUA_MSG_PART_CLASS_TRAF_MODE_TYP(false),
+	SUA_MSG_PART_CLASS_ROUTE_CTX(false),
+	SUA_MSG_PART_CLASS_TID(false),
+	SUA_MSG_PART_CLASS_DRN(false),
+	SUA_MSG_PART_CLASS_INFO_STRING(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+const struct xua_msg_class sua_msg_class_asptm = {
+	.name = "ASPTM",
+	.msgt_names = m3ua_asptm_msgt_names,
+	.iei_names = sua_iei_names,
+	.ies = {
+		IES(SUA_ASPTM_ACTIVE, sua_asp_act_ies),
+		IES(SUA_ASPTM_INACTIVE, m3ua_asp_inact_ies),
+		IES(SUA_ASPTM_ACTIVE_ACK, m3ua_asp_act_ack_ies),
+		IES(SUA_ASPTM_INACTIVE_ACK, m3ua_asp_inact_ack_ies),
 	},
 };
 
@@ -484,7 +514,7 @@ const struct xua_dialect xua_dialect_sua = {
 		[SUA_MSGC_MGMT] = &sua_msg_class_mgmt,
 		[SUA_MSGC_SNM] = &sua_msg_class_snm,
 		[SUA_MSGC_ASPSM] = &m3ua_msg_class_aspsm, /* Same as M3UA */
-		[SUA_MSGC_ASPTM] = &m3ua_msg_class_asptm, /* TODO: different than M3UA */
+		[SUA_MSGC_ASPTM] = &sua_msg_class_asptm,
 		[SUA_MSGC_CL] = &sua_msg_class_cl,
 		[SUA_MSGC_CO] = &sua_msg_class_co,
 		[SUA_MSGC_RKM] = &m3ua_msg_class_rkm, /* TODO: different than M3UA */

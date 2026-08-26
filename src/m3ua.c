@@ -353,18 +353,19 @@ static const struct xua_msg_part_class m3ua_asp_act_ies[] = {
 	M3UA_MSG_PART_CLASS_INFO_STRING(false),
 	XUA_MSG_PART_CLASS_EOF
 };
-static const struct xua_msg_part_class m3ua_asp_inact_ies[] = {
+/* The following 3 msg structs are reused by SUA since it contains same IEs: */
+const struct xua_msg_part_class m3ua_asp_inact_ies[] = {
 	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
 	M3UA_MSG_PART_CLASS_INFO_STRING(false),
 	XUA_MSG_PART_CLASS_EOF
 };
-static const struct xua_msg_part_class m3ua_asp_act_ack_ies[] = {
+const struct xua_msg_part_class m3ua_asp_act_ack_ies[] = {
 	M3UA_MSG_PART_CLASS_TRAF_MODE_TYP(false),
 	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
 	M3UA_MSG_PART_CLASS_INFO_STRING(false),
 	XUA_MSG_PART_CLASS_EOF
 };
-static const struct xua_msg_part_class m3ua_asp_inact_ack_ies[] = {
+const struct xua_msg_part_class m3ua_asp_inact_ack_ies[] = {
 	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
 	M3UA_MSG_PART_CLASS_INFO_STRING(false),
 	XUA_MSG_PART_CLASS_EOF
