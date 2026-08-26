@@ -48,6 +48,20 @@ osmo_static_assert(M3UA_IEI_AFFECTED_PC == SUA_IEI_AFFECTED_PC, _sa_aff_pc);
 osmo_static_assert(M3UA_IEI_ROUTE_CTX == SUA_IEI_ROUTE_CTX, _sa_rctx);
 osmo_static_assert(M3UA_IEI_INFO_STRING == SUA_IEI_INFO_STRING, _sa_inf_str);
 
+/* Get "Mask" field from M3UA/SUA "Affected Point Code" IE and trim it to subset of
+ * Point Codes available in this instance.
+ * This prevents creating incorrect bitmasks and ending up in long loops based on peer
+ * inputting unexpected big values (ie. >14 on ITU and >24 on ANSI).
+ */
+static uint8_t mask_from_affected_pc(const struct osmo_ss7_instance *s7i, uint8_t aff_pc)
+{
+	const uint8_t pc_width = osmo_ss7_pc_width(&s7i->cfg.pc_fmt);
+	uint8_t mask = aff_pc >> 24;
+	if (mask > pc_width)
+		return pc_width;
+	return mask;
+}
+
 static const char *format_affected_pcs_c(void *ctx, const struct osmo_ss7_instance *s7i,
 					 const struct xua_msg_part *ie_aff_pc)
 {
@@ -60,6 +74,7 @@ static const char *format_affected_pcs_c(void *ctx, const struct osmo_ss7_instan
 		uint32_t _aff_pc = ntohl(aff_pc[i]);
 		uint32_t pc = _aff_pc & 0xffffff;
 		uint8_t mask = _aff_pc >> 24;
+		/* No need to call mask_from_affected_pc() here, we want to print what we actually received. */
 
 		/* append point code + mask */
 		out = talloc_asprintf_append(out, "%s%s/%u", i == 0 ? "" : ", ",
@@ -144,7 +159,7 @@ static void xua_snm_pc_available_to_mtp_users(struct osmo_ss7_instance *s7i,
 		 * see RFC 4666 3.4.1 */
 		uint32_t _aff_pc = ntohl(aff_pc[i]);
 		uint32_t pc = _aff_pc & 0xffffff;
-		uint8_t mask = _aff_pc >> 24;
+		uint8_t mask = mask_from_affected_pc(s7i, _aff_pc);
 
 		if (!mask) {
 			if (available)
@@ -200,12 +215,14 @@ static void xua_snm_srm_pc_available(struct osmo_ss7_as *as,
 				     const uint32_t *aff_pc, unsigned int num_aff_pc,
 				     bool available)
 {
+	const struct osmo_ss7_instance *s7i = as->inst;
+
 	for (unsigned int i = 0; i < num_aff_pc; i++) {
 		/* 32bit "Affected Point Code" consists of a 7-bit mask followed by 14/16/24-bit SS7 PC,
 		 * see RFC 4666 3.4.1 */
 		uint32_t _aff_pc = ntohl(aff_pc[i]);
 		uint32_t pc = _aff_pc & 0xffffff;
-		uint8_t mask = _aff_pc >> 24;
+		uint8_t mask = mask_from_affected_pc(s7i, _aff_pc);
 
 		if (!mask) {
 			xua_snm_srm_pc_available_single(as, pc, available);
@@ -349,7 +366,7 @@ static void xua_snm_scon_to_mtp_users(struct osmo_ss7_instance *s7i,
 		 * see RFC 4666 3.4.1 */
 		uint32_t _aff_pc = ntohl(aff_pc[i]);
 		uint32_t pc = _aff_pc & 0xffffff;
-		uint8_t mask = _aff_pc >> 24;
+		uint8_t mask = mask_from_affected_pc(s7i, _aff_pc);
 
 		if (!mask) {
 			mtp_status_ind_up_to_all_users(s7i, pc, MTP_UNAVAIL_C_CONGESTED,
@@ -430,7 +447,7 @@ void xua_snm_rx_daud(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	for (i = 0; i < num_aff_pc; i++) {
 		uint32_t _aff_pc = ntohl(aff_pc[i]);
 		uint32_t pc = _aff_pc & 0xffffff;
-		uint8_t mask = _aff_pc >> 24;
+		uint8_t mask = mask_from_affected_pc(s7i, _aff_pc);
 		bool is_available;
 
 		if (mask == 0) {
