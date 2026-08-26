@@ -389,7 +389,7 @@ const struct xua_msg_class m3ua_msg_class_asptm = {
 };
 
 /* MGMT */
-static const struct xua_msg_part_class err_req_ies[] = {
+static const struct xua_msg_part_class m3ua_err_req_ies[] = {
 	M3UA_MSG_PART_CLASS_ERR_CODE(true),
 	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
 	M3UA_MSG_PART_CLASS_NET_APPEAR(false),
@@ -397,14 +397,14 @@ static const struct xua_msg_part_class err_req_ies[] = {
 	M3UA_MSG_PART_CLASS_DIAG_INFO(false),
 	XUA_MSG_PART_CLASS_EOF
 };
-static const struct xua_msg_part_class ntfy_req_ies[] = {
+const struct xua_msg_part_class m3ua_ntfy_req_ies[] = {
 	M3UA_MSG_PART_CLASS_STATUS(true),
 	M3UA_MSG_PART_CLASS_ASP_ID(false),
 	M3UA_MSG_PART_CLASS_ROUTE_CTX(false),
 	M3UA_MSG_PART_CLASS_INFO_STRING(false),
 	XUA_MSG_PART_CLASS_EOF
 };
-static const struct value_string m3ua_mgmt_msgt_names[] = {
+const struct value_string m3ua_mgmt_msgt_names[] = {
 	{ M3UA_MGMT_ERR,	"ERROR" },
 	{ M3UA_MGMT_NTFY,	"NOTIFY" },
 	{ 0, NULL }
@@ -414,8 +414,8 @@ const struct xua_msg_class m3ua_msg_class_mgmt = {
 	.msgt_names = m3ua_mgmt_msgt_names,
 	.iei_names = m3ua_iei_names,
 	.ies = {
-		IES(M3UA_MGMT_ERR, err_req_ies),
-		IES(M3UA_MGMT_NTFY, ntfy_req_ies),
+		IES(M3UA_MGMT_ERR, m3ua_err_req_ies),
+		IES(M3UA_MGMT_NTFY, m3ua_ntfy_req_ies),
 	},
 };
 

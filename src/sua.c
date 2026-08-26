@@ -185,6 +185,9 @@ static const struct value_string sua_iei_names[] = {
 #define SUA_MSG_PART_CLASS_CAUSE(mandatory) \
 	XUA_MSG_PART_CLASS_U32(SUA_IEI_CAUSE, (mandatory))
 
+#define SUA_MSG_PART_CLASS_NET_APPEARANCE(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_NET_APPEARANCE, (mandatory))
+
 #define SUA_MSG_PART_CLASS_DATA(mandatory) \
 	XUA_MSG_PART_CLASS_UNBOUND(SUA_IEI_DATA, (mandatory))
 
@@ -376,13 +379,33 @@ static const struct xua_msg_class sua_msg_class_co = {
 	},
 };
 
+/* MGMT */
+/* ERR msg in SUA is almost same as M3UA, but "Network Appearance" IE has differnet TAG... */
+static const struct xua_msg_part_class sua_err_req_ies[] = {
+	SUA_MSG_PART_CLASS_ERR_CODE(true),
+	SUA_MSG_PART_CLASS_ROUTE_CTX(false),
+	SUA_MSG_PART_CLASS_NET_APPEARANCE(false),
+	SUA_MSG_PART_CLASS_AFFECTED_PC(false),
+	SUA_MSG_PART_CLASS_DIAG_INFO(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_class sua_msg_class_mgmt = {
+	.name = "MGMT",
+	.msgt_names = m3ua_mgmt_msgt_names,
+	.iei_names = sua_iei_names,
+	.ies = {
+		IES(SUA_MGMT_ERR, sua_err_req_ies),
+		IES(SUA_MGMT_NTFY, m3ua_ntfy_req_ies),
+	},
+};
+
 const struct xua_dialect xua_dialect_sua = {
 	.name = "SUA",
 	.ppid = SUA_PPID,
 	.port = SUA_PORT,
 	.log_subsys = DLSUA,
 	.class = {
-		[SUA_MSGC_MGMT] = &m3ua_msg_class_mgmt, /* TODO: different than M3UA */
+		[SUA_MSGC_MGMT] = &sua_msg_class_mgmt,
 		[SUA_MSGC_SNM] = &m3ua_msg_class_snm, /* TODO: different than M3UA */
 		[SUA_MSGC_ASPSM] = &m3ua_msg_class_aspsm, /* Same as M3UA */
 		[SUA_MSGC_ASPTM] = &m3ua_msg_class_asptm, /* TODO: different than M3UA */
