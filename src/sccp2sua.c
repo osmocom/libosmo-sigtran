@@ -807,7 +807,7 @@ static struct xua_msg *sccp_to_xua_opt(const struct msgb *msg, const uint8_t *pt
 	/* some bounds checking */
 	if (ptr_opt < msg->data)
 		return NULL;
-	if (ptr_opt > msg->tail - (ptr_opt_is_long ? 2 : 1))
+	if (ptr_opt + (ptr_opt_is_long ? 2 : 1) > msg->tail)
 		return NULL;
 
 	if (ptr_opt_is_long)
@@ -831,34 +831,36 @@ static struct xua_msg *sccp_to_xua_opt(const struct msgb *msg, const uint8_t *pt
 
 	enum sccp_parameter_name_codes opt_type = 0; /* dummy value not used */
 	while (oneopt < msg->tail) {
-		uint8_t opt_len;
-		uint16_t opt_len16;
+		uint8_t len_size;
+		uint16_t opt_len;
+
 		opt_type = oneopt[0];
+		oneopt++;
 
 		switch (opt_type) {
 		case SCCP_PNC_END_OF_OPTIONAL:
 			return xua;
 		case SCCP_PNC_LONG_DATA:
-			/* two byte length field */
-			if (oneopt + 2 > msg->tail)
+			/* two byte "Length Indicator" */
+			len_size = 2;
+			if (oneopt + len_size > msg->tail)
 				goto malformed;
-			opt_len16 = oneopt[1] << 8 | oneopt[2];
-			if (oneopt + 3 + opt_len16 > msg->tail)
-				goto malformed;
-			xua_msg_add_sccp_opt(xua, opt_type, opt_len16, oneopt+3);
-			oneopt += 3 + opt_len16;
+			opt_len = oneopt[0] << 8 | oneopt[1];
+			oneopt += len_size;
 			break;
 		default:
-			/* one byte length field */
-			if (oneopt + 1 > msg->tail)
+			/* one byte "Length Indicator" */
+			len_size = 1;
+			if (oneopt + len_size > msg->tail)
 				goto malformed;
-
-			opt_len = oneopt[1];
-			if (oneopt + 2 + opt_len > msg->tail)
-				goto malformed;
-			xua_msg_add_sccp_opt(xua, opt_type, opt_len, oneopt+2);
-			oneopt += 2 + opt_len;
+			opt_len = oneopt[0];
+			oneopt += len_size;
 		}
+
+		if (oneopt + opt_len > msg->tail)
+			goto malformed;
+		xua_msg_add_sccp_opt(xua, opt_type, opt_len, oneopt);
+		oneopt += opt_len;
 	}
 	LOGP(DLSUA, LOGL_ERROR, "Parameter %s not found\n", osmo_sccp_pnc_name(SCCP_PNC_END_OF_OPTIONAL));
 	return NULL;
