@@ -115,15 +115,19 @@ int osmo_isup_party_encode(struct msgb *msg, const char *in_digits)
  *  \returns 0 in case of success, negative on error
  * According to Q.713/3.4 and RFC3868/3.10.2 */
 int osmo_sccp_addr_parse(struct osmo_sccp_addr *out,
-				const uint8_t *addr, unsigned int addrlen)
+			 const uint8_t *addr, unsigned int addrlen)
 {
 	struct sccp_called_party_address *sca;
 	uint8_t *cur;
+	const uint8_t *tail = addr + addrlen;
 	uint8_t encoding;
 	bool odd;
 	int rc;
 
 	memset(out, 0, sizeof(*out));
+
+	if (addrlen < sizeof(struct sccp_called_party_address))
+		return -1;
 
 	sca = (struct sccp_called_party_address *) addr;
 	cur = sca->data;
@@ -134,6 +138,8 @@ int osmo_sccp_addr_parse(struct osmo_sccp_addr *out,
 		out->ri = OSMO_SCCP_RI_GT;
 
 	if (sca->point_code_indicator) {
+		if (cur + 2 > tail)
+			return -1;
 		out->presence |= OSMO_SCCP_ADDR_T_PC;
 		out->pc = (uint16_t) (cur[1] & 0x3f) << 8;
 		out->pc |= cur[0];
@@ -141,6 +147,8 @@ int osmo_sccp_addr_parse(struct osmo_sccp_addr *out,
 	}
 
 	if (sca->ssn_indicator) {
+		if (cur + 1 > tail)
+			return -1;
 		out->presence |= OSMO_SCCP_ADDR_T_SSN;
 		out->ssn = *cur;
 		cur += 1;
@@ -151,6 +159,8 @@ int osmo_sccp_addr_parse(struct osmo_sccp_addr *out,
 		out->gt.gti = OSMO_SCCP_GTI_NO_GT;
 		return 0;
 	case SCCP_TITLE_IND_NATURE_ONLY:
+		if (cur + 1 > tail)
+			return -1;
 		out->presence |= OSMO_SCCP_ADDR_T_GT;
 		out->gt.gti = OSMO_SCCP_GTI_NAI_ONLY;
 		out->gt.nai = *cur & 0x7f;
@@ -160,6 +170,8 @@ int osmo_sccp_addr_parse(struct osmo_sccp_addr *out,
 			odd = false;
 		break;
 	case SCCP_TITLE_IND_TRANSLATION_ONLY:
+		if (cur + 1 > tail)
+			return -1;
 		out->presence |= OSMO_SCCP_ADDR_T_GT;
 		out->gt.gti = OSMO_SCCP_GTI_TT_ONLY;
 		out->gt.tt = *cur++;
@@ -167,6 +179,8 @@ int osmo_sccp_addr_parse(struct osmo_sccp_addr *out,
 		LOGP(DLSUA, LOGL_ERROR, "Unsupported national GTI %u\n", sca->global_title_indicator);
 		return -EINVAL;
 	case SCCP_TITLE_IND_TRANS_NUM_ENC:
+		if (cur + 2 > tail)
+			return -1;
 		out->presence |= OSMO_SCCP_ADDR_T_GT;
 		out->gt.gti = OSMO_SCCP_GTI_TT_NPL_ENC;
 		out->gt.tt = *cur++;
@@ -185,6 +199,8 @@ int osmo_sccp_addr_parse(struct osmo_sccp_addr *out,
 		}
 		break;
 	case SCCP_TITLE_IND_TRANS_NUM_ENC_NATURE:
+		if (cur + 3 > tail)
+			return -1;
 		out->presence |= OSMO_SCCP_ADDR_T_GT;
 		out->gt.gti = OSMO_SCCP_GTI_TT_NPL_ENC_NAI;
 		out->gt.tt = *cur++;
@@ -210,7 +226,7 @@ int osmo_sccp_addr_parse(struct osmo_sccp_addr *out,
 		return -EINVAL;
 	}
 	rc = osmo_isup_party_parse(out->gt.digits, sizeof(out->gt.digits),
-				   cur, (addr+addrlen-cur), odd);
+				   cur, (tail - cur), odd);
 	if (rc < 0)
 		return rc;
 
