@@ -534,6 +534,7 @@ char *xua_hdr_dump(const struct xua_msg *xua, const struct xua_dialect *dialect)
 	return buf;
 }
 
+/* Validate incoming xua_msg. returns 0 on success, M3UA_ERR_* on failure. */
 int xua_dialect_check_all_mand_ies(const struct xua_dialect *dialect, const struct xua_msg *xua)
 {
 	uint8_t msg_class = xua->hdr.msg_class;
@@ -544,12 +545,12 @@ int xua_dialect_check_all_mand_ies(const struct xua_dialect *dialect, const stru
 
 	/* unknown class? */
 	if (!xmc)
-		return 1;
+		return 0;
 
 	ies = xmc->mand_ies[msg_type];
 	/* no mandatory IEs? */
 	if (!ies)
-		return 1;
+		return 0;
 
 	for (ie = *ies; ie; ie = *ies++) {
 		if (!xua_msg_find_tag(xua, ie)) {
@@ -559,11 +560,11 @@ int xua_dialect_check_all_mand_ies(const struct xua_dialect *dialect, const stru
 				dialect->name, xmc->name,
 				xua_class_msg_name(xmc, msg_type),
 				xua_class_iei_name(xmc, ie));
-			return 0;
+			return M3UA_ERR_MISSING_PARAM;
 		}
 	}
 
-	return 1;
+	return 0;
 }
 
 char *xua_msg_dump(const struct xua_msg *xua, const struct xua_dialect *dialect)

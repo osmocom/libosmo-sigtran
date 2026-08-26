@@ -780,9 +780,9 @@ int sua_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg)
 	LOGPASP(asp, DLSUA, LOGL_DEBUG, "Received SUA Message (%s)\n",
 		xua_hdr_dump(xua, &xua_dialect_sua));
 
-	if (!xua_dialect_check_all_mand_ies(&xua_dialect_sua, xua)) {
-		/* FIXME: Return error? */
-		err = sua_gen_error_msg(SUA_ERR_MISSING_PARAM, msg);
+	rc = xua_dialect_check_all_mand_ies(&xua_dialect_sua, xua);
+	if (rc > 0) {
+		err = sua_gen_error_msg(rc, msg);
 		goto out;
 	}
 

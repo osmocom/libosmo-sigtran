@@ -897,8 +897,8 @@ int m3ua_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg)
 	LOGPASP(asp, DLM3UA, LOGL_DEBUG, "Received M3UA Message (%s)\n",
 		xua_hdr_dump(xua, &xua_dialect_m3ua));
 
-	if (!xua_dialect_check_all_mand_ies(&xua_dialect_m3ua, xua)) {
-		rc = M3UA_ERR_MISSING_PARAM;
+	rc = xua_dialect_check_all_mand_ies(&xua_dialect_m3ua, xua);
+	if (rc > 0) {
 		xua_msg_free(xua);
 		goto out;
 	}
