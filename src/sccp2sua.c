@@ -475,21 +475,26 @@ static int sccp_add_long_variable_part(struct msgb *msg, uint8_t *var_ptr, const
 static bool sccp_ptr_part_consistent(const struct msgb *msg, const uint8_t *ptr_addr)
 {
 	const uint8_t *ptr;
+	uint8_t offs;
+	uint8_t len;
 
 	/* check the address of the relative pointer is within msg */
-	if (ptr_addr < msg->data || ptr_addr > msg->tail) {
+	if (ptr_addr < msg->data || ptr_addr >= msg->tail) {
 		LOGP(DLSUA, LOGL_ERROR, "ptr_addr outside msg boundary\n");
 		return false;
 	}
 
-	ptr = ptr_addr + *ptr_addr;
-	if (ptr > msg->tail) {
+	offs = *ptr_addr;
+	ptr = ptr_addr + offs;
+	if (ptr >= msg->tail) {
 		LOGP(DLSUA, LOGL_ERROR, "ptr points outside msg boundary\n");
 		return false;
 	}
 
 	/* at destination of relative pointer is the length */
-	if (ptr + 1 + *ptr > msg->tail) {
+	len = *ptr;
+	ptr++;
+	if (ptr + len > msg->tail) {
 		LOGP(DLSUA, LOGL_ERROR, "ptr + len points outside msg boundary\n");
 		return false;
 	}
@@ -504,31 +509,31 @@ static bool sccp_ptr_part_consistent(const struct msgb *msg, const uint8_t *ptr_
 static bool sccp_longptr_part_consistent(const struct msgb *msg, const uint8_t *ptr_addr, bool len_is_long)
 {
 	const uint8_t *ptr;
-	uint8_t offs;
+	uint16_t offs;
+	uint8_t len_size = len_is_long ? 2 : 1;
 	uint16_t len;
 
 	/* check the address of the relative pointer is within msg */
-	if (ptr_addr < msg->data || ptr_addr > msg->tail) {
+	if (ptr_addr < msg->data || (ptr_addr + sizeof(uint16_t)) > msg->tail) {
 		LOGP(DLSUA, LOGL_ERROR, "ptr_addr outside msg boundary\n");
 		return false;
 	}
 
+	offs = osmo_load16le(ptr_addr);
 	/* +1: Distance from MSB of pointer */
-	ptr = ptr_addr + 1 + osmo_load16le(ptr_addr);
-	if (ptr > msg->tail) {
+	ptr = ptr_addr + 1 + offs;
+	if (ptr + len_size > msg->tail) {
 		LOGP(DLSUA, LOGL_ERROR, "ptr %p points outside msg boundary %p\n", ptr, msg->tail);
 		return false;
 	}
 
 	/* at destination of relative pointer is the length */
-	if (len_is_long) {
-		offs = 2;
+	if (len_is_long)
 		len = osmo_load16le(ptr);
-	} else {
-		offs = 1;
+	else
 		len = *ptr;
-	}
-	if (ptr + offs + len > msg->tail) {
+	ptr += len_size;
+	if (ptr + len > msg->tail) {
 		LOGP(DLSUA, LOGL_ERROR, "ptr + len points outside msg boundary\n");
 		return false;
 	}
