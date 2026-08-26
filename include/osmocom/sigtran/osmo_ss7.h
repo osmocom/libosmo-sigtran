@@ -67,6 +67,7 @@ struct osmo_sccp_instance *osmo_ss7_get_sccp(const struct osmo_ss7_instance *ins
 int osmo_ss7_find_free_rctx(struct osmo_ss7_instance *inst);
 
 bool osmo_ss7_pc_is_local(const struct osmo_ss7_instance *inst, uint32_t pc);
+bool osmo_ss7_pointcode_is_valid(const struct osmo_ss7_instance *inst, uint32_t pc);
 int osmo_ss7_pointcode_parse(const struct osmo_ss7_instance *inst, const char *str);
 int osmo_ss7_pointcode_parse_mask_or_len(const struct osmo_ss7_instance *inst, const char *in);
 const char *osmo_ss7_pointcode_print_buf(char *buf, size_t buf_len, const struct osmo_ss7_instance *inst, uint32_t pc);

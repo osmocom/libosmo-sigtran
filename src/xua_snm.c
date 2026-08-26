@@ -161,6 +161,13 @@ static void xua_snm_pc_available_to_mtp_users(struct osmo_ss7_instance *s7i,
 		uint32_t pc = _aff_pc & 0xffffff;
 		uint8_t mask = mask_from_affected_pc(s7i, _aff_pc);
 
+		if (!osmo_ss7_pointcode_is_valid(s7i, pc)) {
+			LOGSS7(s7i, LOGL_ERROR,
+			       "Ignoring unexpected invalid Affected Point Code pc=%u=%s/%u\n",
+			       pc, osmo_ss7_pointcode_print(s7i, pc), _aff_pc >> 24);
+			continue;
+		}
+
 		if (!mask) {
 			if (available)
 				mtp_resume_ind_up_to_all_users(s7i, pc);
@@ -223,6 +230,13 @@ static void xua_snm_srm_pc_available(struct osmo_ss7_as *as,
 		uint32_t _aff_pc = ntohl(aff_pc[i]);
 		uint32_t pc = _aff_pc & 0xffffff;
 		uint8_t mask = mask_from_affected_pc(s7i, _aff_pc);
+
+		if (!osmo_ss7_pointcode_is_valid(s7i, pc)) {
+			LOGPAS(as, DLSS7, LOGL_ERROR,
+			       "Ignoring unexpected invalid Affected Point Code pc=%u=%s/%u\n",
+			       pc, osmo_ss7_pointcode_print(s7i, pc), _aff_pc >> 24);
+			continue;
+		}
 
 		if (!mask) {
 			xua_snm_srm_pc_available_single(as, pc, available);
@@ -368,6 +382,13 @@ static void xua_snm_scon_to_mtp_users(struct osmo_ss7_instance *s7i,
 		uint32_t pc = _aff_pc & 0xffffff;
 		uint8_t mask = mask_from_affected_pc(s7i, _aff_pc);
 
+		if (!osmo_ss7_pointcode_is_valid(s7i, pc)) {
+			LOGSS7(s7i, LOGL_ERROR,
+			       "Ignoring unexpected invalid Affected Point Code pc=%u=%s/%u\n",
+			       pc, osmo_ss7_pointcode_print(s7i, pc), _aff_pc >> 24);
+			continue;
+		}
+
 		if (!mask) {
 			mtp_status_ind_up_to_all_users(s7i, pc, MTP_UNAVAIL_C_CONGESTED,
 						       cong_level_present, cong_level);
@@ -449,6 +470,15 @@ void xua_snm_rx_daud(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		uint32_t pc = _aff_pc & 0xffffff;
 		uint8_t mask = mask_from_affected_pc(s7i, _aff_pc);
 		bool is_available;
+
+		if (!osmo_ss7_pointcode_is_valid(s7i, pc)) {
+			LOGPASP(asp, DLSS7, LOGL_ERROR,
+				"Rejecting unexpected invalid Affected Point Code pc=%u=%s/%u\n",
+				pc, osmo_ss7_pointcode_print(s7i, pc), _aff_pc >> 24);
+			xua_tx_snm_available(asp, rctx, num_rctx, &aff_pc[i], 1, "Response to DAUD",
+					     false);
+			continue;
+		}
 
 		if (mask == 0) {
 			/* one single point code */

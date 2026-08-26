@@ -240,6 +240,16 @@ bool osmo_ss7_pc_is_local(const struct osmo_ss7_instance *inst, uint32_t pc)
 	return false;
 }
 
+/*! Whether the PC is valid according to SS7 instance point code format configuration
+ * \param[in] inst SS7 Instance on which we operate
+ * \param[in] pc Point Code to validate
+ * \returns true if valid, false if not valid (out of range)
+ */
+bool osmo_ss7_pointcode_is_valid(const struct osmo_ss7_instance *inst, uint32_t pc)
+{
+	return !(pc & ~ss7_pc_full_mask(&inst->cfg.pc_fmt));
+}
+
 /* Next RCTX, skipping special value "0" meaning no context. */
 static inline uint32_t rctx_inc(uint32_t rctx)
 {
