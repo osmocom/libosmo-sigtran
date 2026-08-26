@@ -158,6 +158,12 @@ static const struct value_string sua_iei_names[] = {
 
 /* SUA specific: */
 
+#define SUA_MSG_PART_CLASS_REG_RESULT(mandatory) \
+	XUA_MSG_PART_CLASS(SUA_IEI_REG_RESULT, (mandatory), true, 0, XUA_MSG_PART_CLASS_MAX_LEN)
+
+#define SUA_MSG_PART_CLASS_DEREG_RESULT(mandatory) \
+	XUA_MSG_PART_CLASS(SUA_IEI_DEREG_RESULT, (mandatory), true, 0, XUA_MSG_PART_CLASS_MAX_LEN)
+
 #define SUA_MSG_PART_CLASS_HOP_CTR(mandatory) \
 	XUA_MSG_PART_CLASS_U32(SUA_IEI_S7_HOP_CTR, (mandatory))
 
@@ -175,6 +181,9 @@ static const struct value_string sua_iei_names[] = {
 
 #define SUA_MSG_PART_CLASS_RX_SEQ_NR(mandatory) \
 	XUA_MSG_PART_CLASS_U32(SUA_IEI_RX_SEQ_NR, (mandatory))
+
+#define SUA_MSG_PART_CLASS_ASP_CAPA(mandatory) \
+	XUA_MSG_PART_CLASS_U32(SUA_IEI_ASP_CAPA, (mandatory))
 
 #define SUA_MSG_PART_CLASS_CREDIT(mandatory) \
 	XUA_MSG_PART_CLASS_U32(SUA_IEI_CREDIT, (mandatory))
@@ -196,6 +205,9 @@ static const struct value_string sua_iei_names[] = {
 
 #define SUA_MSG_PART_CLASS_USER_CAUSE(mandatory) \
 	XUA_MSG_PART_CLASS_U32(SUA_IEI_USER_CAUSE, (mandatory))
+
+#define SUA_MSG_PART_CLASS_ROUTING_KEY(mandatory) \
+	XUA_MSG_PART_CLASS(SUA_IEI_ROUTING_KEY, (mandatory), true, 0, XUA_MSG_PART_CLASS_MAX_LEN)
 
 #define SUA_MSG_PART_CLASS_DRN(mandatory) \
 	XUA_MSG_PART_CLASS_U32(SUA_IEI_DRN, (mandatory))
@@ -505,6 +517,36 @@ static const struct xua_msg_class sua_msg_class_mgmt = {
 	},
 };
 
+/* RKM */
+static const struct xua_msg_part_class reg_req_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTING_KEY(true),
+	SUA_MSG_PART_CLASS_ASP_CAPA(false),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_part_class reg_rsp_ies[] = {
+	SUA_MSG_PART_CLASS_REG_RESULT(true),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_part_class dereg_req_ies[] = {
+	SUA_MSG_PART_CLASS_ROUTE_CTX(true),
+	XUA_MSG_PART_CLASS_EOF
+};
+static const struct xua_msg_part_class dereg_rsp_ies[] = {
+	SUA_MSG_PART_CLASS_DEREG_RESULT(true),
+	XUA_MSG_PART_CLASS_EOF
+};
+const struct xua_msg_class sua_msg_class_rkm = {
+	.name = "RKM",
+	.msgt_names = m3ua_rkm_msgt_names, /* same as M3UA */
+	.iei_names = sua_iei_names,
+	.ies = {
+		IES(SUA_RKM_REG_REQ, reg_req_ies),
+		IES(SUA_RKM_REG_RSP, reg_rsp_ies),
+		IES(SUA_RKM_DEREG_REQ, dereg_req_ies),
+		IES(SUA_RKM_DEREG_RSP, dereg_rsp_ies),
+	},
+};
+
 const struct xua_dialect xua_dialect_sua = {
 	.name = "SUA",
 	.ppid = SUA_PPID,
@@ -517,7 +559,7 @@ const struct xua_dialect xua_dialect_sua = {
 		[SUA_MSGC_ASPTM] = &sua_msg_class_asptm,
 		[SUA_MSGC_CL] = &sua_msg_class_cl,
 		[SUA_MSGC_CO] = &sua_msg_class_co,
-		[SUA_MSGC_RKM] = &m3ua_msg_class_rkm, /* TODO: different than M3UA */
+		[SUA_MSGC_RKM] = &sua_msg_class_rkm,
 	},
 };
 
