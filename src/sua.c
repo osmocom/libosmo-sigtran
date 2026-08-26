@@ -136,7 +136,7 @@ static const struct value_string sua_cl_msgt_names[] = {
 	{ SUA_CL_CLDR,		"CLDR" },
 	{ 0, NULL }
 };
-static const struct xua_msg_class msg_class_cl = {
+static const struct xua_msg_class sua_msg_class_cl = {
 	.name = "CL",
 	.msgt_names = sua_cl_msgt_names,
 	.iei_names = sua_iei_names,
@@ -200,7 +200,7 @@ static const struct value_string sua_co_msgt_names[] = {
 	{ SUA_CO_COIT,		"COIT" },
 	{ 0, NULL }
 };
-static const struct xua_msg_class msg_class_co = {
+static const struct xua_msg_class sua_msg_class_co = {
 	.name = "CO",
 	.msgt_names = sua_co_msgt_names,
 	.iei_names = sua_iei_names,
@@ -229,8 +229,8 @@ const struct xua_dialect xua_dialect_sua = {
 		[SUA_MSGC_SNM] = &m3ua_msg_class_snm,
 		[SUA_MSGC_ASPSM] = &m3ua_msg_class_aspsm,
 		[SUA_MSGC_ASPTM] = &m3ua_msg_class_asptm,
-		[SUA_MSGC_CL] = &msg_class_cl,
-		[SUA_MSGC_CO] = &msg_class_co,
+		[SUA_MSGC_CL] = &sua_msg_class_cl,
+		[SUA_MSGC_CO] = &sua_msg_class_co,
 		[SUA_MSGC_RKM] = &m3ua_msg_class_rkm,
 	},
 };
