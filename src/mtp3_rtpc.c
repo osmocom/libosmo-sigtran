@@ -42,14 +42,14 @@ static struct xua_msg *gen_duna_ret_msg(struct osmo_ss7_instance *inst, const st
 	struct xua_msg *xua;
 	struct xua_msg_part *rctx_ie;
 	unsigned int num_rctx = 0;
-	uint32_t rctx = 0;
+	uint32_t *rctx_raw = NULL;
 	uint32_t aff_pc = htonl(orig_xua->mtp.dpc);
 
 	if ((rctx_ie = xua_msg_find_tag(orig_xua, M3UA_IEI_ROUTE_CTX))) {
-		rctx = xua_msg_part_get_u32(rctx_ie);
-		num_rctx = 1;
+		rctx_raw = (uint32_t *) rctx_ie->dat;
+		num_rctx = rctx_ie->len / sizeof(uint32_t);
 	}
-	xua = m3ua_encode_duna(&rctx, num_rctx, &aff_pc, 1,
+	xua = m3ua_encode_duna(rctx_raw, num_rctx, &aff_pc, 1,
 			       "transfer prohibited (inaccessible SP)");
 	OSMO_ASSERT(xua);
 
