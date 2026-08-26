@@ -159,6 +159,7 @@ static const struct value_string m3ua_xfer_msgt_names[] = {
 static const struct xua_msg_class msg_class_xfer = {
 	.name = "XFER",
 	.msgt_names = m3ua_xfer_msgt_names,
+	.iei_names = m3ua_iei_names,
 	.mand_ies = {
 		MAND_IES(M3UA_XFER_DATA, data_mand_ies),
 	},
@@ -195,6 +196,7 @@ const struct value_string m3ua_snm_msgt_names[] = {
 const struct xua_msg_class m3ua_msg_class_snm = {
 	.name = "SNM",
 	.msgt_names = m3ua_snm_msgt_names,
+	.iei_names = m3ua_iei_names,
 	.mand_ies = {
 		MAND_IES(M3UA_SNM_DUNA, duna_mand_ies),
 		MAND_IES(M3UA_SNM_DAVA, dava_mand_ies),
@@ -218,6 +220,7 @@ static const struct value_string m3ua_aspsm_msgt_names[] = {
 const struct xua_msg_class m3ua_msg_class_aspsm = {
 	.name = "ASPSM",
 	.msgt_names = m3ua_aspsm_msgt_names,
+	.iei_names = m3ua_iei_names,
 };
 
 /* ASPTM */
