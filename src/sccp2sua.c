@@ -1164,6 +1164,9 @@ static struct xua_msg *sccp_to_xua_cr(const struct msgb *msg, struct xua_msg *xu
 {
 	struct sccp_connection_request *req = (struct sccp_connection_request *)msg->l2h;
 
+	if (msgb_l2len(msg) < sizeof(*req))
+		return NULL;
+
 	/* Fixed Part */
 	xua_msg_add_u32(xua, SUA_IEI_PROTO_CLASS, req->proto_class);
 	xua_msg_add_u32(xua, SUA_IEI_SRC_REF, load_24be(&req->source_local_reference));
@@ -1200,6 +1203,9 @@ static struct xua_msg *sccp_to_xua_cc(const struct msgb *msg, struct xua_msg *xu
 {
 	struct sccp_connection_confirm *cnf = (struct sccp_connection_confirm *)msg->l2h;
 
+	if (msgb_l2len(msg) < sizeof(*cnf))
+		return NULL;
+
 	/* Fixed Part */
 	xua_msg_add_u32(xua, SUA_IEI_PROTO_CLASS, cnf->proto_class);
 	xua_msg_add_u32(xua, SUA_IEI_DEST_REF, load_24be(&cnf->destination_local_reference));
@@ -1233,6 +1239,9 @@ static struct xua_msg *sccp_to_xua_cref(const struct msgb *msg, struct xua_msg *
 {
 	const struct sccp_connection_refused *ref = (const struct sccp_connection_refused *)msg->l2h;
 
+	if (msgb_l2len(msg) < sizeof(*ref))
+		return NULL;
+
 	/* Fixed Part */
 	xua_msg_add_u32(xua, SUA_IEI_DEST_REF, load_24be(&ref->destination_local_reference));
 	xua_msg_add_u32(xua, SUA_IEI_CAUSE, SUA_CAUSE_T_REFUSAL | ref->cause);
@@ -1261,6 +1270,9 @@ static int sua_to_sccp_cref(struct msgb *msg, const struct xua_msg *xua)
 static struct xua_msg *sccp_to_xua_rlsd(const struct msgb *msg, struct xua_msg *xua)
 {
 	const struct sccp_connection_released *rlsd = (const struct sccp_connection_released *)msg->l2h;
+
+	if (msgb_l2len(msg) < sizeof(*rlsd))
+		return NULL;
 
 	/* Fixed Part */
 	xua_msg_add_u32(xua, SUA_IEI_DEST_REF, load_24be(&rlsd->destination_local_reference));
@@ -1296,6 +1308,9 @@ static struct xua_msg *sccp_to_xua_rlc(const struct msgb *msg, struct xua_msg *x
 	const struct sccp_connection_release_complete *rlc;
 	rlc = (const struct sccp_connection_release_complete *) msg->l2h;
 
+	if (msgb_l2len(msg) < sizeof(*rlc))
+		return NULL;
+
 	/* Fixed Part */
 	xua_msg_add_u32(xua, SUA_IEI_DEST_REF, load_24be(&rlc->destination_local_reference));
 	xua_msg_add_u32(xua, SUA_IEI_SRC_REF, load_24be(&rlc->source_local_reference));
@@ -1323,6 +1338,9 @@ static int sua_to_sccp_rlc(struct msgb *msg, const struct xua_msg *xua)
 static struct xua_msg *sccp_to_xua_dt1(const struct msgb *msg, struct xua_msg *xua)
 {
 	const struct sccp_data_form1 *dt1 = (const struct sccp_data_form1 *) msg->l2h;
+
+	if (msgb_l2len(msg) < sizeof(*dt1))
+		return NULL;
 
 	/* Fixed Part */
 	xua_msg_add_u32(xua, SUA_IEI_DEST_REF, load_24be(&dt1->destination_local_reference));
@@ -1355,6 +1373,9 @@ static int sua_to_sccp_dt1(struct msgb *msg, const struct xua_msg *xua)
 static struct xua_msg *sccp_to_xua_udt(const struct msgb *msg, struct xua_msg *xua)
 {
 	const struct sccp_data_unitdata *udt = (const struct sccp_data_unitdata *)msg->l2h;
+
+	if (msgb_l2len(msg) < sizeof(*udt))
+		return NULL;
 
 	/* Fixed Part */
 	xua_msg_add_u32(xua, SUA_IEI_PROTO_CLASS, udt->proto_class);
@@ -1406,6 +1427,9 @@ static struct xua_msg *sccp_to_xua_xudt(const struct msgb *msg, struct xua_msg *
 {
 	const struct sccp_data_ext_unitdata *xudt = (const struct sccp_data_ext_unitdata *)msg->l2h;
 
+	if (msgb_l2len(msg) < sizeof(*xudt))
+		return NULL;
+
 	/* Fixed Part */
 	xua_msg_add_u32(xua, SUA_IEI_PROTO_CLASS, xudt->proto_class);
 	xua_msg_add_u32(xua, SUA_IEI_S7_HOP_CTR, xudt->hop_counter);
@@ -1453,6 +1477,9 @@ static struct xua_msg *sccp_to_xua_ludt(const struct msgb *msg, struct xua_msg *
 {
 	struct sccp_data_long_unitdata *ludt = (struct sccp_data_long_unitdata *)msg->l2h;
 
+	if (msgb_l2len(msg) < sizeof(*ludt))
+		return NULL;
+
 	/* Fixed Part */
 	xua_msg_add_u32(xua, SUA_IEI_PROTO_CLASS, ludt->proto_class);
 	xua_msg_add_u32(xua, SUA_IEI_S7_HOP_CTR, ludt->hop_counter);
@@ -1492,6 +1519,9 @@ static struct xua_msg *sccp_to_xua_udts(const struct msgb *msg, struct xua_msg *
 {
 	const struct sccp_data_unitdata_service *udts;
 	udts = (const struct sccp_data_unitdata_service *)msg->l2h;
+
+	if (msgb_l2len(msg) < sizeof(*udts))
+		return NULL;
 
 	/* Fixed Part */
 	xua_msg_add_u32(xua, SUA_IEI_CAUSE, SUA_CAUSE_T_RETURN | udts->return_cause);
@@ -1544,6 +1574,9 @@ static struct xua_msg *sccp_to_xua_xudts(const struct msgb *msg, struct xua_msg 
 	const struct sccp_data_ext_unitdata_service *xudts;
 	xudts = (const struct sccp_data_ext_unitdata_service *)msg->l2h;
 
+	if (msgb_l2len(msg) < sizeof(*xudts))
+		return NULL;
+
 	/* Fixed Part */
 	xua_msg_add_u32(xua, SUA_IEI_CAUSE, SUA_CAUSE_T_RETURN | xudts->return_cause);
 	xua_msg_add_u32(xua, SUA_IEI_S7_HOP_CTR, xudts->hop_counter);
@@ -1584,6 +1617,9 @@ static struct xua_msg *sccp_to_xua_ludts(const struct msgb *msg, struct xua_msg 
 	const struct sccp_data_long_unitdata_service *ludts;
 	ludts = (const struct sccp_data_long_unitdata_service *)msg->l2h;
 
+	if (msgb_l2len(msg) < sizeof(*ludts))
+		return NULL;
+
 	/* Fixed Part */
 	xua_msg_add_u32(xua, SUA_IEI_CAUSE, SUA_CAUSE_T_RETURN | ludts->return_cause);
 	xua_msg_add_u32(xua, SUA_IEI_S7_HOP_CTR, ludts->hop_counter);
@@ -1623,6 +1659,9 @@ static struct xua_msg *sccp_to_xua_it(const struct msgb *msg, struct xua_msg *xu
 {
 	const struct sccp_data_it *it = (const struct sccp_data_it *)msg->l2h;
 
+	if (msgb_l2len(msg) < sizeof(*it))
+		return NULL;
+
 	/* Fixed Part */
 	xua_msg_add_u32(xua, SUA_IEI_PROTO_CLASS, it->proto_class);
 	xua_msg_add_u32(xua, SUA_IEI_SRC_REF, load_24be(&it->source_local_reference));
@@ -1661,6 +1700,9 @@ static int sua_to_sccp_it(struct msgb *msg, const struct xua_msg *xua)
 static struct xua_msg *sccp_to_xua_err(const struct msgb *msg, struct xua_msg *xua)
 {
 	const struct sccp_proto_err *err = (const struct sccp_proto_err *)msg->l2h;
+
+	if (msgb_l2len(msg) < sizeof(*err))
+		return NULL;
 
 	/* Fixed Part */
 	xua_msg_add_u32(xua, SUA_IEI_DEST_REF, load_24be(&err->destination_local_reference));
