@@ -1173,7 +1173,8 @@ static struct xua_msg *sccp_to_xua_cr(const struct msgb *msg, struct xua_msg *xu
 	/* Variable Part */
 	if (!sccp_ptr_part_consistent(msg, &req->variable_called))
 		return NULL;
-	sccp_addr_to_sua_ptr(xua, SUA_IEI_DEST_ADDR, &req->variable_called, false);
+	if (sccp_addr_to_sua_ptr(xua, SUA_IEI_DEST_ADDR, &req->variable_called, false) < 0)
+		return NULL;
 	/* Optional Part */
 	return sccp_to_xua_opt(msg, &req->optional_start, false, xua);
 }
@@ -1382,10 +1383,12 @@ static struct xua_msg *sccp_to_xua_udt(const struct msgb *msg, struct xua_msg *x
 	/* Variable Part */
 	if (!sccp_ptr_part_consistent(msg, &udt->variable_called))
 		return NULL;
-	sccp_addr_to_sua_ptr(xua, SUA_IEI_DEST_ADDR, &udt->variable_called, false);
+	if (sccp_addr_to_sua_ptr(xua, SUA_IEI_DEST_ADDR, &udt->variable_called, false) < 0)
+		return NULL;
 	if (!sccp_ptr_part_consistent(msg, &udt->variable_calling))
 		return NULL;
-	sccp_addr_to_sua_ptr(xua, SUA_IEI_SRC_ADDR, &udt->variable_calling, false);
+	if (sccp_addr_to_sua_ptr(xua, SUA_IEI_SRC_ADDR, &udt->variable_calling, false) < 0)
+		return NULL;
 	if (!sccp_ptr_part_consistent(msg, &udt->variable_data))
 		return NULL;
 	sccp_data_to_sua_ptr(xua, SUA_IEI_DATA, &udt->variable_data);
@@ -1436,10 +1439,12 @@ static struct xua_msg *sccp_to_xua_xudt(const struct msgb *msg, struct xua_msg *
 	/* Variable Part */
 	if (!sccp_ptr_part_consistent(msg, &xudt->variable_called))
 		return NULL;
-	sccp_addr_to_sua_ptr(xua, SUA_IEI_DEST_ADDR, &xudt->variable_called, false);
+	if (sccp_addr_to_sua_ptr(xua, SUA_IEI_DEST_ADDR, &xudt->variable_called, false) < 0)
+		return NULL;
 	if (!sccp_ptr_part_consistent(msg, &xudt->variable_calling))
 		return NULL;
-	sccp_addr_to_sua_ptr(xua, SUA_IEI_SRC_ADDR, &xudt->variable_calling, false);
+	if (sccp_addr_to_sua_ptr(xua, SUA_IEI_SRC_ADDR, &xudt->variable_calling, false) < 0)
+		return NULL;
 	if (!sccp_ptr_part_consistent(msg, &xudt->variable_data))
 		return NULL;
 	sccp_data_to_sua_ptr(xua, SUA_IEI_DATA, &xudt->variable_data);
@@ -1486,10 +1491,12 @@ static struct xua_msg *sccp_to_xua_ludt(const struct msgb *msg, struct xua_msg *
 	/* Variable Part */
 	if (!sccp_longptr_part_consistent(msg, (uint8_t *)&ludt->variable_called, false))
 		return NULL;
-	sccp_addr_to_sua_ptr(xua, SUA_IEI_DEST_ADDR, (uint8_t *)&ludt->variable_called, true);
+	if (sccp_addr_to_sua_ptr(xua, SUA_IEI_DEST_ADDR, (uint8_t *)&ludt->variable_called, true) < 0)
+		return NULL;
 	if (!sccp_longptr_part_consistent(msg, (uint8_t *)&ludt->variable_calling, false))
 		return NULL;
-	sccp_addr_to_sua_ptr(xua, SUA_IEI_SRC_ADDR, (uint8_t *)&ludt->variable_calling, true);
+	if (sccp_addr_to_sua_ptr(xua, SUA_IEI_SRC_ADDR, (uint8_t *)&ludt->variable_calling, true) < 0)
+		return NULL;
 	if (!sccp_longptr_part_consistent(msg, (uint8_t *)&ludt->variable_data, true))
 		return NULL;
 	sccp_longdata_to_sua_ptr(xua, SUA_IEI_DATA, (uint8_t *)&ludt->variable_data);
@@ -1528,10 +1535,12 @@ static struct xua_msg *sccp_to_xua_udts(const struct msgb *msg, struct xua_msg *
 	/* Variable Part */
 	if (!sccp_ptr_part_consistent(msg, &udts->variable_called))
 		return NULL;
-	sccp_addr_to_sua_ptr(xua, SUA_IEI_DEST_ADDR, &udts->variable_called, false);
+	if (sccp_addr_to_sua_ptr(xua, SUA_IEI_DEST_ADDR, &udts->variable_called, false) < 0)
+		return NULL;
 	if (!sccp_ptr_part_consistent(msg, &udts->variable_calling))
 		return NULL;
-	sccp_addr_to_sua_ptr(xua, SUA_IEI_SRC_ADDR, &udts->variable_calling, false);
+	if (sccp_addr_to_sua_ptr(xua, SUA_IEI_SRC_ADDR, &udts->variable_calling, false) < 0)
+		return NULL;
 	if (!sccp_ptr_part_consistent(msg, &udts->variable_data))
 		return NULL;
 	sccp_data_to_sua_ptr(xua, SUA_IEI_DATA, &udts->variable_data);
@@ -1583,10 +1592,12 @@ static struct xua_msg *sccp_to_xua_xudts(const struct msgb *msg, struct xua_msg 
 	/* Variable Part */
 	if (!sccp_ptr_part_consistent(msg, (uint8_t *)&xudts->variable_called))
 		return NULL;
-	sccp_addr_to_sua_ptr(xua, SUA_IEI_DEST_ADDR, &xudts->variable_called, false);
+	if (sccp_addr_to_sua_ptr(xua, SUA_IEI_DEST_ADDR, &xudts->variable_called, false) < 0)
+		return NULL;
 	if (!sccp_ptr_part_consistent(msg, (uint8_t *)&xudts->variable_calling))
 		return NULL;
-	sccp_addr_to_sua_ptr(xua, SUA_IEI_SRC_ADDR, &xudts->variable_calling, false);
+	if (sccp_addr_to_sua_ptr(xua, SUA_IEI_SRC_ADDR, &xudts->variable_calling, false) < 0)
+		return NULL;
 	if (!sccp_ptr_part_consistent(msg, (uint8_t *)&xudts->variable_data))
 		return NULL;
 	sccp_data_to_sua_ptr(xua, SUA_IEI_DATA, &xudts->variable_data);
@@ -1626,10 +1637,12 @@ static struct xua_msg *sccp_to_xua_ludts(const struct msgb *msg, struct xua_msg 
 	/* Variable Part */
 	if (!sccp_longptr_part_consistent(msg, (uint8_t *)&ludts->variable_called, false))
 		return NULL;
-	sccp_addr_to_sua_ptr(xua, SUA_IEI_DEST_ADDR, (uint8_t *)&ludts->variable_called, true);
+	if (sccp_addr_to_sua_ptr(xua, SUA_IEI_DEST_ADDR, (uint8_t *)&ludts->variable_called, true) < 0)
+		return NULL;
 	if (!sccp_longptr_part_consistent(msg, (uint8_t *)&ludts->variable_calling, false))
 		return NULL;
-	sccp_addr_to_sua_ptr(xua, SUA_IEI_SRC_ADDR, (uint8_t *)&ludts->variable_calling, true);
+	if (sccp_addr_to_sua_ptr(xua, SUA_IEI_SRC_ADDR, (uint8_t *)&ludts->variable_calling, true) < 0)
+		return NULL;
 	if (!sccp_longptr_part_consistent(msg, (uint8_t *)&ludts->variable_data, true))
 		return NULL;
 	sccp_longdata_to_sua_ptr(xua, SUA_IEI_DATA, (uint8_t *)&ludts->variable_data);
