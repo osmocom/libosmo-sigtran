@@ -857,9 +857,8 @@ int sua_addr_parse_part(struct osmo_sccp_addr *out,
 			out->presence |= OSMO_SCCP_ADDR_T_SSN;
 			break;
 		case SUA_IEI_GT:
-			if (par_datalen < 8)
+			if (sua_parse_gt(&out->gt, par->data, par_datalen) < 0)
 				goto subpar_fail;
-			sua_parse_gt(&out->gt, par->data, par_datalen);
 			out->presence |= OSMO_SCCP_ADDR_T_GT;
 			break;
 		case SUA_IEI_IPv4:
