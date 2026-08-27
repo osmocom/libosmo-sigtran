@@ -830,8 +830,11 @@ int sua_addr_parse_part(struct osmo_sccp_addr *out,
 		par_tag = ntohs(par->tag);
 		par_len = ntohs(par->len);
 
-		/* sanity: check par->len received on the wire, make sure the subtraction does not wrap past zero. */
+		/* L value must account for at least TL (struct xua_parameter_hdr): */
 		if (par_len < sizeof(*par))
+			goto subpar_fail;
+		/* Avoid reading past buffer: */
+		if (pos + par_len > param->len)
 			goto subpar_fail;
 		par_datalen = par_len - sizeof(*par);
 
