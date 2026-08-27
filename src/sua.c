@@ -888,8 +888,8 @@ int sua_addr_parse_part(struct osmo_sccp_addr *out,
 	return 0;
 
 subpar_fail:
-	LOGP(DLSUA, LOGL_ERROR, "Failed to parse subparts of address IEI=0x%04x\n",
-	     param->tag);
+	LOGP(DLSUA, LOGL_ERROR, "Failed to parse SUA Address IEI=0x%04x (subpart tag 0x%04x, len %hu)\n",
+	     param->tag, par_tag, par_len);
 	return -EINVAL;
 }
 
