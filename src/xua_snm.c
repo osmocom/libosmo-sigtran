@@ -53,7 +53,7 @@ osmo_static_assert(M3UA_IEI_INFO_STRING == SUA_IEI_INFO_STRING, _sa_inf_str);
  * This prevents creating incorrect bitmasks and ending up in long loops based on peer
  * inputting unexpected big values (ie. >14 on ITU and >24 on ANSI).
  */
-static uint8_t mask_from_affected_pc(const struct osmo_ss7_instance *s7i, uint8_t aff_pc)
+static uint8_t mask_from_affected_pc(const struct osmo_ss7_instance *s7i, uint32_t aff_pc)
 {
 	const uint8_t pc_width = osmo_ss7_pc_width(&s7i->cfg.pc_fmt);
 	uint8_t mask = aff_pc >> 24;
