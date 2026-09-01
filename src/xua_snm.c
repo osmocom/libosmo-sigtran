@@ -539,8 +539,6 @@ void xua_snm_rx_duna(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as_array[], u
 	struct xua_msg_part *ie_aff_pc = xua_msg_find_tag(xua, M3UA_IEI_AFFECTED_PC);
 	struct xua_msg_part *ie_ssn = xua_msg_find_tag(xua, SUA_IEI_SSN);
 	const char *info_str = xua_msg_get_str(xua, M3UA_IEI_INFO_STRING);
-	/* TODO: should our processing depend on the RCTX included? I somehow don't think so */
-	//struct xua_msg_part *ie_rctx = xua_msg_find_tag(xua, M3UA_IEI_ROUTE_CTX);
 	int log_ss = osmo_ss7_asp_get_log_subsys(asp);
 
 	OSMO_ASSERT(ie_aff_pc);
@@ -554,15 +552,18 @@ void xua_snm_rx_duna(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as_array[], u
 		uint32_t ssn = xua_msg_part_get_u32(ie_ssn);
 		const uint32_t *aff_pc = (const uint32_t *)ie_aff_pc->dat;
 		uint32_t pc, smi;
+		const uint32_t *smi_ptr = xua_msg_get_u32p(xua, SUA_IEI_SMI, &smi);
 		/* The Affected Point Code can only contain one point code when SSN is present */
 		if (ie_aff_pc->len/sizeof(uint32_t) != 1)
 			return;
 		pc = ntohl(aff_pc[0]) & 0xffffff;
-		sua_snm_ssn_available(as_array[0], pc, ssn, xua_msg_get_u32p(xua, SUA_IEI_SMI, &smi), info_str, false);
+		for (unsigned int i = 0; i < as_count; i++)
+			sua_snm_ssn_available(as_array[i], pc, ssn, smi_ptr, info_str, false);
 	} else {
 		/* when the SSN is not included, DUNA corresponds to the SCCP N-PCSTATE primitive */
-		xua_snm_pc_available(as_array[0], (const uint32_t *)ie_aff_pc->dat,
-				     ie_aff_pc->len / sizeof(uint32_t), info_str, false);
+		for (unsigned int i = 0; i < as_count; i++)
+			xua_snm_pc_available(as_array[i], (const uint32_t *)ie_aff_pc->dat,
+					     ie_aff_pc->len / sizeof(uint32_t), info_str, false);
 	}
 }
 
@@ -587,14 +588,17 @@ void xua_snm_rx_dava(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as_array[], u
 		uint32_t ssn = xua_msg_part_get_u32(ie_ssn);
 		const uint32_t *aff_pc = (const uint32_t *)ie_aff_pc->dat;
 		uint32_t pc, smi;
+		const uint32_t *smi_ptr = xua_msg_get_u32p(xua, SUA_IEI_SMI, &smi);
 		/* The Affected Point Code can only contain one point code when SSN is present */
 		if (ie_aff_pc->len/sizeof(uint32_t) != 1)
 			return;
 		pc = ntohl(aff_pc[0]) & 0xffffff;
-		sua_snm_ssn_available(as_array[0], pc, ssn, xua_msg_get_u32p(xua, SUA_IEI_SMI, &smi), info_str, true);
+		for (unsigned int i = 0; i < as_count; i++)
+			sua_snm_ssn_available(as_array[i], pc, ssn, smi_ptr, info_str, true);
 	} else {
 		/* when the SSN is not included, DAVA corresponds to the SCCP N-PCSTATE primitive */
-		xua_snm_pc_available(as_array[0], (const uint32_t *)ie_aff_pc->dat,
+		for (unsigned int i = 0; i < as_count; i++)
+			xua_snm_pc_available(as_array[i], (const uint32_t *)ie_aff_pc->dat,
 				     ie_aff_pc->len / sizeof(uint32_t), info_str, true);
 	}
 }
@@ -629,7 +633,8 @@ void xua_snm_rx_dupu(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as_array[], u
 		info_str ? info_str : "", osmo_ss7_pointcode_print(asp->inst, aff_pc),
 		get_value_string(mtp_si_vals, user), cause);
 
-	xua_snm_upu(as_array[0], aff_pc, user, cause, info_str);
+	for (unsigned int i = 0; i < as_count; i++)
+		xua_snm_upu(as_array[i], aff_pc, user, cause, info_str);
 }
 
 /* an incoming SUA/M3UA SCON was received from a remote ASP/SG/IPSP */
@@ -647,6 +652,7 @@ void xua_snm_rx_scon(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as_array[], u
 	LOGPASP(asp, log_ss, LOGL_NOTICE, "RX SCON(%s) for %s level=%u\n", info_str ? info_str : "",
 		format_affected_pcs(asp->inst, ie_aff_pc), cong_level ? *cong_level : 0);
 
-	xua_snm_scon(as_array[0], (const uint32_t *) ie_aff_pc->dat, ie_aff_pc->len / sizeof(uint32_t),
-		     concerned_dpc, (const uint8_t *) cong_level, info_str);
+	for (unsigned int i = 0; i < as_count; i++)
+		xua_snm_scon(as_array[i], (const uint32_t *) ie_aff_pc->dat, ie_aff_pc->len / sizeof(uint32_t),
+			     concerned_dpc, (const uint8_t *) cong_level, info_str);
 }
