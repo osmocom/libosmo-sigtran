@@ -43,14 +43,6 @@ static struct msgb *encode_notify(const struct osmo_xlm_prim_notify *npar)
 	return msg;
 }
 
-static int fill_notify_route_ctx(const struct osmo_ss7_asp *asp, struct osmo_xlm_prim_notify *npar)
-{
-	npar->route_ctx_count = ss7_asp_get_all_rctx(asp, npar->route_ctx, ARRAY_SIZE(npar->route_ctx), NULL);
-	if (npar->route_ctx_count > 0)
-		npar->presence |= NOTIFY_PAR_P_ROUTE_CTX;
-	return 0;
-}
-
 static void tx_notify(struct osmo_ss7_asp *asp, struct osmo_xlm_prim_notify *npar)
 {
 	const char *type_name, *info_name, *info_str;
@@ -60,7 +52,6 @@ static void tx_notify(struct osmo_ss7_asp *asp, struct osmo_xlm_prim_notify *npa
 
 	LOGPASP(asp, DLSS7, LOGL_INFO, "Tx NOTIFY Type %s:%s (%s)\n",
 		type_name, info_name, info_str);
-	fill_notify_route_ctx(asp, npar);
 	struct msgb *msg = encode_notify(npar);
 	osmo_ss7_asp_send(asp, msg);
 }
@@ -138,8 +129,6 @@ static int as_notify_all_asp(struct osmo_ss7_as *as, struct osmo_xlm_prim_notify
 		} else {
 			npar->presence &= ~NOTIFY_PAR_P_ASP_ID;
 		}
-
-		fill_notify_route_ctx(asp, npar);
 
 		msg = encode_notify(npar);
 		osmo_ss7_asp_send(asp, msg);
@@ -248,9 +237,19 @@ struct xua_as_fsm_priv {
 
 static void fill_notify_statchg_pars(const struct osmo_fsm_inst *fi, struct osmo_xlm_prim_notify *npar)
 {
+	struct xua_as_fsm_priv *xafp = (struct xua_as_fsm_priv *) fi->priv;
+	struct osmo_ss7_as *as = xafp->as;
+
 	*npar = (struct osmo_xlm_prim_notify){
 		.status_type = M3UA_NOTIFY_T_STATCHG,
 	};
+
+	/* Add the routing context, if it is configured */
+	if (as->cfg.routing_key.context > 0) {
+		npar->presence |= NOTIFY_PAR_P_ROUTE_CTX;
+		npar->route_ctx[0] = as->cfg.routing_key.context;
+		npar->route_ctx_count = 1;
+	}
 
 	switch (fi->state) {
 	case XUA_AS_S_INACTIVE:
