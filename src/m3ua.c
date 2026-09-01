@@ -155,7 +155,7 @@ static const struct value_string m3ua_iei_names[] = {
 	XUA_MSG_PART_CLASS_UNBOUND(M3UA_IEI_ROUTE_CTX, (mandatory))
 
 #define M3UA_MSG_PART_CLASS_ROUTE_CTX(mandatory) \
-	XUA_MSG_PART_CLASS_U32(M3UA_IEI_ROUTE_CTX, (mandatory))
+	XUA_MSG_PART_CLASS_UNBOUND(M3UA_IEI_ROUTE_CTX, (mandatory))
 
 #define M3UA_MSG_PART_CLASS_ROUTE_CTX1(mandatory) \
 	XUA_MSG_PART_CLASS_U32(M3UA_IEI_ROUTE_CTX, (mandatory))

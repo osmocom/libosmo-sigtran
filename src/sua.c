@@ -130,7 +130,7 @@ static const struct value_string sua_iei_names[] = {
 	XUA_MSG_PART_CLASS_UNBOUND(SUA_IEI_ROUTE_CTX, (mandatory))
 
 #define SUA_MSG_PART_CLASS_ROUTE_CTX(mandatory) \
-	XUA_MSG_PART_CLASS_U32(SUA_IEI_ROUTE_CTX, (mandatory))
+	XUA_MSG_PART_CLASS_UNBOUND(SUA_IEI_ROUTE_CTX, (mandatory))
 
 #define SUA_MSG_PART_CLASS_ROUTE_CTX1(mandatory) \
 	XUA_MSG_PART_CLASS_U32(SUA_IEI_ROUTE_CTX, (mandatory))
