@@ -1314,27 +1314,28 @@ void m3ua_tx_dupu(struct osmo_ss7_asp *asp, const uint32_t *rctx, unsigned int n
  * xua is owned by parent call m3ua_rx_snm() */
 static int m3ua_rx_snm_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
-	struct osmo_ss7_as *as = NULL;
+	struct osmo_ss7_as *as_array[OSMO_SS7_MAX_RCTX_COUNT];
+	unsigned int as_count = 0;
 	struct xua_msg_part *rctx_ie = xua_msg_find_tag(xua, M3UA_IEI_ROUTE_CTX);
 	int rc;
 
-	rc = xua_find_as_for_asp(&as, asp, rctx_ie);
+	rc = xua_find_multiple_as_for_asp(&as_array[0], &as_count, ARRAY_SIZE(as_array), asp, rctx_ie);
 	if (rc)
 		return rc;
 
 	/* report those up the stack so both other ASPs and local SCCP users can be notified */
 	switch (xua->hdr.msg_type) {
 	case M3UA_SNM_DUNA:
-		xua_snm_rx_duna(asp, as, xua);
+		xua_snm_rx_duna(asp, as_array, as_count, xua);
 		break;
 	case M3UA_SNM_DAVA:
-		xua_snm_rx_dava(asp, as, xua);
+		xua_snm_rx_dava(asp, as_array, as_count, xua);
 		break;
 	case M3UA_SNM_DUPU:
-		xua_snm_rx_dupu(asp, as, xua);
+		xua_snm_rx_dupu(asp, as_array, as_count, xua);
 		break;
 	case M3UA_SNM_SCON:
-		xua_snm_rx_scon(asp, as, xua);
+		xua_snm_rx_scon(asp, as_array, as_count, xua);
 		break;
 	case M3UA_SNM_DRST:
 		LOGPASP(asp, DLM3UA, LOGL_NOTICE, "Received unsupported M3UA SNM message type %u\n",
@@ -1366,7 +1367,8 @@ static int m3ua_rx_snm_asp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
  * xua is owned by parent call m3ua_rx_snm() */
 static int m3ua_rx_snm_sg(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
-	struct osmo_ss7_as *as = NULL;
+	struct osmo_ss7_as *as_array[OSMO_SS7_MAX_RCTX_COUNT];
+	unsigned int as_count = 0;
 	struct xua_msg_part *rctx_ie;
 	int rc = 0;
 
@@ -1378,10 +1380,10 @@ static int m3ua_rx_snm_sg(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		 * to an M3UA peer, indicating that the congestion level of the M3UA layer or the
 		 * ASP has changed.*/
 		rctx_ie = xua_msg_find_tag(xua, M3UA_IEI_ROUTE_CTX);
-		rc = xua_find_as_for_asp(&as, asp, rctx_ie);
+		rc = xua_find_multiple_as_for_asp(&as_array[0], &as_count, ARRAY_SIZE(as_array), asp, rctx_ie);
 		if (rc)
 			return rc;
-		xua_snm_rx_scon(asp, as, xua);
+		xua_snm_rx_scon(asp, as_array, as_count, xua);
 		break;
 	case M3UA_SNM_DAUD:
 		/* Audit: ASP inquires about availability of Point Codes */
@@ -1400,7 +1402,8 @@ static int m3ua_rx_snm_sg(struct osmo_ss7_asp *asp, struct xua_msg *xua)
  * xua is owned by parent call m3ua_rx_snm() */
 static int m3ua_rx_snm_ipsp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 {
-	struct osmo_ss7_as *as = NULL;
+	struct osmo_ss7_as *as_array[OSMO_SS7_MAX_RCTX_COUNT];
+	unsigned int as_count = 0;
 	struct xua_msg_part *rctx_ie;
 	int rc = 0;
 
@@ -1411,10 +1414,10 @@ static int m3ua_rx_snm_ipsp(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		 * An IPSP can only be connected against another IPSP, hence if an IPSP can send
 		 * an SCON, it can be derived that it is expected it can receive it: */
 		rctx_ie = xua_msg_find_tag(xua, M3UA_IEI_ROUTE_CTX);
-		rc = xua_find_as_for_asp(&as, asp, rctx_ie);
+		rc = xua_find_multiple_as_for_asp(&as_array[0], &as_count, ARRAY_SIZE(as_array), asp, rctx_ie);
 		if (rc)
 			return rc;
-		xua_snm_rx_scon(asp, as, xua);
+		xua_snm_rx_scon(asp, as_array, as_count, xua);
 		break;
 	case M3UA_SNM_DAUD:
 		/* RFC states only permitted in ASP->SG direction, not reverse nor IPSP. But some

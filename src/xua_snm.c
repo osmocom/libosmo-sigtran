@@ -534,7 +534,7 @@ void xua_snm_rx_daud(struct osmo_ss7_asp *asp, const struct xua_msg *xua)
 }
 
 /* an incoming xUA DUNA was received from a remote SG */
-void xua_snm_rx_duna(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const struct xua_msg *xua)
+void xua_snm_rx_duna(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as_array[], unsigned int as_count, const struct xua_msg *xua)
 {
 	struct xua_msg_part *ie_aff_pc = xua_msg_find_tag(xua, M3UA_IEI_AFFECTED_PC);
 	struct xua_msg_part *ie_ssn = xua_msg_find_tag(xua, SUA_IEI_SSN);
@@ -558,16 +558,16 @@ void xua_snm_rx_duna(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const str
 		if (ie_aff_pc->len/sizeof(uint32_t) != 1)
 			return;
 		pc = ntohl(aff_pc[0]) & 0xffffff;
-		sua_snm_ssn_available(as, pc, ssn, xua_msg_get_u32p(xua, SUA_IEI_SMI, &smi), info_str, false);
+		sua_snm_ssn_available(as_array[0], pc, ssn, xua_msg_get_u32p(xua, SUA_IEI_SMI, &smi), info_str, false);
 	} else {
 		/* when the SSN is not included, DUNA corresponds to the SCCP N-PCSTATE primitive */
-		xua_snm_pc_available(as, (const uint32_t *)ie_aff_pc->dat,
+		xua_snm_pc_available(as_array[0], (const uint32_t *)ie_aff_pc->dat,
 				     ie_aff_pc->len / sizeof(uint32_t), info_str, false);
 	}
 }
 
 /* an incoming xUA DAVA was received from a remote SG */
-void xua_snm_rx_dava(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const struct xua_msg *xua)
+void xua_snm_rx_dava(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as_array[], unsigned int as_count, const struct xua_msg *xua)
 {
 	struct xua_msg_part *ie_aff_pc = xua_msg_find_tag(xua, M3UA_IEI_AFFECTED_PC);
 	struct xua_msg_part *ie_ssn = xua_msg_find_tag(xua, SUA_IEI_SSN);
@@ -591,16 +591,16 @@ void xua_snm_rx_dava(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const str
 		if (ie_aff_pc->len/sizeof(uint32_t) != 1)
 			return;
 		pc = ntohl(aff_pc[0]) & 0xffffff;
-		sua_snm_ssn_available(as, pc, ssn, xua_msg_get_u32p(xua, SUA_IEI_SMI, &smi), info_str, true);
+		sua_snm_ssn_available(as_array[0], pc, ssn, xua_msg_get_u32p(xua, SUA_IEI_SMI, &smi), info_str, true);
 	} else {
 		/* when the SSN is not included, DAVA corresponds to the SCCP N-PCSTATE primitive */
-		xua_snm_pc_available(as, (const uint32_t *)ie_aff_pc->dat,
+		xua_snm_pc_available(as_array[0], (const uint32_t *)ie_aff_pc->dat,
 				     ie_aff_pc->len / sizeof(uint32_t), info_str, true);
 	}
 }
 
 /* an incoming SUA/M3UA DUPU was received from a remote SG */
-void xua_snm_rx_dupu(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const struct xua_msg *xua)
+void xua_snm_rx_dupu(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as_array[], unsigned int as_count, const struct xua_msg *xua)
 {
 	uint32_t aff_pc = xua_msg_get_u32(xua, M3UA_IEI_AFFECTED_PC);
 	const char *info_str = xua_msg_get_str(xua, M3UA_IEI_INFO_STRING);
@@ -629,11 +629,11 @@ void xua_snm_rx_dupu(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const str
 		info_str ? info_str : "", osmo_ss7_pointcode_print(asp->inst, aff_pc),
 		get_value_string(mtp_si_vals, user), cause);
 
-	xua_snm_upu(as, aff_pc, user, cause, info_str);
+	xua_snm_upu(as_array[0], aff_pc, user, cause, info_str);
 }
 
 /* an incoming SUA/M3UA SCON was received from a remote ASP/SG/IPSP */
-void xua_snm_rx_scon(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const struct xua_msg *xua)
+void xua_snm_rx_scon(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as_array[], unsigned int as_count, const struct xua_msg *xua)
 {
 	struct xua_msg_part *ie_aff_pc = xua_msg_find_tag(xua, M3UA_IEI_AFFECTED_PC);
 	const char *info_str = xua_msg_get_str(xua, M3UA_IEI_INFO_STRING);
@@ -647,6 +647,6 @@ void xua_snm_rx_scon(struct osmo_ss7_asp *asp, struct osmo_ss7_as *as, const str
 	LOGPASP(asp, log_ss, LOGL_NOTICE, "RX SCON(%s) for %s level=%u\n", info_str ? info_str : "",
 		format_affected_pcs(asp->inst, ie_aff_pc), cong_level ? *cong_level : 0);
 
-	xua_snm_scon(as, (const uint32_t *) ie_aff_pc->dat, ie_aff_pc->len / sizeof(uint32_t),
+	xua_snm_scon(as_array[0], (const uint32_t *) ie_aff_pc->dat, ie_aff_pc->len / sizeof(uint32_t),
 		     concerned_dpc, (const uint8_t *) cong_level, info_str);
 }
