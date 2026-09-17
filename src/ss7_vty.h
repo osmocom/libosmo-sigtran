@@ -40,6 +40,9 @@ extern const struct value_string ipproto_vals[];
 #define IP_DSCP_RANGE_STR "<0-63>"
 #define IP_DSCP_RANGE_HELP_STR "IP Differentiated Service Code Point\n"
 
+#define SS7_QOS_CLASS_RANGE_STR "<1-255>"
+#define SS7_QOS_CLASS_RANGE_HELP_STR "QoS Class\n"
+
 #define QOS_CLASS_RANGE_STR "<0-7>"
 #define QOS_CLASS_RANGE_HELP_STR "QoS Class\n"
 #define QOS_CLASS_VAR_STR "(" QOS_CLASS_RANGE_STR "|default)"
@@ -49,6 +52,11 @@ extern const struct value_string ipproto_vals[];
 
 int parse_trans_proto(const char *protocol);
 enum osmo_ss7_asp_protocol parse_asp_proto(const char *protocol);
+
+/* ss7_qos_class_vty.c */
+struct ss7_qos_class;
+void ss7_vty_init_node_qos_class(void);
+void ss7_vty_write_one_qos_class(struct vty *vty, struct ss7_qos_class *qos);
 
 /* ss7_asp_vty.c */
 void ss7_vty_init_node_asp(void);

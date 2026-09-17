@@ -50,6 +50,7 @@
 #include "ss7_user.h"
 #include "ss7_vty.h"
 #include "ss7_xua_srv.h"
+#include "ss7_qos_class.h"
 #ifdef WITH_TCAP_LOADSHARING
 #include "tcap_as_loadshare_vty.h"
 #endif /* WITH_TCAP_LOADSHARING */
@@ -1352,6 +1353,7 @@ static void write_cs7_timers_xua(struct vty *vty, const char *indent,
 
 static void write_one_cs7(struct vty *vty, struct osmo_ss7_instance *inst, bool show_dyn_config)
 {
+	struct ss7_qos_class *qos;
 	struct osmo_ss7_asp *asp;
 	struct osmo_ss7_as *as;
 	struct osmo_ss7_route_table *rtable;
@@ -1401,15 +1403,19 @@ static void write_one_cs7(struct vty *vty, struct osmo_ss7_instance *inst, bool 
 
 	write_cs7_timers_xua(vty, " ", inst);
 
-	/* first dump ASPs, as ASs reference them */
+	/* dump QoS classes */
+	llist_for_each_entry(qos, &inst->qos_class_list, list)
+		ss7_vty_write_one_qos_class(vty, qos);
+
+	/* dump ASPs, as ASs reference them */
 	llist_for_each_entry(asp, &inst->asp_list, list)
 		ss7_vty_write_one_asp(vty, asp, show_dyn_config);
 
-	/* then dump ASPs, as routes reference them */
+	/* dump ASPs, as routes reference them */
 	llist_for_each_entry(as, &inst->as_list, list)
 		ss7_vty_write_one_as(vty, as, show_dyn_config);
 
-	/* now dump everything that is relevant for the SG role */
+	/* dump everything that is relevant for the SG role */
 	if (cs7_role == CS7_ROLE_SG) {
 
 		/* dump routes, as their target ASs exist */
@@ -1429,10 +1435,16 @@ static void write_one_cs7(struct vty *vty, struct osmo_ss7_instance *inst, bool 
 
 int osmo_ss7_vty_go_parent(struct vty *vty)
 {
+	struct ss7_qos_class *qos;
 	struct osmo_ss7_route_table *rtbl;
 	struct osmo_sccp_addr_entry *entry;
 
 	switch (vty->node) {
+	case L_CS7_QOS_CLASS_NODE:
+		qos = vty->index;
+		vty->node = L_CS7_NODE;
+		vty->index = qos->inst;
+		break;
 	case L_CS7_ASP_NODE:
 		return ss7_vty_node_asp_go_parent(vty);
 	case L_CS7_RTABLE_NODE:
@@ -1537,6 +1549,7 @@ static void vty_init_shared(void *ctx)
 	install_lib_element(L_CS7_NODE, &cs7_opc_dpc_shift_cmd);
 	install_lib_element(L_CS7_NODE, &cs7_sls_shift_cmd);
 
+	ss7_vty_init_node_qos_class();
 	ss7_vty_init_node_asp();
 	ss7_vty_init_node_as();
 

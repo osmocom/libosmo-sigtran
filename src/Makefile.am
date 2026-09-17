@@ -25,6 +25,7 @@ noinst_HEADERS = \
 	ss7_user.h \
 	ss7_vty.h \
 	ss7_xua_srv.h \
+	ss7_qos_class.h \
 	tcap_as_loadshare.h \
 	tcap_as_loadshare_vty.h \
 	tcap_trans_tracking.h \
@@ -89,6 +90,8 @@ libosmo_sigtran_la_SOURCES = \
 	ss7_route.c \
 	ss7_route_table.c \
 	ss7_user.c \
+	ss7_qos_class.c \
+	ss7_qos_class_vty.c \
 	sua.c \
 	xua_asp_fsm.c \
 	xua_as_fsm.c \

@@ -53,6 +53,7 @@
 #include <ss7_linkset.h>
 #include "ss7_internal.h"
 #include "ss7_vty.h"
+#include "ss7_qos_class.h"
 
 #include <netinet/tcp.h>
 
@@ -414,33 +415,58 @@ DEFUN_ATTR(asp_ip_dscps, asp_ip_dscp_cmd,
 	   "ip-dscp " IP_DSCP_RANGE_STR,
 	   "Specify IP DSCP of ASP\n"
 	   IP_DSCP_RANGE_HELP_STR,
-	   CMD_ATTR_NODE_EXIT)
+	   CMD_ATTR_IMMEDIATE | CMD_ATTR_DEPRECATED)
 {
 	struct osmo_ss7_asp *asp = vty->index;
+	vty_out(vty, "%% 'ip-dscp' command is deprecated, use 'qos-class' instead%s", VTY_NEWLINE);
 	asp->cfg.ip_dscp = atoi(argv[0]);
-	ss7_asp_apply_ip_dscp(asp);
+	asp->cfg.qos = NULL;
+	ss7_asp_apply_qos_class(asp);
 	return CMD_SUCCESS;
 }
 
 DEFUN_ATTR(asp_no_ip_dscps, asp_no_ip_dscp_cmd,
 	   "no ip-dscp",
 	   NO_STR "Reset IP DSCP of ASP to default\n",
-	   CMD_ATTR_NODE_EXIT)
+	   CMD_ATTR_IMMEDIATE | CMD_ATTR_DEPRECATED)
 {
 	struct osmo_ss7_asp *asp = vty->index;
 	asp->cfg.ip_dscp = 0;
-	ss7_asp_apply_ip_dscp(asp);
+	ss7_asp_apply_qos_class(asp);
 	return CMD_SUCCESS;
 }
 
-DEFUN_ATTR(asp_qos_clas, asp_qos_class_cmd,
-	   "qos-class " QOS_CLASS_RANGE_STR,
-	   "Specify QoS Class of ASP\n"
-	   QOS_CLASS_RANGE_HELP_STR,
-	   CMD_ATTR_NODE_EXIT)
+DEFUN_ATTR(asp_qos_class, asp_qos_class_cmd,
+	   "qos-class " SS7_QOS_CLASS_RANGE_STR,
+	   "Specify QoS class of ASP\n"
+	   SS7_QOS_CLASS_RANGE_HELP_STR,
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct osmo_ss7_asp *asp = vty->index;
-	asp->cfg.qos_class = atoi(argv[0]);
+	struct ss7_qos_class *qos = ss7_qos_class_find(asp->inst, atoi(argv[0]));
+	if (qos) {
+		asp->cfg.qos = qos;
+		if (asp->cfg.ip_dscp != 0) {
+			vty_out(vty, "%% Config updated: ip-dscp %d -> qos-class %d (ip-dscp %d)%s",
+				asp->cfg.ip_dscp, qos->qos_class, qos->ip_dscp, VTY_NEWLINE);
+			asp->cfg.ip_dscp = 0;
+		}
+		ss7_asp_apply_qos_class(asp);
+	} else {
+		vty_out(vty, "%% QoS class with ID '%s' does not exit%s", argv[0], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(asp_no_qos_class, asp_no_qos_class_cmd,
+	   "no qos-class",
+	   NO_STR "QoS class\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct osmo_ss7_asp *asp = vty->index;
+	asp->cfg.qos = NULL;
+	ss7_asp_apply_qos_class(asp);
 	return CMD_SUCCESS;
 }
 
@@ -1432,10 +1458,10 @@ void ss7_vty_write_one_asp(struct vty *vty, struct osmo_ss7_asp *asp, bool show_
 			vty_out(vty, "  remote-ip %s%s%s", asp->cfg.remote.host[i],
 				asp->cfg.remote.idx_primary == i ? " primary" : "", VTY_NEWLINE);
 	}
-	if (asp->cfg.ip_dscp != 0)
+	if (asp->cfg.qos)
+		vty_out(vty, "  qos-class %u%s", asp->cfg.qos->qos_class, VTY_NEWLINE);
+	else if (asp->cfg.ip_dscp != 0)
 		vty_out(vty, "  ip-dscp %u%s", asp->cfg.ip_dscp, VTY_NEWLINE);
-	if (asp->cfg.qos_class)
-		vty_out(vty, "  qos-class %u%s", asp->cfg.qos_class, VTY_NEWLINE);
 	vty_out(vty, "  role %s%s", osmo_str_tolower(get_value_string(osmo_ss7_asp_role_names, asp->cfg.role)),
 		VTY_NEWLINE);
 	if (asp->cfg.trans_proto == IPPROTO_SCTP)
@@ -1546,6 +1572,7 @@ void ss7_vty_init_node_asp(void)
 	install_lib_element(L_CS7_ASP_NODE, &asp_ip_dscp_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_no_ip_dscp_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_qos_class_cmd);
+	install_lib_element(L_CS7_ASP_NODE, &asp_no_qos_class_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_role_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_transport_role_cmd);
 	install_lib_element(L_CS7_ASP_NODE, &asp_sctp_role_cmd);

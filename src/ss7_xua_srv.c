@@ -57,6 +57,7 @@
 #include "xua_as_fsm.h"
 #include "xua_lm_sap.h"
 #include "ss7_xua_srv.h"
+#include "ss7_qos_class.h"
 
 /***********************************************************************
  * SS7 xUA Server
@@ -106,7 +107,9 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
 			asp = ss7_asp_find_by_socket_addr(fd, oxs->cfg.trans_proto);
 		}
 		/* If ASP uses individual DSCP setting, override the setting from the listener socket. */
-		if (asp->cfg.ip_dscp > 0)
+		if (asp->cfg.qos)
+			osmo_sock_set_dscp(fd, asp->cfg.qos->ip_dscp);
+		else if (asp->cfg.ip_dscp != 0)
 			osmo_sock_set_dscp(fd, asp->cfg.ip_dscp);
 	}
 
@@ -409,7 +412,9 @@ bool ss7_xua_server_set_ip_dscp(struct osmo_xua_server *xs)
 {
 	if (!xs->server)
 		return false;
-	if (xs->cfg.ip_dscp != 0)
+	if (xs->cfg.qos)
+		osmo_stream_srv_link_set_ip_dscp(xs->server, xs->cfg.qos->ip_dscp);
+	else if (xs->cfg.ip_dscp != 0)
 		osmo_stream_srv_link_set_ip_dscp(xs->server, xs->cfg.ip_dscp);
 	return true;
 }

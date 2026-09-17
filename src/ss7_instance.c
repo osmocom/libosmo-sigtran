@@ -37,8 +37,10 @@
 #include "ss7_asp.h"
 #include "ss7_internal.h"
 #include "ss7_instance.h"
+#include "ss7_xua_srv.h"
 #include "ss7_linkset.h"
 #include "ss7_route_table.h"
+#include "ss7_qos_class.h"
 #include "sccp_internal.h"
 
 static int32_t next_rctx = 1;
@@ -108,6 +110,7 @@ ss7_instance_alloc(void *ctx, uint32_t id)
 	INIT_LLIST_HEAD(&inst->rtable_list);
 	INIT_LLIST_HEAD(&inst->xua_servers);
 	INIT_LLIST_HEAD(&inst->t8_inaccessible_sp.list);
+	INIT_LLIST_HEAD(&inst->qos_class_list);
 
 	osmo_timer_setup(&inst->t8_inaccessible_sp.timer, t8_inaccessible_sp_timer_cb, inst);
 
@@ -141,6 +144,7 @@ void osmo_ss7_instance_destroy(struct osmo_ss7_instance *inst)
 	struct osmo_ss7_linkset *lset, *lset2;
 	struct osmo_ss7_as *as, *as2;
 	struct osmo_ss7_asp *asp, *asp2;
+	struct ss7_qos_class *qos, *qos2;
 
 	OSMO_ASSERT(ss7_initialized);
 	LOGSS7(inst, LOGL_INFO, "Destroying SS7 Instance\n");
@@ -153,6 +157,9 @@ void osmo_ss7_instance_destroy(struct osmo_ss7_instance *inst)
 
 	llist_for_each_entry_safe(lset, lset2, &inst->linksets, list)
 		ss7_linkset_destroy(lset);
+
+	llist_for_each_entry_safe(qos, qos2, &inst->qos_class_list, list)
+		ss7_qos_class_destroy(qos);
 
 	osmo_timer_del(&inst->t8_inaccessible_sp.timer);
 	/* Talloc takes care of freeing inst->t8_inaccessible_sp.list and its entries */

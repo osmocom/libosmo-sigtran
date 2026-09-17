@@ -123,6 +123,8 @@ ss7_asp_vty_test(config-cs7)# list
   xua rkm routing-key-allocation (static-only|dynamic-permitted)
   sls-opc-dpc [opc-shift] [<0-8>] [dpc-shift] [<0-8>]
   sls-shift <0-6>
+  qos class <1-255>
+  no qos class <1-255>
   asp NAME <0-65535> <0-65535> (sua|m3ua|ipa)
   asp NAME <0-65535> <0-65535> (sua|m3ua|ipa) (sctp|tcp)
   no asp NAME
@@ -145,8 +147,9 @@ ss7_asp_vty_test(config-cs7)# ?
   xua                SIGTRAN xxxUA related
   sls-opc-dpc        Shift OPC and DPC bits used during routing decision
   sls-shift          Shift SLS bits used during routing decision
-  asp                Configure Application Server Process
+  qos                QoS definition
   no                 Negate a command or set its defaults
+  asp                Configure Application Server Process
   as                 Configure an Application Server
   sccp-address       Create/Modify an SCCP addressbook entry
   timer              Configure CS7 Instance default timer values
@@ -214,6 +217,7 @@ ss7_asp_vty_test(config-cs7)# sccp-address ?
   NAME  Name of the SCCP Address
 
 ss7_asp_vty_test(config-cs7)# no ?
+  qos           QoS definition
   asp           Disable Application Server Process
   as            Disable Application Server
   sccp-address  Delete an SCCP addressbook entry
@@ -281,9 +285,8 @@ ss7_asp_vty_test(config-cs7-asp)# list
   no remote-ip (A.B.C.D|X:X::X:X)
   local-ip (A.B.C.D|X:X::X:X) [primary]
   no local-ip (A.B.C.D|X:X::X:X)
-  ip-dscp <0-63>
-  no ip-dscp
-  qos-class <0-7>
+  qos-class <1-255>
+  no qos-class
   role (sg|asp|ipsp)
   transport-role (client|server)
   sctp-param init (num-ostreams|max-instreams|max-attempts|timeout) <0-65535>
@@ -313,8 +316,7 @@ ss7_asp_vty_test(config-cs7-asp)# ?
   no                 Negate a command or set its defaults
   remote-ip          Specify Remote IP Address of ASP
   local-ip           Specify Local IP Address from which to contact ASP
-  ip-dscp            Specify IP DSCP of ASP
-  qos-class          Specify QoS Class of ASP
+  qos-class          Specify QoS class of ASP
   role               Specify the xUA role for this ASP
   transport-role     Specify the transport layer role for this ASP
   sctp-param         Configure SCTP parameters
@@ -330,7 +332,7 @@ ss7_asp_vty_test(config-cs7-asp)# no ?
 ...
   remote-ip          Specify Remote IP Address of ASP
   local-ip           Specify Local IP Address from which to contact ASP
-  ip-dscp            Reset IP DSCP of ASP to default
+  qos-class          QoS class
   sctp-param         Configure SCTP parameters
   tcp-param          Configure TCP parameters
   destination-audit  Configure ASP Auditing (xUA DAUD)

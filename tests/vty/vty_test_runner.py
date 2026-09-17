@@ -235,20 +235,36 @@ class TestDSCP(TestVTYBase):
     def vty_app(self):
         return (4239, "./stp/osmo-stp", "OsmoSTP", "stp")
 
-    def testDSCPSettings(self):
+    def _run_test_dscp_settings(self, qos_class):
         self.vty.enable()
         self.assertTrue(self.vty.verify("configure terminal",['']))
         self.assertTrue(self.vty.verify("cs7 instance 0",['']))
+        if qos_class:
+            self.assertTrue(self.vty.verify("qos class 5",['']))
+            self.assertTrue(self.vty.verify("qos-ip-dscp 23",['']))
+            self.assertTrue(self.vty.verify("exit",['']))
+            self.assertTrue(self.vty.verify("qos class 6",['']))
+            self.assertTrue(self.vty.verify("qos-ip-dscp 42",['']))
+            self.assertTrue(self.vty.verify("exit",['']))
+            self.assertTrue(self.vty.verify("qos class 7",['']))
+            self.assertTrue(self.vty.verify("qos-ip-dscp 8",['']))
+            self.assertTrue(self.vty.verify("exit",['']))
         self.assertTrue(self.vty.verify("no listen m3ua 2905",['']))
         self.assertTrue(self.vty.verify("listen m3ua 2905",['']))
         self.assertTrue(self.vty.verify("accept-asp-connections dynamic-permitted",['']))
         self.assertTrue(self.vty.verify("local-ip 127.0.0.1",['']))
-        self.assertTrue(self.vty.verify("init-ip-dscp 23",['']))
+        if qos_class:
+            self.assertTrue(self.vty.verify("qos-class 5",['']))
+        else:
+            self.assertTrue(self.vty.verify("init-ip-dscp 23",["% 'init-ip-dscp' command is deprecated, use 'qos-class' instead"]))
         self.assertTrue(self.vty.verify("exit",['']))
         self.assertTrue(self.vty.verify("asp asp-srv-m3ua 2906 2905 m3ua",['']))
         self.assertTrue(self.vty.verify("local-ip 127.0.0.1",['']))
         self.assertTrue(self.vty.verify("remote-ip 127.0.0.2",['']))
-        self.assertTrue(self.vty.verify("ip-dscp 8",['']))
+        if qos_class:
+            self.assertTrue(self.vty.verify("qos-class 7",['']))
+        else:
+            self.assertTrue(self.vty.verify("ip-dscp 8",["% 'ip-dscp' command is deprecated, use 'qos-class' instead"]))
         self.assertTrue(self.vty.verify("role asp",['']))
         self.assertTrue(self.vty.verify("sctp-role server",['']))
         self.assertTrue(self.vty.verify("no shutdown",['']))
@@ -256,7 +272,10 @@ class TestDSCP(TestVTYBase):
         self.assertTrue(self.vty.verify("asp asp-clnt-m3ua 2905 2906 m3ua",['']))
         self.assertTrue(self.vty.verify("local-ip 127.0.0.2",['']))
         self.assertTrue(self.vty.verify("remote-ip 127.0.0.1",['']))
-        self.assertTrue(self.vty.verify("ip-dscp 42",['']))
+        if qos_class:
+            self.assertTrue(self.vty.verify("qos-class 6",['']))
+        else:
+            self.assertTrue(self.vty.verify("ip-dscp 42",["% 'ip-dscp' command is deprecated, use 'qos-class' instead"]))
         self.assertTrue(self.vty.verify("role asp",['']))
         self.assertTrue(self.vty.verify("sctp-role client",['']))
         self.assertTrue(self.vty.verify("no shutdown",['']))
@@ -367,6 +386,12 @@ class TestDSCP(TestVTYBase):
 
         sorted_output = "\n".join(sorted(output.splitlines()))
         self.assertEqual(sorted_output, expected_output)
+
+    def testDSCPSettings_without_QoSClass(self):
+        self._run_test_dscp_settings(qos_class = False)
+
+    def testDSCPSettings_with_QoSClass(self):
+        self._run_test_dscp_settings(qos_class = True)
 
 if __name__ == '__main__':
     import argparse

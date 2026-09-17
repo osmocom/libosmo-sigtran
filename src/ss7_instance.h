@@ -47,6 +47,8 @@ struct osmo_ss7_pc_fmt {
 struct osmo_ss7_instance {
 	/*! member of global list of instances */
 	struct llist_head list;
+	/*! list of \ref ss7_qos_class */
+	struct llist_head qos_class_list;
 	/*! list of \ref osmo_ss7_linkset */
 	struct llist_head linksets;
 	/*! list of \ref osmo_ss7_as */
