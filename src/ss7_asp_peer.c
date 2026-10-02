@@ -53,35 +53,36 @@ void ss7_asp_peer_init(struct osmo_ss7_asp_peer *peer)
 
 int ss7_asp_peer_snprintf(char *buf, size_t buf_len, struct osmo_ss7_asp_peer *peer)
 {
-	int len = 0, offset = 0, rem = buf_len;
-	int ret, i;
-	char *after;
+	struct osmo_strbuf sb = { .buf = buf, .len = buf_len };
+	bool is_v6 = false;
+	unsigned int i;
 	char *primary;
 
-	if (buf_len < 3)
-		return -EINVAL;
-
-	if (peer->host_cnt > 1) {
-		ret = snprintf(buf, rem, "(");
-		if (ret < 0)
-			return ret;
-		OSMO_SNPRINTF_RET(ret, rem, offset, len);
+	if (peer->host_cnt == 0) {
+		OSMO_STRBUF_PRINTF(sb, "NULL:%u", peer->port);
+		return sb.chars_needed;
 	}
-	for (i = 0; i < peer->host_cnt; i++) {
+
+	if (peer->host_cnt > 1)
+		OSMO_STRBUF_PRINTF(sb, "(");
+	else if (peer->host[0] && (is_v6 = !!strchr(peer->host[0], ':')))
+		OSMO_STRBUF_PRINTF(sb, "["); /* IPv6, add [] to separate from port. */
+
+	for (i = 0; i < peer->host_cnt - 1; i++) {
 		primary = (peer->idx_primary == i) ? "*" : "";
-		if (peer->host_cnt == 1)
-			after = "";
-		else
-			after = (i == (peer->host_cnt - 1)) ? ")" : "|";
-		ret = snprintf(buf + offset, rem, "%s%s%s", peer->host[i] ? : "0.0.0.0", primary, after);
-		OSMO_SNPRINTF_RET(ret, rem, offset, len);
+		OSMO_STRBUF_PRINTF(sb, "%s%s|", peer->host[i] ? : "NULL", primary);
 	}
-	ret = snprintf(buf + offset, rem, ":%u", peer->port);
-	if (ret < 0)
-		return ret;
-	OSMO_SNPRINTF_RET(ret, rem, offset, len);
+	primary = (peer->idx_primary == i) ? "*" : "";
+	OSMO_STRBUF_PRINTF(sb, "%s%s", peer->host[i] ? : "NULL", primary);
 
-	return len;
+	if (peer->host_cnt > 1)
+		OSMO_STRBUF_PRINTF(sb, ")");
+	else if (is_v6)
+		OSMO_STRBUF_PRINTF(sb, "]");
+
+	OSMO_STRBUF_PRINTF(sb, ":%u", peer->port);
+
+	return sb.chars_needed;
 }
 
 /*! \brief Set (copy) addresses for a given ASP peer. Previous addresses are freed.

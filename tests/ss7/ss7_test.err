@@ -44,13 +44,13 @@ DLSS7 INFO 0: Destroying Linkset b
 DLSS7 DEBUG XUA_AS(as1){AS_DOWN}: Allocated
 DLSS7 INFO 0: AS(as1) Created AS
 DLSS7 INFO 0: AS(as1) Adding ASP asp1 to AS
-DLSS7 INFO 0: ASP(asp1) Restarting ASP asp1, r=:0<->l=:2905
+DLSS7 INFO 0: ASP(asp1) Restarting ASP asp1, r=NULL:0<->l=NULL:2905
 DLSS7 DEBUG xua_default_lm(asp1){IDLE}: Allocated
 DLSS7 DEBUG XUA_ASP(asp1){ASP_DOWN}: Allocated
 DLINP ERROR CLICONN(asp1,){CLOSED} connect: socket creation error (-22)
 DLINP DEBUG CLICONN(asp1,){CLOSED} close()
 DLINP INFO CLICONN(asp1,){WAIT_RECONNECT} retrying reconnect in 5 seconds...
-DLSS7 ERROR 0: ASP(asp1) Unable to open stream client for ASP asp1, :2905 ==> :0
+DLSS7 ERROR 0: ASP(asp1) Unable to open stream client for ASP asp1, NULL:2905 ==> NULL:0
 DLSS7 DEBUG XUA_ASP(asp1){ASP_DOWN}: Received Event M-ASP_UP.req
 DLSS7 DEBUG 0: ASP(asp1) Tx 8 bytes: [L2]> 01 00 03 01 00 00 00 08 
 DLSS7 ERROR 0: ASP(asp1) Cannot transmit, asp->client not connected
