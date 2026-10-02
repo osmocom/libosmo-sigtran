@@ -231,6 +231,7 @@ void sccp_conn_scu_gen_encode_and_send(struct sccp_connection *conn, uint32_t ev
 	struct osmo_scu_connect_param *uconp;
 	struct osmo_scu_data_param *udatp;
 	struct xua_msg_part *data_ie;
+	uint32_t cause;
 
 	scu_prim = scu_prim_alloc(primitive, operation);
 
@@ -243,7 +244,19 @@ void sccp_conn_scu_gen_encode_and_send(struct sccp_connection *conn, uint32_t ev
 		udisp->originator = OSMO_SCCP_ORIG_UNDEFINED;
 		//udisp->in_sequence_control;
 		if (xua) {
-			udisp->cause = xua_msg_get_u32(xua, SUA_IEI_CAUSE);
+			cause = xua_msg_get_u32(xua, SUA_IEI_CAUSE);
+			switch (cause & SUA_CAUSE_T_MASK) {
+			case SUA_CAUSE_T_REFUSAL:
+				sccp_refusal_cause_to_scu_rel_reason(&udisp->originator, &udisp->cause, cause & 0xff);
+				break;
+			case SUA_CAUSE_T_RELEASE:
+				sccp_release_cause_to_scu_rel_reason(&udisp->originator, &udisp->cause, cause & 0xff);
+				break;
+			default:
+				udisp->originator = OSMO_SCCP_ORIG_UNDEFINED;
+				udisp->cause = OSMO_SCCP_REL_REASON_UNDEFINED;
+				break;
+			}
 			if (xua_msg_find_tag(xua, SUA_IEI_SRC_ADDR)) {
 				if (sua_addr_parse(&udisp->responding_addr, xua, SUA_IEI_SRC_ADDR) < 0) {
 					LOGPSCC(conn, LOGL_ERROR, "XUA Message %s without valid SRC_ADDR\n",

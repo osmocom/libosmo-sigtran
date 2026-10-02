@@ -8,6 +8,8 @@
 #include <osmocom/sigtran/sccp_sap.h>
 
 struct osmo_sccp_instance;
+enum sccp_refusal_cause;
+enum osmo_sccp_originator;
 
 struct osmo_sccp_user {
 	/*! \brief entry in list of sccp users of \ref osmo_sccp_instance */
@@ -37,6 +39,11 @@ struct osmo_sccp_user *sccp_user_alloc(struct osmo_sccp_instance *inst, const ch
 void sccp_user_free(struct osmo_sccp_user *scu);
 
 int sccp_user_prim_up(struct osmo_sccp_user *scut, struct osmo_scu_prim *prim);
+
+enum sccp_refusal_cause scu_rel_reason_to_sccp_refusal_cause(enum osmo_sccp_originator originator, uint32_t reason);
+enum sccp_release_cause scu_rel_reason_to_sccp_release_cause(enum osmo_sccp_originator originator, uint32_t reason);
+void sccp_refusal_cause_to_scu_rel_reason(enum osmo_sccp_originator *originator, uint32_t *reason, uint32_t sccp_cause);
+void sccp_release_cause_to_scu_rel_reason(enum osmo_sccp_originator *originator, uint32_t *reason, uint32_t sccp_cause);
 
 #define _LOGPSCU(scu, subsys, level, fmt, args ...) \
 	_LOGPSCI((scu)->inst, subsys, level, "SCU(%s) " fmt, osmo_sccp_user_name(scu), ## args)

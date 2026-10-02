@@ -225,7 +225,8 @@ static void scoc_fsm_conn_pend_out(struct osmo_fsm_inst *fi, uint32_t event, voi
 	switch (event) {
 	case SCOC_E_SCU_N_DISC_REQ:
 		prim = data;
-		conn->release_cause = prim->u.disconnect.cause;
+		conn->release_cause = scu_rel_reason_to_sccp_release_cause(prim->u.disconnect.originator,
+									   prim->u.disconnect.cause);
 		osmo_fsm_inst_state_chg(fi, S_WAIT_CONN_CONF, 0, 0);
 		/* keep conn timer running(!) */
 		break;

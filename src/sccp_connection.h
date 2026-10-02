@@ -3,6 +3,7 @@
 
 #include <osmocom/core/fsm.h>
 #include <osmocom/sigtran/sccp_sap.h>
+#include <osmocom/sccp/sccp_types.h>
 
 struct xua_msg;
 
@@ -34,7 +35,7 @@ struct sccp_connection {
 
 	uint32_t importance;
 	uint32_t sccp_class;
-	uint32_t release_cause; /* WAIT_CONN_CONF */
+	enum sccp_release_cause release_cause; /* WAIT_CONN_CONF */
 
 	/* SLS to be used to transmit all Connection-oriented messages
 	 * (ITU-T Q.714 1.1.2.3 Protocol class 2).

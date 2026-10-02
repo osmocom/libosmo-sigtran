@@ -137,6 +137,67 @@ enum osmo_sccp_ssn {
 	OSMO_SCCP_SSN_BSSAP		= 254,
 };
 
+/* Q.711 6.1.1.2.3, "Table 5/Q.711" and paragrapgs below it */
+enum osmo_sccp_reset_reason_nsp {
+	OSMO_SCCP_RESET_REASON_NSP_UNSPEC = 0x0,
+	OSMO_SCCP_RESET_REASON_NSP_LOCAL_SCCP_ORIGIN,
+};
+
+enum osmo_sccp_reset_reason_nsu {
+	OSMO_SCCP_RESET_REASON_NSU_USER_SYNCHRONIZATION = 0x0,
+};
+
+enum osmo_sccp_reset_reason_undefined {
+	OSMO_SCCP_RESET_REASON_UNDEFINED = 0x0,
+};
+
+/* Q.711 6.1.1.2.4 1) When the "originator" parameter indicates the "network service provider" */
+enum osmo_sccp_release_reason_nsp {
+	OSMO_SCCP_REL_REASON_NSP_DISC_NT = 0x100,
+	OSMO_SCCP_REL_REASON_NSP_DISC_T,
+	OSMO_SCCP_REL_REASON_NSP_DISC_INVALID_STATE,
+	OSMO_SCCP_REL_REASON_NSP_DISC_RELEASE_IN_PROGRESS,
+	OSMO_SCCP_REL_REASON_NSP_CREF_DST_ADDR_UNKNOWN_NT,
+	OSMO_SCCP_REL_REASON_NSP_CREF_DST_INACC_NT,
+	OSMO_SCCP_REL_REASON_NSP_CREF_DST_INACC_T,
+	OSMO_SCCP_REL_REASON_NSP_CREF_QOS_UNAVAIL_NT,
+	OSMO_SCCP_REL_REASON_NSP_CREF_QOS_UNAVAIL_T,
+	OSMO_SCCP_REL_REASON_NSP_CREF_REASON_UNSPEC_NT,
+	OSMO_SCCP_REL_REASON_NSP_CREF_REASON_UNSPEC_T,
+	OSMO_SCCP_REL_REASON_NSP_CREF_LOCAL_ERROR,
+	OSMO_SCCP_REL_REASON_NSP_CREF_INVALID_STATE,
+	OSMO_SCCP_REL_REASON_NSP_CREF_NO_TRANSITION,
+	OSMO_SCCP_REL_REASON_NSP_CREF_IN_RESTART_PHASE,
+	OSMO_SCCP_REL_REASON_NSP_CREF_HOP_COUNTER_VIOLATION,
+};
+
+/* Q.711 6.1.1.2.4 2) When the "originator" parameter indicates the "network service user" */
+enum osmo_sccp_release_reason_nsu {
+	OSMO_SCCP_REL_REASON_NSU_DISC_NORMAL = 0x100,
+	OSMO_SCCP_REL_REASON_NSU_DISC_ABNORMAL,
+	OSMO_SCCP_REL_REASON_NSU_DISC_END_USER_CONGESTION,
+	OSMO_SCCP_REL_REASON_NSU_DISC_END_USER_FAILURE,
+	OSMO_SCCP_REL_REASON_NSU_DISC_SCCP_USER_ORIGIN,
+	OSMO_SCCP_REL_REASON_NSU_DISC_ACCESS_CONGESTION,
+	OSMO_SCCP_REL_REASON_NSU_DISC_ACCESS_FAILURE,
+	OSMO_SCCP_REL_REASON_NSU_DISC_SUBSYS_CONGESTION,
+	OSMO_SCCP_REL_REASON_NSU_CREF_NT_CONDITION,
+	OSMO_SCCP_REL_REASON_NSU_CREF_T_CONDITION,
+	OSMO_SCCP_REL_REASON_NSU_CREF_INCOMPAT_INFO_NSDU,
+	OSMO_SCCP_REL_REASON_NSU_CREF_END_USER_ORIGIN,
+	OSMO_SCCP_REL_REASON_NSU_CREF_END_USER_CONGESTION,
+	OSMO_SCCP_REL_REASON_NSU_CREF_END_USER_FAILURE,
+	OSMO_SCCP_REL_REASON_NSU_CREF_SCCP_USER_ORIGINATED,
+	OSMO_SCCP_REL_REASON_NSU_CREF_ACCESS_CONGESTION,
+	OSMO_SCCP_REL_REASON_NSU_CREF_ACCESS_FAILURE,
+	OSMO_SCCP_REL_REASON_NSU_CREF_SUBSYS_CONGESTION,
+};
+
+/* Q.711 6.1.1.2.4 2) When the "originator" parameter indicates the "network service user" */
+enum osmo_sccp_release_reason_undefined {
+	OSMO_SCCP_REL_REASON_UNDEFINED = 0x100,
+};
+
 /* Q.711 6.3.2.2.5 Signalling point status */
 enum osmo_sccp_sp_status {
 	OSMO_SCCP_SP_S_INACCESSIBLE	= 1,
@@ -222,6 +283,8 @@ enum osmo_sccp_originator {
 struct osmo_scu_disconn_param {
 	enum osmo_sccp_originator originator;
 	struct osmo_sccp_addr responding_addr;
+	/* enum osmo_sccp_release_reason_* (value > 19),
+	 * enum sccp_refusal_cause (ITU-T Q.713 Section 3.15 Refusal cause) value <= 19, backward compatibility */
 	uint32_t cause;
 	uint32_t conn_id;
 	uint32_t importance;
@@ -231,6 +294,7 @@ struct osmo_scu_disconn_param {
 /* OSMO_SCU_PRIM_N_RESET */
 struct osmo_scu_reset_param {
 	enum osmo_sccp_originator originator;
+	/* enum osmo_sccp_reset_reason_*, "Table 5/Q.711" and paragraphs below it */
 	uint32_t cause;
 	uint32_t conn_id;
 };
