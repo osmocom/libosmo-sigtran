@@ -71,6 +71,7 @@ cs7 instance 0
   local-ip 127.0.0.1
   local-ip ::1
   accept-asp-connections dynamic-permitted
+  no shutdown
 end
 
 OsmoSTP(config-cs7)# route-table system

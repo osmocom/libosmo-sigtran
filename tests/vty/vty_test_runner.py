@@ -257,7 +257,8 @@ class TestDSCP(TestVTYBase):
             self.assertTrue(self.vty.verify("qos-class 5",['']))
         else:
             self.assertTrue(self.vty.verify("init-ip-dscp 23",["% 'init-ip-dscp' command is deprecated, use 'qos-class' instead"]))
-        self.assertTrue(self.vty.verify("exit",['']))
+        self.assertTrue(self.vty.verify("no shutdown",['']))
+        self.assertTrue(self.vty.verify("exit",["% NOTE: Skipping automatic restart of VTY node 'listen' since an explicit '[no] shutdown' command was entered"]))
         self.assertTrue(self.vty.verify("asp asp-srv-m3ua 2906 2905 m3ua",['']))
         self.assertTrue(self.vty.verify("local-ip 127.0.0.1",['']))
         self.assertTrue(self.vty.verify("remote-ip 127.0.0.2",['']))

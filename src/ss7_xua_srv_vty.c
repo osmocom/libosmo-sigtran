@@ -84,6 +84,9 @@ DEFUN_ATTR(cs7_xua, cs7_xua_cmd,
 		ss7_xua_server_set_local_hosts(xs, NULL, 0);
 	}
 
+	/* Reset value, will be checked at osmo_ss7_vty_go_parent() */
+	xs->cfg.explicit_shutdown_state_by_vty_since_node_enter = false;
+
 	vty->node = L_CS7_XUA_NODE;
 	vty->index = xs;
 	return CMD_SUCCESS;
@@ -274,6 +277,38 @@ DEFUN_ATTR(xua_no_sctp_param_init, xua_no_sctp_param_init_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN_ATTR(xua_shutdown, xua_shutdown_cmd,
+	   "shutdown",
+	   "Terminates transport (SCTP, TCP) listening socket\n",
+	   CMD_ATTR_NODE_EXIT)
+{
+	struct osmo_xua_server *oxs = vty->index;
+
+	LOGPOXS(oxs, DLSS7, LOGL_NOTICE, "Applying Adm State change: '%sshutdown' -> 'shutdown'\n",
+		oxs->cfg.adm_state.shutdown ? "" : "no ");
+
+	oxs->cfg.explicit_shutdown_state_by_vty_since_node_enter = true;
+	oxs->cfg.adm_state.shutdown = true;
+	ss7_xua_server_restart_after_reconfigure(oxs);
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(xua_no_shutdown, xua_no_shutdown_cmd,
+	"no shutdown",
+	NO_STR "Terminates transport (SCTP, TCP) listening socket\n",
+	CMD_ATTR_NODE_EXIT)
+{
+	struct osmo_xua_server *oxs = vty->index;
+
+	LOGPOXS(oxs, DLSS7, LOGL_NOTICE, "Applying Adm State change: '%sshutdown' -> 'no shutdown'\n",
+		oxs->cfg.adm_state.shutdown ? "" : "no ");
+
+	oxs->cfg.explicit_shutdown_state_by_vty_since_node_enter = true;
+	oxs->cfg.adm_state.shutdown = false;
+	ss7_xua_server_restart_after_reconfigure(oxs);
+	return CMD_SUCCESS;
+}
+
 void ss7_vty_write_one_oxs(struct vty *vty, struct osmo_xua_server *xs)
 {
 	int i;
@@ -299,6 +334,8 @@ void ss7_vty_write_one_oxs(struct vty *vty, struct osmo_xua_server *xs)
 		vty_out(vty, "  sctp-param init num-ostreams %u%s", xs->cfg.sctp_init.num_ostreams_value, VTY_NEWLINE);
 	if (xs->cfg.sctp_init.max_instreams_present)
 		vty_out(vty, "  sctp-param init max-instreams %u%s", xs->cfg.sctp_init.max_instreams_value, VTY_NEWLINE);
+
+	vty_out(vty, "  %sshutdown%s", xs->cfg.adm_state.shutdown ? "" : "no ", VTY_NEWLINE);
 }
 
 static void vty_dump_xua_server(struct vty *vty, struct osmo_xua_server *xs)
@@ -386,10 +423,29 @@ int ss7_vty_node_oxs_go_parent(struct vty *vty)
 {
 	struct osmo_xua_server *oxs = vty->index;
 
-	/* If no local addr was set, or erased after _create(): */
-	ss7_xua_server_set_default_local_hosts(oxs);
-	if (ss7_xua_server_bind(oxs) < 0)
-		vty_out(vty, "%% Unable to bind xUA server to IP(s)%s", VTY_NEWLINE);
+	if (oxs->cfg.explicit_shutdown_state_by_vty_since_node_enter) {
+		/* Interactive VTY, inform of new behavior upon use of new '[no] shutdown' commands: */
+		if (vty->type != VTY_FILE)
+			vty_out(vty, "%% NOTE: Skipping automatic restart of VTY node 'listen' "
+				"since an explicit '[no] shutdown' command was entered%s",
+				VTY_NEWLINE);
+		oxs->cfg.explicit_shutdown_state_by_vty_since_node_enter = false;
+	} else if (vty->type == VTY_FILE) {
+		/* Make sure config reading is backward compatible by starting the xUA server if no explicit 'no shutdown' is read: */
+		vty_out(vty,
+			"%% VTY node 'listen' without a '[no] shutdown' command at the end is deprecated, "
+			"please make sure you update your cfg file for future compatibility.%s",
+			VTY_NEWLINE);
+		if (ss7_xua_server_restart_after_reconfigure(oxs) < 0)
+			vty_out(vty, "%% Unable to bind xUA server to IP(s)%s", VTY_NEWLINE);
+	} else {
+		/* Interactive VTY without '[no] shutdown' explicit cmd, remind the user that we are no
+		 * longer automatically restarting the xUA server when going out of the "asp" node: */
+		vty_out(vty,
+			"%% NOTE: Make sure to use '[no] shutdown' command in 'listen' node "
+			"in order to restart the ASP for new configs to be applied.%s",
+			VTY_NEWLINE);
+	}
 	vty->node = L_CS7_NODE;
 	vty->index = oxs->inst;
 
@@ -416,4 +472,6 @@ void ss7_vty_init_node_oxs(void)
 	install_lib_element(L_CS7_XUA_NODE, &xua_accept_dyn_asp_cmd);
 	install_lib_element(L_CS7_XUA_NODE, &xua_sctp_param_init_cmd);
 	install_lib_element(L_CS7_XUA_NODE, &xua_no_sctp_param_init_cmd);
+	install_lib_element(L_CS7_XUA_NODE, &xua_shutdown_cmd);
+	install_lib_element(L_CS7_XUA_NODE, &xua_no_shutdown_cmd);
 }

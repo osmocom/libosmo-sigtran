@@ -331,7 +331,7 @@ static int ss7_xua_srv_apply_sctp_init_pars(struct osmo_xua_server *xs)
  *  \param[in] xs xUA server to operate
  *  \returns 0 on success, negative value on error.
  */
-int
+static int
 ss7_xua_server_bind(struct osmo_xua_server *xs)
 {
 	char buf[512];
@@ -340,9 +340,9 @@ ss7_xua_server_bind(struct osmo_xua_server *xs)
 
 	rc = ss7_asp_peer_snprintf(buf, sizeof(buf), &xs->cfg.local);
 	if (rc < 0) {
-		LOGPOXS(xs, DLSS7, LOGL_INFO, "Failed parsing %s Server osmo_ss7_asp_peer\n", proto);
+		LOGPOXS(xs, DLSS7, LOGL_ERROR, "Failed parsing %s Server osmo_ss7_asp_peer\n", proto);
 	} else {
-		LOGPOXS(xs, DLSS7, LOGL_INFO, "(Re)binding %s Server to %s\n",
+		LOGPOXS(xs, DLSS7, LOGL_NOTICE, "(Re)binding %s Server to %s\n",
 			proto, buf);
 	}
 
@@ -418,6 +418,34 @@ bool ss7_xua_server_set_ip_dscp(struct osmo_xua_server *xs)
 	else if (xs->cfg.ip_dscp != 0)
 		osmo_stream_srv_link_set_ip_dscp(xs->server, xs->cfg.ip_dscp);
 	return true;
+}
+
+int ss7_xua_server_restart(struct osmo_xua_server *oxs)
+{
+	int rc;
+
+	if (oxs->cfg.adm_state.shutdown) {
+		if (osmo_stream_srv_link_is_opened(oxs->server)) {
+			LOGPOXS(oxs, DLSS7, LOGL_NOTICE, "Stop listening (Adm State 'shutdown')\n");
+			osmo_stream_srv_link_close(oxs->server);
+		}
+		return 0;
+	}
+
+	/* ss7_xua_server_bind() through osmo_stream_srv_link_open() takes care of
+	 * closing and re-opening the old listening socket if needed: */
+	rc = ss7_xua_server_bind(oxs);
+	return rc;
+}
+
+/* Apply sane configs for unconfigured options and restart the xUA Server. */
+int ss7_xua_server_restart_after_reconfigure(struct osmo_xua_server *oxs)
+{
+	int rc;
+	/* If no local addr was set, or erased after _create(): */
+	ss7_xua_server_set_default_local_hosts(oxs);
+	rc = ss7_xua_server_restart(oxs);
+	return rc;
 }
 
 void ss7_xua_server_destroy(struct osmo_xua_server *xs)
