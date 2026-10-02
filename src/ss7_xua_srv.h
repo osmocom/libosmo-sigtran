@@ -76,3 +76,9 @@ bool ss7_xua_server_set_ip_dscp(struct osmo_xua_server *xs);
 void ss7_xua_server_destroy(struct osmo_xua_server *xs);
 
 bool ss7_xua_server_set_default_local_hosts(struct osmo_xua_server *oxs);
+
+#define LOGPOXS(oxs, subsys, level, fmt, args ...) \
+	_LOGSS7((oxs)->inst, subsys, level, "XUA_SRV(%s,%s) " fmt, \
+		osmo_stream_srv_link_get_name(oxs->server), \
+		osmo_stream_srv_link_get_sockname(oxs->server) ? : "NULL", \
+		## args)

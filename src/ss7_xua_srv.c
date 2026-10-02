@@ -74,11 +74,11 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
 	const char *proto_name = get_value_string(osmo_ss7_asp_protocol_vals, oxs->cfg.proto);
 	int rc = 0;
 
-	LOGP(DLSS7, LOGL_INFO, "%s: New %s connection accepted\n", sock_name, proto_name);
+	LOGPOXS(oxs, DLSS7, LOGL_INFO, "New %s connection accepted: %s\n", proto_name, sock_name);
 
 	asp = ss7_asp_find_by_socket_addr(fd, oxs->cfg.trans_proto);
 	if (asp) {
-		LOGP(DLSS7, LOGL_INFO, "%s: matched connection to ASP %s\n", sock_name, asp->cfg.name);
+		LOGPOXS(oxs, DLSS7, LOGL_INFO, "Matched %s connection %s to ASP %s\n", proto_name, sock_name, asp->cfg.name);
 		if (!asp->cfg.is_server) {
 			LOGPASP(asp, DLSS7, LOGL_NOTICE,
 				"Reject incoming new connection from %s for ASP configured as 'transport-role client'\n",
@@ -114,9 +114,9 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
 	}
 
 	if (!asp && !oxs->cfg.accept_dyn_reg) {
-		LOGP(DLSS7, LOGL_NOTICE, "%s: %s connection without matching "
+		LOGPOXS(oxs, DLSS7, LOGL_NOTICE, "%s connection %s without matching "
 			"ASP definition and no dynamic registration enabled, terminating\n",
-			sock_name, proto_name);
+			proto_name, sock_name);
 		close(fd);
 		talloc_free(sock_name);
 		return -1;
@@ -124,8 +124,8 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
 
 	srv = osmo_stream_srv_create2(oxs, link, fd, NULL);
 	if (!srv) {
-		LOGP(DLSS7, LOGL_ERROR, "%s: Unable to create stream server "
-		     "for connection\n", sock_name);
+		LOGPOXS(oxs, DLSS7, LOGL_ERROR, "Unable to create stream server "
+		     "for %s connection %s\n", proto_name, sock_name);
 		close(fd);
 		talloc_free(sock_name);
 		return -1;
@@ -173,7 +173,8 @@ static int xua_accept_cb(struct osmo_stream_srv_link *link, int fd)
 		}
 
 		osmo_sock_get_ip_and_port(fd, hostbuf, sizeof(hostbuf), portbuf, sizeof(portbuf), false);
-		LOGP(DLSS7, LOGL_INFO, "%s: created dynamic ASP %s\n", sock_name, asp->cfg.name);
+		LOGPOXS(oxs, DLSS7, LOGL_INFO, "Created dynamic ASP %s from %s connection %s\n",
+			asp->cfg.name, proto_name, sock_name);
 		asp->cfg.is_server = true;
 		asp->cfg.role = OSMO_SS7_ASP_ROLE_SG;
 		asp->cfg.local.port = oxs->cfg.local.port;
@@ -254,7 +255,7 @@ ss7_xua_server_create2(struct osmo_ss7_instance *inst,
 		return NULL;
 
 	LOGP(DLSS7, LOGL_INFO, "Creating %s Server %s:%u\n",
-		get_value_string(osmo_ss7_asp_protocol_vals, proto), local_host, local_port);
+		get_value_string(osmo_ss7_asp_protocol_vals, proto), local_host ? : "NULL", local_port);
 
 	INIT_LLIST_HEAD(&oxs->asp_list);
 
@@ -274,7 +275,7 @@ ss7_xua_server_create2(struct osmo_ss7_instance *inst,
 	ss7_xua_server_set_local_host(oxs, local_host);
 
 	LOGP(DLSS7, LOGL_INFO, "Created %s server on %s:%" PRIu16 "\n",
-		get_value_string(osmo_ss7_asp_protocol_vals, proto), local_host, local_port);
+		get_value_string(osmo_ss7_asp_protocol_vals, proto), local_host ? : "NULL", local_port);
 
 	oxs->inst = inst;
 	llist_add_tail(&oxs->list, &inst->xua_servers);
@@ -339,16 +340,16 @@ ss7_xua_server_bind(struct osmo_xua_server *xs)
 
 	rc = ss7_asp_peer_snprintf(buf, sizeof(buf), &xs->cfg.local);
 	if (rc < 0) {
-		LOGP(DLSS7, LOGL_INFO, "Failed parsing %s Server osmo_ss7_asp_peer\n", proto);
+		LOGPOXS(xs, DLSS7, LOGL_INFO, "Failed parsing %s Server osmo_ss7_asp_peer\n", proto);
 	} else {
-		LOGP(DLSS7, LOGL_INFO, "(Re)binding %s Server to %s\n",
-		     proto, buf);
+		LOGPOXS(xs, DLSS7, LOGL_INFO, "(Re)binding %s Server to %s\n",
+			proto, buf);
 	}
 
 	/* Applying xUA Server config which may have changed through VTY on the srv_link before opening it: */
 	if (xs->cfg.trans_proto == IPPROTO_SCTP) {
 		if ((rc = ss7_xua_srv_apply_sctp_init_pars(xs)) < 0)
-			LOGP(DLSS7, LOGL_NOTICE, "Failed applying %s Server SCTP INIT parameters\n", proto);
+			LOGPOXS(xs, DLSS7, LOGL_NOTICE, "Failed applying %s Server SCTP INIT parameters\n", proto);
 	}
 
 	return osmo_stream_srv_link_open(xs->server);
