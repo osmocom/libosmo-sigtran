@@ -357,7 +357,7 @@ const uint32_t *xua_msg_get_u32p(const struct xua_msg *xua, uint16_t iei, uint32
 
 const char *xua_msg_part_get_str(const struct xua_msg_part *part)
 {
-	static char __thread buf[256];
+	static char buf[256];
 
 	if (part->len == 0)
 		return "";
