@@ -435,6 +435,8 @@ OsmoSTP(config-cs7-listen)# list
   accept-asp-connections (pre-configured|dynamic-permitted)
   sctp-param init (num-ostreams|max-instreams) <0-65535>
   no sctp-param init (num-ostreams|max-instreams)
+  shutdown
+  no shutdown
 ...
 
 OsmoSTP(config-cs7-listen)# ?
@@ -454,6 +456,7 @@ OsmoSTP(config-cs7-listen)# no ?
 ...
 
 OsmoSTP(config-cs7-listen)# exit
+% NOTE: Make sure to use '[no] shutdown' command in 'listen' node in order to restart the ASP for new configs to be applied.
 OsmoSTP(config-cs7)# as my-ass m3ua
 OsmoSTP(config-cs7-as)# list
 ...
@@ -711,6 +714,7 @@ cs7 instance 0
   local-ip 127.0.0.1
   local-ip ::1
   accept-asp-connections dynamic-permitted
+  no shutdown
  sccp-address foo
   routing-indicator PC
   point-code 1.2.3

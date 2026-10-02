@@ -31,11 +31,22 @@ struct osmo_xua_server {
 		uint8_t ip_dscp;
 		enum osmo_ss7_asp_protocol proto;
 		struct {
+			/*! no listening transport (SCTP, TCP) socket */
+			bool shutdown:1;
+		} adm_state;
+		struct {
 			bool num_ostreams_present;
 			bool max_instreams_present;
 			uint16_t num_ostreams_value;
 			uint16_t max_instreams_value;
 		} sctp_init;
+
+		/* Used internally by "listen" VTY node to figure out if "no shutdown"
+		 * was done explicitly, in order to avoid automatic xUA Server
+		 * reconfiguring/restart at go_parent().
+		 * Can be dropped in the future once we make sure everybody uses
+		 * "[no] shutdown" explicitly in cfg files. */
+		bool explicit_shutdown_state_by_vty_since_node_enter;
 
 		/*! The underlaying transport protocol (one of IPPROTO_*) */
 		int trans_proto;
@@ -64,7 +75,9 @@ ss7_xua_server_create2(struct osmo_ss7_instance *inst,
 			    uint16_t local_port, const char *local_host);
 
 int
-ss7_xua_server_bind(struct osmo_xua_server *xs);
+ss7_xua_server_restart(struct osmo_xua_server *oxs);
+int
+ss7_xua_server_restart_after_reconfigure(struct osmo_xua_server *oxs);
 
 int
 ss7_xua_server_set_local_host(struct osmo_xua_server *xs, const char *local_host);

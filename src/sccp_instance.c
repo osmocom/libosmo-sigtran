@@ -850,7 +850,7 @@ osmo_sccp_simple_server_on_ss7_id(void *ctx, uint32_t ss7_id, uint32_t pc,
 	if (!xs)
 		goto out_ss7;
 
-	rc = ss7_xua_server_bind(xs);
+	rc = ss7_xua_server_restart(xs);
 	if (rc < 0)
 		goto out_xs;
 
