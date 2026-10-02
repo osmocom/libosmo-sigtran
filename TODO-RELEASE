@@ -8,3 +8,4 @@
 # If any interfaces have been removed or changed since the last public release: c:r:0.
 #library	what			description / commit summary line
 libosmocore	>1.14.2			new VTY node L_CS7_QOS_CLASS_NODE added
+libosmo-sigtran added			enum osmo_sccp_reset_reason_*, enum osmo_sccp_release_reason_*
