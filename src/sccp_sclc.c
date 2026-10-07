@@ -287,6 +287,10 @@ static int sclc_rx_cldr(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 	}
 
 	param->importance = xua_msg_get_u32(xua, SUA_IEI_IMPORTANCE);
+	/* Q.713 A.5 Return cause: "There is a one-to-one mapping between the
+	 * return cause of UDTS, XUDTS or LUDTS messages and the reason for return in
+	 * the N-NOTICE primitives"
+	 */
 	param->cause = xua_msg_get_u32(xua, SUA_IEI_CAUSE) & ~SUA_CAUSE_T_MASK;
 
 	scu = sccp_user_find(inst, param->called_addr.ssn,

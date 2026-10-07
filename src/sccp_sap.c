@@ -506,6 +506,29 @@ void sccp_release_cause_to_scu_rel_reason(enum osmo_sccp_originator *originator,
 	}
 }
 
+/* Q.711 6.2.2.2.4 Reason for return.
+ * Q.713 A.5 Return cause: "There is a one-to-one mapping between the return
+ * cause of UDTS, XUDTS or LUDTS messages and the reason for return in the
+ * N-NOTICE primitives" (ITU-T Q.713, Section 3.12 Return cause)
+ */
+const struct value_string osmo_sccp_return_reason_names[] = {
+	{ OSMO_SCCP_RETURN_REASON_NO_TRANSLATION_NATURE, "no translation for an address of such nature" },
+	{ OSMO_SCCP_RETURN_REASON_NO_TRANSLATION, "no translation for this specific address" },
+	{ OSMO_SCCP_RETURN_REASON_SUBSYSTEM_CONGESTION, "subsystem congestion" },
+	{ OSMO_SCCP_RETURN_REASON_SUBSYSTEM_FAILURE, "subsystem failure" },
+	{ OSMO_SCCP_RETURN_REASON_UNEQUIPPED_USER, "unequipped user" },
+	{ OSMO_SCCP_RETURN_REASON_MTP_FAILURE, "MTP failure" },
+	{ OSMO_SCCP_RETURN_REASON_NETWORK_CONGESTION, "network congestion" },
+	{ OSMO_SCCP_RETURN_REASON_UNQUALIFIED, "unqualified" },
+	{ OSMO_SCCP_RETURN_REASON_ERROR_IN_MSG_TRANSPORT, "error in message transport" },
+	{ OSMO_SCCP_RETURN_REASON_ERROR_IN_LOCAL_PROCESSING, "error in local processing" },
+	{ OSMO_SCCP_RETURN_REASON_DEST_CANNOT_PERFORM_REASSEMBLY, "destination cannot perform reassembly" },
+	{ OSMO_SCCP_RETURN_REASON_SCCP_FAILURE, "SCCP failure" },
+	{ OSMO_SCCP_RETURN_REASON_HOP_COUNTER_VIOLATION, "hop counter violation" },
+	{ OSMO_SCCP_RETURN_REASON_SEGMENTATION_NOT_SUPPORTED, "segmentation not supported" },
+	{ OSMO_SCCP_RETURN_REASON_SEGMENTATION_FAILURE, "segmentation failure" },
+	{}
+};
 
 /* get the Connection ID of the given SCU primitive */
 static uint32_t scu_prim_conn_id(const struct osmo_scu_prim *prim)

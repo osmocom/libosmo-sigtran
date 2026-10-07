@@ -198,6 +198,31 @@ enum osmo_sccp_release_reason_undefined {
 	OSMO_SCCP_REL_REASON_UNDEFINED = 0x100,
 };
 
+/* Q.711 6.2.2.2.4 Reason for return.
+ * Q.713 A.5 Return cause: "There is a one-to-one mapping between the return
+ * cause of UDTS, XUDTS or LUDTS messages and the reason for return in the
+ * N-NOTICE primitives" (ITU-T Q.713, Section 3.12 Return cause) */
+enum osmo_sccp_return_reason {
+	OSMO_SCCP_RETURN_REASON_NO_TRANSLATION_NATURE		= 0,
+	OSMO_SCCP_RETURN_REASON_NO_TRANSLATION			= 1,
+	OSMO_SCCP_RETURN_REASON_SUBSYSTEM_CONGESTION		= 2,
+	OSMO_SCCP_RETURN_REASON_SUBSYSTEM_FAILURE		= 3,
+	OSMO_SCCP_RETURN_REASON_UNEQUIPPED_USER			= 4,
+	OSMO_SCCP_RETURN_REASON_MTP_FAILURE			= 5,
+	OSMO_SCCP_RETURN_REASON_NETWORK_CONGESTION		= 6,
+	OSMO_SCCP_RETURN_REASON_UNQUALIFIED			= 7,
+	OSMO_SCCP_RETURN_REASON_ERROR_IN_MSG_TRANSPORT		= 8,
+	OSMO_SCCP_RETURN_REASON_ERROR_IN_LOCAL_PROCESSING	= 9,
+	OSMO_SCCP_RETURN_REASON_DEST_CANNOT_PERFORM_REASSEMBLY	= 10,
+	OSMO_SCCP_RETURN_REASON_SCCP_FAILURE			= 11,
+	OSMO_SCCP_RETURN_REASON_HOP_COUNTER_VIOLATION		= 12,
+	OSMO_SCCP_RETURN_REASON_SEGMENTATION_NOT_SUPPORTED	= 13,
+	OSMO_SCCP_RETURN_REASON_SEGMENTATION_FAILURE		= 14
+};
+extern const struct value_string osmo_sccp_return_reason_names[];
+static inline const char *osmo_sccp_return_reason_name(enum osmo_sccp_return_reason val)
+{ return get_value_string(osmo_sccp_return_reason_names, val); }
+
 /* Q.711 6.3.2.2.5 Signalling point status */
 enum osmo_sccp_sp_status {
 	OSMO_SCCP_SP_S_INACCESSIBLE	= 1,
@@ -320,8 +345,7 @@ struct osmo_scu_unitdata_param {
 struct osmo_scu_notice_param {
 	struct osmo_sccp_addr called_addr;
 	struct osmo_sccp_addr calling_addr;
-	/* ITU Q.711 6.2.2.2.4 "Reason for return":
-	 * enum sccp_return_cause (ITU Q.713 3.12), as per ITU Q.713 A.5. */
+	/* ITU Q.711 6.2.2.2.4 "Reason for return" (enum osmo_sccp_return_reason): */
 	uint32_t cause;
 	uint32_t importance; /* ITU Q.711 6.2.2.2.6, Q.713 3.19 */
 	/* user data */

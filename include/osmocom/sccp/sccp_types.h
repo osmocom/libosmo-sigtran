@@ -231,7 +231,10 @@ extern const struct value_string osmo_sccp_release_cause_names[];
 static inline const char *osmo_sccp_release_cause_name(enum sccp_release_cause val)
 { return get_value_string(osmo_sccp_release_cause_names, val); }
 
-/* ITU-T Q.713, Section 3.12 Return cause */
+/* ITU-T Q.713, Section 3.12 Return cause
+ * Q.713 A.5 Return cause: "There is a one-to-one mapping between the return
+ * cause of UDTS, XUDTS or LUDTS messages and the reason for return in the
+ * N-NOTICE primitives" (Q.711 6.2.2.2.4 Reason for return) */
 enum sccp_return_cause {
 	SCCP_RETURN_CAUSE_NO_TRANSLATION_NATURE	    = 0,
 	SCCP_RETURN_CAUSE_NO_TRANSLATION	    = 1,
