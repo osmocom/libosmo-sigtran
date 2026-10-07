@@ -28,3 +28,13 @@ route with full mask: 0.1.4/14
 route with partial mask: 0.1.0/11
 route with non-consecutive mask: 0.1.0/7.255.1
 Testing SS7 linkset/link
+ss7_asp_peer_snprintf: :0
+ss7_asp_peer_snprintf: :2905
+ss7_asp_peer_snprintf: (127.0.0.1*|::1):2905
+ss7_asp_peer_snprintf: (127.0.0.1*|::1):2905
+ss7_asp_peer_snprintf: (127.0.0.1|::1):2905
+ss7_asp_peer_snprintf: (127.0.0.1|::1*):2905
+ss7_asp_peer_snprintf: ::1*:2905
+ss7_asp_peer_snprintf: :2905
+ss7_asp_peer_snprintf: 0.0.0.0:2905
+ss7_asp_peer_snprintf: :::2905

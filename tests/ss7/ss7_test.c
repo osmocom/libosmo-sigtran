@@ -319,6 +319,131 @@ static void test_as(void)
 	OSMO_ASSERT(osmo_ss7_as_find_by_name(s7i, "as1") == NULL);
 }
 
+static void test_asp_peer(void)
+{
+	struct osmo_ss7_asp_peer peer;
+	int rc;
+	char buf[1024];
+
+	const char *hosts[] = {
+		"127.0.0.1", "::1"
+	};
+
+	ss7_asp_peer_init(&peer);
+
+	OSMO_ASSERT(ss7_asp_peer_snprintf(buf, sizeof(buf), &peer) > 0);
+	printf("ss7_asp_peer_snprintf: %s\n", buf);
+	OSMO_ASSERT(peer.idx_primary == -1);
+
+	peer.port = 2905;
+	OSMO_ASSERT(ss7_asp_peer_snprintf(buf, sizeof(buf), &peer) > 0);
+	printf("ss7_asp_peer_snprintf: %s\n", buf);
+
+	OSMO_ASSERT(ss7_asp_peer_match_host(&peer, hosts[0], false) == false);
+	OSMO_ASSERT(ss7_asp_peer_match_host(&peer, hosts[1], true) == false);
+
+	rc = ss7_asp_peer_set_hosts2(&peer, s7i, hosts, ARRAY_SIZE(hosts), 0);
+	OSMO_ASSERT(rc == 0);
+	OSMO_ASSERT(ss7_asp_peer_snprintf(buf, sizeof(buf), &peer) > 0);
+	printf("ss7_asp_peer_snprintf: %s\n", buf);
+	OSMO_ASSERT(peer.host_cnt == 2);
+	OSMO_ASSERT(peer.idx_primary == 0);
+
+	OSMO_ASSERT(ss7_asp_peer_find_host(&peer, hosts[0]) == 0);
+	OSMO_ASSERT(ss7_asp_peer_find_host(&peer, hosts[1]) == 1);
+	OSMO_ASSERT(ss7_asp_peer_find_host(&peer, "127.0.0.2") < 0);
+	OSMO_ASSERT(ss7_asp_peer_find_host(&peer, "::2") < 0);
+	OSMO_ASSERT(ss7_asp_peer_match_host(&peer, hosts[0], false) == true);
+	OSMO_ASSERT(ss7_asp_peer_match_host(&peer, hosts[1], true) == true);
+	OSMO_ASSERT(ss7_asp_peer_match_host(&peer, "127.0.0.2", false) == false);
+	OSMO_ASSERT(ss7_asp_peer_match_host(&peer, "::2", true) == false);
+
+	/* These should be no-op since the addresses are already there:*/
+	OSMO_ASSERT(ss7_asp_peer_add_host2(&peer, s7i, hosts[0], true) == 0);
+	OSMO_ASSERT(ss7_asp_peer_add_host2(&peer, s7i, hosts[1], false) == 0);
+	OSMO_ASSERT(ss7_asp_peer_snprintf(buf, sizeof(buf), &peer) > 0);
+	printf("ss7_asp_peer_snprintf: %s\n", buf);
+	OSMO_ASSERT(peer.host_cnt == 2);
+	OSMO_ASSERT(peer.idx_primary == 0);
+
+	/* This removes the primary from idx=0: */
+	OSMO_ASSERT(ss7_asp_peer_add_host2(&peer, s7i, hosts[0], false) == 0);
+	OSMO_ASSERT(ss7_asp_peer_snprintf(buf, sizeof(buf), &peer) > 0);
+	printf("ss7_asp_peer_snprintf: %s\n", buf);
+	OSMO_ASSERT(peer.host_cnt == 2);
+	OSMO_ASSERT(peer.idx_primary == -1);
+
+	/* This adds the primary to idx=1: */
+	OSMO_ASSERT(ss7_asp_peer_add_host2(&peer, s7i, hosts[1], true) == 0);
+	OSMO_ASSERT(ss7_asp_peer_snprintf(buf, sizeof(buf), &peer) > 0);
+	printf("ss7_asp_peer_snprintf: %s\n", buf);
+	OSMO_ASSERT(peer.host_cnt == 2);
+	OSMO_ASSERT(peer.idx_primary == 1);
+
+	OSMO_ASSERT(ss7_asp_peer_del_host(&peer, "127.0.0.1") == 0);
+	OSMO_ASSERT(ss7_asp_peer_snprintf(buf, sizeof(buf), &peer) > 0);
+	printf("ss7_asp_peer_snprintf: %s\n", buf);
+	/* Validate the items in the array moved: */
+	OSMO_ASSERT(ss7_asp_peer_find_host(&peer, "::1") == 0);
+	OSMO_ASSERT(peer.host_cnt == 1);
+	OSMO_ASSERT(peer.idx_primary == 0);
+
+	/* Adding an ANY_ADDR should fail, because there's already a specific address: */
+	OSMO_ASSERT(ss7_asp_peer_add_host2(&peer, s7i, "0.0.0.0", false) == -EINVAL);
+	OSMO_ASSERT(ss7_asp_peer_add_host2(&peer, s7i, "::", false) == -EINVAL);
+	OSMO_ASSERT(peer.host_cnt == 1);
+	OSMO_ASSERT(peer.idx_primary == 0);
+
+	OSMO_ASSERT(ss7_asp_peer_del_host(&peer, "::1") == 0);
+	OSMO_ASSERT(ss7_asp_peer_snprintf(buf, sizeof(buf), &peer) > 0);
+	printf("ss7_asp_peer_snprintf: %s\n", buf);
+	OSMO_ASSERT(peer.host_cnt == 0);
+	OSMO_ASSERT(peer.idx_primary == -1);
+
+	/* Test IPv4 ANY_ADDR */
+	OSMO_ASSERT(ss7_asp_peer_add_host2(&peer, s7i, "0.0.0.0", false) == 0);
+	OSMO_ASSERT(ss7_asp_peer_snprintf(buf, sizeof(buf), &peer) > 0);
+	printf("ss7_asp_peer_snprintf: %s\n", buf);
+	OSMO_ASSERT(peer.host_cnt == 1);
+	OSMO_ASSERT(peer.idx_primary == -1);
+	OSMO_ASSERT(ss7_asp_peer_find_host(&peer, "0.0.0.0") == 0);
+	OSMO_ASSERT(ss7_asp_peer_match_host(&peer, "0.0.0.0", false) == true);
+	OSMO_ASSERT(ss7_asp_peer_match_host(&peer, "127.0.0.2", false) == true);
+	OSMO_ASSERT(ss7_asp_peer_match_host(&peer, "::2", true) == false);
+
+	/* Adding an ANY_ADDR again should fail (be it IPv4 or IPv6), because there's already a specific address: */
+	OSMO_ASSERT(ss7_asp_peer_add_host2(&peer, s7i, "0.0.0.0", false) == -EINVAL);
+	OSMO_ASSERT(ss7_asp_peer_add_host2(&peer, s7i, "::", false) == -EINVAL);
+	OSMO_ASSERT(peer.host_cnt == 1);
+	OSMO_ASSERT(peer.idx_primary == -1);
+
+	OSMO_ASSERT(ss7_asp_peer_del_host(&peer, "0.0.0.0") == 0);
+	OSMO_ASSERT(peer.host_cnt == 0);
+	OSMO_ASSERT(peer.idx_primary == -1);
+
+	/* Test IPv6 ANY_ADDR */
+	OSMO_ASSERT(ss7_asp_peer_add_host2(&peer, s7i, "::", false) == 0);
+	OSMO_ASSERT(ss7_asp_peer_snprintf(buf, sizeof(buf), &peer) > 0);
+	printf("ss7_asp_peer_snprintf: %s\n", buf);
+	OSMO_ASSERT(peer.host_cnt == 1);
+	OSMO_ASSERT(peer.idx_primary == -1);
+	OSMO_ASSERT(ss7_asp_peer_find_host(&peer, "::") == 0);
+	OSMO_ASSERT(ss7_asp_peer_find_host(&peer, "0.0.0.0") < 0);
+	OSMO_ASSERT(ss7_asp_peer_match_host(&peer, "0.0.0.0", false) == true);
+	OSMO_ASSERT(ss7_asp_peer_match_host(&peer, "127.0.0.2", false) == true);
+	OSMO_ASSERT(ss7_asp_peer_match_host(&peer, "::2", true) == true);
+
+	/* Adding an ANY_ADDR again should fail (be it IPv4 or IPv6), because there's already a specific address: */
+	OSMO_ASSERT(ss7_asp_peer_add_host2(&peer, s7i, "0.0.0.0", false) == -EINVAL);
+	OSMO_ASSERT(ss7_asp_peer_add_host2(&peer, s7i, "::", false) == -EINVAL);
+	OSMO_ASSERT(peer.host_cnt == 1);
+	OSMO_ASSERT(peer.idx_primary == -1);
+
+	OSMO_ASSERT(ss7_asp_peer_del_host(&peer, "::") == 0);
+	OSMO_ASSERT(peer.host_cnt == 0);
+	OSMO_ASSERT(peer.idx_primary == -1);
+}
+
 /***********************************************************************
  * Initialization
  ***********************************************************************/
@@ -369,6 +494,7 @@ int main(int argc, char **argv)
 	test_route();
 	test_linkset();
 	test_as();
+	test_asp_peer();
 
 	/* destroy */
 	osmo_ss7_instance_destroy(s7i);
