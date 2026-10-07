@@ -464,7 +464,13 @@ static void init_logging(void)
 	msgb_talloc_ctx_init(tall_ctx, 0);
 	osmo_init_logging2(tall_ctx, &log_info);
 
+	log_set_print_category(osmo_stderr_target, 1);
+	log_set_print_category_hex(osmo_stderr_target, 0);
+	log_set_print_level(osmo_stderr_target, 1);
 	log_set_print_filename2(osmo_stderr_target, LOG_FILENAME_NONE);
+	log_set_use_color(osmo_stderr_target, 0);
+
+	osmo_fsm_log_addr(false);
 
 	for (i = 0; i < ARRAY_SIZE(log_cats); i++)
 		log_set_category_filter(osmo_stderr_target, log_cats[i], 1, LOGL_DEBUG);
@@ -473,7 +479,6 @@ static void init_logging(void)
 int main(int argc, char **argv)
 {
 	init_logging();
-	osmo_fsm_log_addr(false);
 
 	/* init */
 	OSMO_ASSERT(osmo_ss7_init() == 0);

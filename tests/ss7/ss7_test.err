@@ -1,49 +1,92 @@
-0: Creating SS7 Instance
-[0;m0: Creating Route Table system
-[0;m0: Point Code Format 8-8-8 is longer than 14 bits, odd?
-[0;mregistering user=testuser for SI 1 with priv 0x1234
-[0;mdelivering MTP-TRANSFER.ind to user testuser, priv=0x1234
-[0;mNo MTP-User for SI 1
-[0;mUnsupported Primitive
-[0;m0: Creating Route Table foobar
-[0;m0: Creating Linkset a
-[0;m0: Creating Linkset b
-[0;m0: Destroying Linkset a
-[0;m0: Destroying Linkset b
-[0;m0: Creating Linkset a
-[0;m0: Creating Linkset b
-[0;m0: Creating Link a:1
-[0;m0: Creating Link a:2
-[0;m0: Destroying Link a:1
-[0;m0: Destroying Link a:2
-[0;m0: Destroying Linkset a
-[0;m0: Destroying Linkset b
-[0;m0: Creating AS as1
-[0;mXUA_AS(as1){AS_DOWN}: Allocated
-[0;m0: Adding ASP asp1 to AS as1
-[0;m0: Restarting ASP asp1
-[0;munable to connect/bind socket: (null):0: Connection refused
-[0;mconnection closed
-[0;mretrying in 5 seconds...
-[0;m0: Unable to open stream client for ASP asp1
-[0;mXUA_ASP(asp1){ASP_DOWN}: Allocated
-[0;mXUA_ASP(asp1){ASP_DOWN}: Received Event M-ASP_UP.req
-[0;mXUA_ASP(asp1){ASP_DOWN}: Received Event ASPSM-ASP_UP_ACK
-[0;mXUA_ASP(asp1){ASP_DOWN}: T(ack) stopped
-[0;mXUA_ASP(asp1){ASP_DOWN}: state_chg to ASP_INACTIVE
-[0;mXUA_ASP(asp1){ASP_INACTIVE}: Received Event M-ASP_ACTIVE.req
-[0;mXUA_ASP(asp1){ASP_INACTIVE}: Received Event ASPTM-ASP_AC_ACK
-[0;mXUA_ASP(asp1){ASP_INACTIVE}: T(ack) stopped
-[0;mXUA_ASP(asp1){ASP_INACTIVE}: state_chg to ASP_ACTIVE
-[0;m0: Removing ASP asp1 from AS as1
-[0;m0: Removing ASP asp1 from AS as1
-[0;m0: Destroying ASP asp1
-[0;mXUA_ASP(asp1){ASP_ACTIVE}: Terminating (cause = OSMO_FSM_TERM_REQUEST)
-[0;mXUA_ASP(asp1){ASP_ACTIVE}: Freeing instance
-[0;mXUA_ASP(asp1){ASP_ACTIVE}: Deallocated
-[0;m0: Destroying AS as1
-[0;mXUA_AS(as1){AS_DOWN}: Terminating (cause = OSMO_FSM_TERM_REQUEST)
-[0;mXUA_AS(as1){AS_DOWN}: Freeing instance
-[0;mXUA_AS(as1){AS_DOWN}: Deallocated
-[0;m0: Destroying SS7 Instance
-[0;m
+DLSS7 INFO 0: Creating SS7 Instance
+DLSS7 INFO 0: Creating Route Table system
+DLSS7 NOTICE 0: Point Code Format 8-8-8 is longer than 14 bits, odd?
+DLSS7 DEBUG 0: ss7_user(testuser) registering for SI 1 with priv 0x1234
+DLSS7 DEBUG 0: ss7_user(testuser) Delivering to MTP User: MTP-TRANSFER.indication
+DLSS7 DEBUG 0: ss7_user(testuser) unregistering from SI 1 with priv 0x1234
+DLSS7 INFO 0: Creating Route Table foobar
+DLSS7 INFO 0: Creating Linkset a
+DLSS7 INFO 0: Creating Link a:0
+DLSS7 INFO 0: Creating Linkset b
+DLSS7 INFO 0: Creating Link b:0
+DLSS7 INFO 0: RT(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5,via=a,st=available) Creating route: pc=12=0.1.4 mask=0x3fff=7.255.7 prio=5 via linkset a
+DLSS7 INFO 0: CombinedLinkset(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5) RT loookup: OPC=0=0.0.0,DPC=12=0.1.4,SLS=0 -> eSLS=80: picked Normal Route via '<linkset>' round-robin style (available)
+DLSS7 INFO 0: RT(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5,via=a,st=available) Destroying route: pc=12=0.1.4 mask=0x3fff=7.255.7 prio=5 via linkset a
+DLSS7 INFO 0: RT(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5,via=a,st=available) Creating route: pc=8=0.1.0 mask=0x3ff8=7.255.0 prio=5 via linkset a
+DLSS7 INFO 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT loookup: OPC=0=0.0.0,DPC=8=0.1.0,SLS=0 -> eSLS=16: picked Normal Route via '<linkset>' round-robin style (available)
+DLSS7 INFO 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT loookup: OPC=0=0.0.0,DPC=9=0.1.1,SLS=0 -> eSLS=0: picked Normal Route via '<linkset>' round-robin style (available)
+DLSS7 INFO 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT loookup: OPC=0=0.0.0,DPC=12=0.1.4,SLS=0 -> eSLS=80: picked Normal Route via '<linkset>' round-robin style (available)
+DLSS7 INFO 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT loookup: OPC=0=0.0.0,DPC=15=0.1.7,SLS=0 -> eSLS=96: picked Normal Route via '<linkset>' round-robin style (available)
+DLSS7 INFO 0: RT(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5,via=b,st=available) Creating route: pc=12=0.1.4 mask=0x3fff=7.255.7 prio=5 via linkset b
+DLSS7 INFO 0: CombinedLinkset(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5) RT loookup: OPC=0=0.0.0,DPC=12=0.1.4,SLS=0 -> eSLS=80: picked Normal Route via '<linkset>' round-robin style (available)
+DLSS7 DEBUG 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT lookup: OPC=0=0.0.0,DPC=15=0.1.7,SLS=0 -> eSLS=96: use Normal Route via '<linkset>'
+DLSS7 INFO 0: RT(dpc=0=0.0.0,mask=0x0=0.0.0,prio=5,via=a,st=available) Creating route: pc=0=0.0.0 mask=0x0=0.0.0 prio=5 via linkset a
+DLSS7 DEBUG 0: CombinedLinkset(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5) RT lookup: OPC=0=0.0.0,DPC=12=0.1.4,SLS=0 -> eSLS=80: use Normal Route via '<linkset>'
+DLSS7 DEBUG 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT lookup: OPC=0=0.0.0,DPC=15=0.1.7,SLS=0 -> eSLS=96: use Normal Route via '<linkset>'
+DLSS7 INFO 0: CombinedLinkset(dpc=0=0.0.0,mask=0x0=0.0.0,prio=5) RT loookup: OPC=0=0.0.0,DPC=16=0.2.0,SLS=0 -> eSLS=32: picked Normal Route via '<linkset>' round-robin style (available)
+DLSS7 INFO 0: RT(dpc=0=0.0.0,mask=0x0=0.0.0,prio=5,via=a,st=available) Destroying route: pc=0=0.0.0 mask=0x0=0.0.0 prio=5 via linkset a
+DLSS7 INFO 0: RT(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5,via=b,st=available) Destroying route: pc=12=0.1.4 mask=0x3fff=7.255.7 prio=5 via linkset b
+DLSS7 INFO 0: RT(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5,via=a,st=available) Destroying route: pc=8=0.1.0 mask=0x3ff8=7.255.0 prio=5 via linkset a
+DLSS7 INFO 0: RT(dpc=8=0.1.0,mask=0x3ff9=7.255.1,prio=5,via=a,st=available) Creating route: pc=8=0.1.0 mask=0x3ff9=7.255.1 prio=5 via linkset a
+DLSS7 INFO 0: RT(dpc=8=0.1.0,mask=0x3ff9=7.255.1,prio=5,via=a,st=available) Destroying route: pc=8=0.1.0 mask=0x3ff9=7.255.1 prio=5 via linkset a
+DLSS7 INFO 0: Destroying Linkset a
+DLSS7 INFO 0: Destroying Link a:0
+DLSS7 INFO 0: Destroying Linkset b
+DLSS7 INFO 0: Destroying Link b:0
+DLSS7 INFO 0: Creating Linkset a
+DLSS7 INFO 0: Creating Linkset b
+DLSS7 INFO 0: Creating Link a:1
+DLSS7 INFO 0: Creating Link a:2
+DLSS7 INFO 0: Destroying Link a:1
+DLSS7 INFO 0: Destroying Link a:2
+DLSS7 INFO 0: Destroying Linkset a
+DLSS7 INFO 0: Destroying Linkset b
+DLSS7 DEBUG XUA_AS(as1){AS_DOWN}: Allocated
+DLSS7 INFO 0: AS(as1) Created AS
+DLSS7 INFO 0: AS(as1) Adding ASP asp1 to AS
+DLSS7 INFO 0: ASP(asp1) Restarting ASP asp1, r=:0<->l=:2905
+DLSS7 DEBUG xua_default_lm(asp1){IDLE}: Allocated
+DLSS7 DEBUG XUA_ASP(asp1){ASP_DOWN}: Allocated
+DLINP ERROR CLICONN(asp1,){CLOSED} connect: socket creation error (-22)
+DLINP DEBUG CLICONN(asp1,){CLOSED} close()
+DLINP INFO CLICONN(asp1,){WAIT_RECONNECT} retrying reconnect in 5 seconds...
+DLSS7 ERROR 0: ASP(asp1) Unable to open stream client for ASP asp1, :2905 ==> :0
+DLSS7 DEBUG XUA_ASP(asp1){ASP_DOWN}: Received Event M-ASP_UP.req
+DLSS7 DEBUG 0: ASP(asp1) Tx 8 bytes: [L2]> 01 00 03 01 00 00 00 08 
+DLSS7 ERROR 0: ASP(asp1) Cannot transmit, asp->client not connected
+DLSS7 DEBUG XUA_ASP(asp1){ASP_DOWN}: Received Event ASPSM-ASP_UP_ACK
+DLSS7 DEBUG XUA_ASP(asp1){ASP_DOWN}: state_chg to ASP_INACTIVE
+DLSS7 DEBUG XUA_ASP(asp1){ASP_INACTIVE}: Tx HEARTBEAT (0 unacked)
+DLSS7 DEBUG 0: ASP(asp1) Tx 8 bytes: [L2]> 01 00 03 03 00 00 00 08 
+DLSS7 ERROR 0: ASP(asp1) Cannot transmit, asp->client not connected
+DLSS7 DEBUG XUA_AS(as1){AS_DOWN}: Received Event ASPAS-ASP_INACTIVE.ind
+DLSS7 DEBUG XUA_AS(as1){AS_DOWN}: state_chg to AS_INACTIVE
+DLSS7 DEBUG XUA_AS(as1){AS_INACTIVE}: Broadcasting NOTIFY Type State Change:AS Inactive () to all non-DOWN ASPs
+DLSS7 DEBUG xua_default_lm(asp1){IDLE}: Received primitive M-ASP_UP.confirm
+DLSS7 DEBUG xua_default_lm(asp1){IDLE}: Received Event ASP-UP.conf
+DLSS7 ERROR xua_default_lm(asp1){IDLE}: Event ASP-UP.conf not permitted
+DLSS7 DEBUG XUA_ASP(asp1){ASP_INACTIVE}: Received Event ASPTM-ASP_AC_ACK
+DLSS7 DEBUG XUA_ASP(asp1){ASP_INACTIVE}: state_chg to ASP_ACTIVE
+DLSS7 DEBUG XUA_AS(as1){AS_INACTIVE}: Received Event ASPAS-ASP_ACTIVE.ind
+DLSS7 DEBUG XUA_AS(as1){AS_INACTIVE}: state_chg to AS_ACTIVE
+DLSS7 DEBUG XUA_AS(as1){AS_ACTIVE}: Broadcasting NOTIFY Type State Change:AS Active () to all non-DOWN ASPs
+DLSS7 DEBUG xua_default_lm(asp1){IDLE}: Received primitive M-ASP_ACTIVE.confirm
+DLSS7 DEBUG xua_default_lm(asp1){IDLE}: Received Event ASP-ACT.conf
+DLSS7 ERROR xua_default_lm(asp1){IDLE}: Event ASP-ACT.conf not permitted
+DLSS7 INFO 0: AS(as1) Removing ASP asp1 from AS
+DLSS7 INFO 0: ASP(asp1) Destroying ASP
+DLINP DEBUG CLICONN(asp1,){WAIT_RECONNECT} destroy()
+DLINP DEBUG CLICONN(asp1,){WAIT_RECONNECT} close()
+DLINP DEBUG CLICONN(asp1,){CLOSED} free(destroy)
+DLSS7 DEBUG XUA_ASP(asp1){ASP_ACTIVE}: Terminating (cause = OSMO_FSM_TERM_REQUEST)
+DLSS7 DEBUG XUA_ASP(asp1){ASP_ACTIVE}: T(beat) stopped
+DLSS7 DEBUG XUA_ASP(asp1){ASP_ACTIVE}: Freeing instance
+DLSS7 DEBUG XUA_ASP(asp1){ASP_ACTIVE}: Deallocated
+DLSS7 DEBUG xua_default_lm(asp1){IDLE}: Terminating (cause = OSMO_FSM_TERM_ERROR)
+DLSS7 DEBUG xua_default_lm(asp1){IDLE}: Freeing instance
+DLSS7 DEBUG xua_default_lm(asp1){IDLE}: Deallocated
+DLSS7 INFO 0: AS(as1) Destroying AS
+DLSS7 DEBUG XUA_AS(as1){AS_ACTIVE}: Terminating (cause = OSMO_FSM_TERM_REQUEST)
+DLSS7 DEBUG XUA_AS(as1){AS_ACTIVE}: Freeing instance
+DLSS7 DEBUG XUA_AS(as1){AS_ACTIVE}: Deallocated
+DLSS7 INFO 0: Destroying SS7 Instance
