@@ -457,9 +457,12 @@ ss7_asp_vty_test(config-cs7-as)# list
   recovery-timeout <1-2000>
   qos-class <0-7>
   routing-key RCONTEXT DPC
+  routing-key RCONTEXT DPC opc POINT_CODE MASK
+  routing-key RCONTEXT DPC opc POINT_CODE MASK si (aal2|bicc|b-isup|h248|isup|sat-isup|sccp|tup)
+  routing-key RCONTEXT DPC opc POINT_CODE MASK si (aal2|bicc|b-isup|h248|isup|sat-isup|sccp|tup) ssn SSN
   routing-key RCONTEXT DPC si (aal2|bicc|b-isup|h248|isup|sat-isup|sccp|tup)
-  routing-key RCONTEXT DPC ssn SSN
   routing-key RCONTEXT DPC si (aal2|bicc|b-isup|h248|isup|sat-isup|sccp|tup) ssn SSN
+  routing-key RCONTEXT DPC ssn SSN
   point-code override (opc|dpc) PC
   no point-code override (opc|dpc)
   point-code override patch-sccp (disabled|both)

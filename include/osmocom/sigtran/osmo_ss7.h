@@ -140,14 +140,19 @@ osmo_ss7_route_get_dest_as(struct osmo_ss7_route *rt);
  * SS7 Routing key
  ***********************************************************************/
 
+#define OSSMO_SS7_RKEY_SI_UNSET 0xff
+#define OSSMO_SS7_RKEY_SSN_UNSET 0x00
 struct osmo_ss7_routing_key {
 	uint32_t context;
 	uint32_t l_rk_id;
 
 	uint32_t pc;
-	uint8_t si;
-	uint32_t ssn;
-	/* FIXME: more complex routing keys */
+	uint8_t si; /* OSSMO_SS7_RKEY_SI_UNSET == unset */
+	uint32_t ssn; /* OSSMO_SS7_RKEY_SSN_UNSET == unset */
+
+	/* opc=0 & opc_mask=0 matches any. */
+	uint32_t opc;
+	uint32_t opc_mask;
 };
 
 

@@ -182,6 +182,8 @@ struct osmo_ss7_as *ss7_as_alloc(struct osmo_ss7_instance *inst, const char *nam
 	as->cfg.mode = OSMO_SS7_AS_TMOD_OVERRIDE;
 	as->cfg.recovery_timeout_msec = 2000;
 	as->cfg.routing_key.l_rk_id = ss7_find_free_l_rk_id(inst);
+	as->cfg.routing_key.si = OSSMO_SS7_RKEY_SI_UNSET;
+	as->cfg.routing_key.ssn = OSSMO_SS7_RKEY_SSN_UNSET;
 
 #ifdef WITH_TCAP_LOADSHARING
 	/* loadshare-tcap based id sharing */

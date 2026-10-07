@@ -322,8 +322,12 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 			as->cfg.mode_set_by_peer = true;
 		}
 		/* fill routing key */
-		as->cfg.routing_key.pc = dpc;
 		as->cfg.routing_key.context = rctx;
+		as->cfg.routing_key.pc = dpc;
+		as->cfg.routing_key.opc = 0; /* TODO: support OPC List IE */
+		as->cfg.routing_key.opc_mask = 0;
+		as->cfg.routing_key.si = OSSMO_SS7_RKEY_SI_UNSET;
+		as->cfg.routing_key.ssn = OSSMO_SS7_RKEY_SSN_UNSET;
 
 		/* add dynamic route for that routing key */
 		rt = ss7_route_create(as->inst->rtable_system, dpc, 0xFFFFFF, true, namebuf);

@@ -36,6 +36,7 @@
 #include <osmocom/vty/misc.h>
 
 #include <osmocom/sigtran/protocol/mtp.h>
+#include <osmocom/sigtran/osmo_ss7.h>
 
 #include "ss7_as.h"
 #ifdef WITH_TCAP_LOADSHARING
@@ -335,6 +336,11 @@ const struct value_string mtp_si_vals[] = {
 	"Define a routing key\n" \
 	"Routing context number\n" \
 	"Destination Point Code\n"
+#define ROUTING_KEY_OPC_ARG " opc POINT_CODE MASK"
+#define ROUTING_KEY_OPC_ARG_STRS \
+	"Match on Originating Point Code and Mask\n" \
+	"Originating Point Code\n" \
+	"Originating Point Code Mask\n"
 #define ROUTING_KEY_SI_ARG " si (aal2|bicc|b-isup|h248|isup|sat-isup|sccp|tup)"
 #define ROUTING_KEY_SI_ARG_STRS \
 	"Match on Service Indicator\n" \
@@ -352,31 +358,92 @@ const struct value_string mtp_si_vals[] = {
 	"Sub-System Number to match on\n"
 
 static int _rout_key(struct vty *vty,
-		     const char *rcontext, const char *dpc,
-		     const char *si, const char *ssn)
+		     const char *rctx_str, const char *dpc_str,
+		     const char *opc_str, const char *opc_mask_str,
+		     const char *si_str, const char *ssn_str)
 {
 	struct osmo_ss7_as *as = vty->index;
 	struct osmo_ss7_routing_key *rkey = &as->cfg.routing_key;
-	int pc;
+	int dpc, opc, opc_mask;
+	int64_t rctx;
+	uint8_t si;
+	int64_t ssn;
 
-	if (as->cfg.proto == OSMO_SS7_ASP_PROT_IPA && atoi(rcontext) != 0) {
+	if (osmo_str_to_int64(&rctx, rctx_str, 10, 0, UINT32_MAX) != 0) {
+		vty_out(vty, "Invalid Routing Context (%s)%s", rctx_str, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (as->cfg.proto == OSMO_SS7_ASP_PROT_IPA && rctx != 0) {
 		vty_out(vty, "IPA doesn't support routing contexts; only permitted routing context "
 			"is 0\n");
 		return CMD_WARNING;
 	}
 
-	pc = osmo_ss7_pointcode_parse(as->inst, dpc);
-	if (pc < 0) {
-		vty_out(vty, "Invalid point code (%s)%s", dpc, VTY_NEWLINE);
+	dpc = osmo_ss7_pointcode_parse(as->inst, dpc_str);
+	if (dpc < 0) {
+		vty_out(vty, "Invalid Point Code (%s)%s", dpc_str, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
-	rkey->pc = pc;
+	if (opc_str) {
+		OSMO_ASSERT(opc_mask_str);
+		opc = osmo_ss7_pointcode_parse(as->inst, opc_str);
+		if (opc < 0) {
+			vty_out(vty, "Invalid Originating Point Code (%s)%s", opc_str, VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+		opc_mask = osmo_ss7_pointcode_parse_mask_or_len(as->inst, opc_mask_str);
+		if (opc_mask < 0) {
+			vty_out(vty, "Invalid Originating Point Code Mask (%s)%s", opc_mask_str, VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+	} else {
+		/* Match all OPC: */
+		opc = 0;
+		opc_mask = 0;
+	}
 
-	rkey->context = atoi(rcontext);				/* FIXME: input validation */
-	rkey->si = si ? get_string_value(mtp_si_vals, si) : 0;	/* FIXME: input validation */
-	rkey->ssn = ssn ? atoi(ssn) : 0;			/* FIXME: input validation */
+	if (si_str)
+		si = get_string_value(mtp_si_vals, si_str);
+	else
+		si = OSSMO_SS7_RKEY_SI_UNSET;
 
+	if (ssn_str) {
+		if (osmo_str_to_int64(&ssn, ssn_str, 10, 0, 254 /* max(enum osmo_sccp_ssn) */) != 0) {
+			vty_out(vty, "Invalid SSN (%s)%s", ssn_str, VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+		if (ssn != OSSMO_SS7_RKEY_SSN_UNSET) {
+			if (si == OSSMO_SS7_RKEY_SI_UNSET) {
+				/* Assume si == SCCP: */
+				si = MTP_SI_SCCP;
+			}
+			if (si != MTP_SI_SCCP) {
+				vty_out(vty, "Invalid SI (%s) together with SSN (%s)%s", si_str, ssn_str, VTY_NEWLINE);
+				return CMD_WARNING;
+			}
+			if (as->cfg.proto != OSMO_SS7_ASP_PROT_SUA) {
+				/* FIXME: we may later want to support this:
+				 * M3UA: Decode SCCP early if si==SCCP in m3ua_rx_xfer().
+				 * IPA: We already parse sccp in ipa_rx_msg_up() -> patch_sccp_with_pc() */
+				vty_out(vty, "%s AS doesn't support matching on AS; only permitted on SUA AS%s",
+					osmo_ss7_asp_protocol_name(as->cfg.proto), VTY_NEWLINE);
+				return CMD_WARNING;
+			}
+		}
+	} else {
+		ssn = OSSMO_SS7_RKEY_SSN_UNSET;
+	}
+
+	rkey->context = rctx;
+	/* truncate mask to maximum. Let's avoid callers specifying arbitrary large
+	 * masks to ensure we don't fail duplicate detection with longer mask lengths */
+	rkey->pc = osmo_ss7_pc_normalize(&as->inst->cfg.pc_fmt, dpc);
+	rkey->opc = osmo_ss7_pc_normalize(&as->inst->cfg.pc_fmt, opc);
+	rkey->opc_mask = osmo_ss7_pc_normalize(&as->inst->cfg.pc_fmt, opc_mask);
+	rkey->si = si;
+	rkey->ssn = ssn;
 	return CMD_SUCCESS;
 }
 
@@ -385,7 +452,31 @@ DEFUN_ATTR(as_rout_key, as_rout_key_cmd,
 	   ROUTING_KEY_CMD_STRS,
 	   CMD_ATTR_IMMEDIATE)
 {
-	return _rout_key(vty, argv[0], argv[1], NULL, NULL);
+	return _rout_key(vty, argv[0], argv[1], NULL, NULL, NULL, NULL);
+}
+
+DEFUN_ATTR(as_rout_key_opc, as_rout_key_opc_cmd,
+	   ROUTING_KEY_CMD      ROUTING_KEY_OPC_ARG,
+	   ROUTING_KEY_CMD_STRS ROUTING_KEY_OPC_ARG_STRS,
+	   CMD_ATTR_IMMEDIATE)
+{
+	return _rout_key(vty, argv[0], argv[1], argv[2], argv[3], NULL, NULL);
+}
+
+DEFUN_ATTR(as_rout_key_opc_si, as_rout_key_opc_si_cmd,
+	   ROUTING_KEY_CMD      ROUTING_KEY_OPC_ARG      ROUTING_KEY_SI_ARG,
+	   ROUTING_KEY_CMD_STRS ROUTING_KEY_OPC_ARG_STRS ROUTING_KEY_SI_ARG_STRS,
+	   CMD_ATTR_IMMEDIATE)
+{
+	return _rout_key(vty, argv[0], argv[1], argv[2], argv[3], argv[4], NULL);
+}
+
+DEFUN_ATTR(as_rout_key_opc_si_ssn, as_rout_key_opc_si_ssn_cmd,
+	   ROUTING_KEY_CMD      ROUTING_KEY_OPC_ARG      ROUTING_KEY_SI_ARG      ROUTING_KEY_SSN_ARG,
+	   ROUTING_KEY_CMD_STRS ROUTING_KEY_OPC_ARG_STRS ROUTING_KEY_SI_ARG_STRS ROUTING_KEY_SSN_ARG_STRS,
+	   CMD_ATTR_IMMEDIATE)
+{
+	return _rout_key(vty, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }
 
 DEFUN_ATTR(as_rout_key_si, as_rout_key_si_cmd,
@@ -393,15 +484,7 @@ DEFUN_ATTR(as_rout_key_si, as_rout_key_si_cmd,
 	   ROUTING_KEY_CMD_STRS ROUTING_KEY_SI_ARG_STRS,
 	   CMD_ATTR_IMMEDIATE)
 {
-	return _rout_key(vty, argv[0], argv[1], argv[2], NULL);
-}
-
-DEFUN_ATTR(as_rout_key_ssn, as_rout_key_ssn_cmd,
-	   ROUTING_KEY_CMD      ROUTING_KEY_SSN_ARG,
-	   ROUTING_KEY_CMD_STRS ROUTING_KEY_SSN_ARG_STRS,
-	   CMD_ATTR_IMMEDIATE)
-{
-	return _rout_key(vty, argv[0], argv[1], NULL, argv[2]);
+	return _rout_key(vty, argv[0], argv[1], NULL, NULL, argv[2], NULL);
 }
 
 DEFUN_ATTR(as_rout_key_si_ssn, as_rout_key_si_ssn_cmd,
@@ -409,7 +492,15 @@ DEFUN_ATTR(as_rout_key_si_ssn, as_rout_key_si_ssn_cmd,
 	   ROUTING_KEY_CMD_STRS ROUTING_KEY_SI_ARG_STRS ROUTING_KEY_SSN_ARG_STRS,
 	   CMD_ATTR_IMMEDIATE)
 {
-	return _rout_key(vty, argv[0], argv[1], argv[2], argv[3]);
+	return _rout_key(vty, argv[0], argv[1], NULL, NULL, argv[2], argv[3]);
+}
+
+DEFUN_ATTR(as_rout_key_ssn, as_rout_key_ssn_cmd,
+	   ROUTING_KEY_CMD      ROUTING_KEY_SSN_ARG,
+	   ROUTING_KEY_CMD_STRS ROUTING_KEY_SSN_ARG_STRS,
+	   CMD_ATTR_IMMEDIATE)
+{
+	return _rout_key(vty, argv[0], argv[1], NULL, NULL, NULL, argv[2]);
 }
 
 DEFUN_ATTR(as_pc_override, as_pc_override_cmd,
@@ -572,10 +663,14 @@ void ss7_vty_write_one_as(struct vty *vty, struct osmo_ss7_as *as, bool show_dyn
 	rkey = &as->cfg.routing_key;
 	vty_out(vty, "  routing-key %u %s", rkey->context,
 		osmo_ss7_pointcode_print(as->inst, rkey->pc));
-	if (rkey->si)
+	if (rkey->opc != 0 || rkey->opc_mask != 0)
+		vty_out(vty, " opc %s %s",
+			osmo_ss7_pointcode_print(as->inst, rkey->opc),
+			osmo_ss7_pointcode_print2(as->inst, rkey->opc_mask));
+	if (rkey->si != OSSMO_SS7_RKEY_SI_UNSET)
 		vty_out(vty, " si %s",
 			get_value_string(mtp_si_vals, rkey->si));
-	if (rkey->ssn)
+	if (rkey->ssn != OSSMO_SS7_RKEY_SSN_UNSET)
 		vty_out(vty, " ssn %u", rkey->ssn);
 	vty_out(vty, "%s", VTY_NEWLINE);
 
@@ -592,10 +687,29 @@ void ss7_vty_write_one_as(struct vty *vty, struct osmo_ss7_as *as, bool show_dyn
 
 static void show_one_as(struct vty *vty, struct osmo_ss7_as *as)
 {
+	char opc[MAX_PC_STR_LEN+MAX_PC_STR_LEN+1] = { '\0' };
+	char si[16] = { '\0' };
+	char ssn[16] = { '\0' };
+
+	if (as->cfg.routing_key.opc != 0 || as->cfg.routing_key.opc_mask != 0) {
+		snprintf(opc, sizeof(opc), "%s/%s",
+			osmo_ss7_pointcode_print(as->inst, as->cfg.routing_key.opc),
+			osmo_ss7_pointcode_print2(as->inst, as->cfg.routing_key.opc_mask));
+	}
+
+	if (as->cfg.routing_key.si != OSSMO_SS7_RKEY_SI_UNSET)
+		snprintf(si, sizeof(si), "%u", as->cfg.routing_key.si);
+
+	if (as->cfg.routing_key.ssn != OSSMO_SS7_RKEY_SSN_UNSET)
+		snprintf(si, sizeof(si), "%u", as->cfg.routing_key.ssn);
+
 	vty_out(vty, "%-12s %-12s %-10u %-13s %4s %13s %3s %5s %4s %10s%s",
-		as->cfg.name, osmo_fsm_inst_state_name(as->fi), as->cfg.routing_key.context,
+		as->cfg.name,
+		osmo_fsm_inst_state_name(as->fi),
+		as->cfg.routing_key.context,
 		osmo_ss7_pointcode_print(as->inst, as->cfg.routing_key.pc),
-		"", "", "", "", "", osmo_ss7_as_traffic_mode_name(as->cfg.mode),
+		si, opc, ssn, "", "",
+		osmo_ss7_as_traffic_mode_name(as->cfg.mode),
 		VTY_NEWLINE);
 }
 
@@ -776,9 +890,12 @@ void ss7_vty_init_node_as(void)
 	install_lib_element(L_CS7_AS_NODE, &as_recov_tout_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_qos_class_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_rout_key_cmd);
+	install_lib_element(L_CS7_AS_NODE, &as_rout_key_opc_cmd);
+	install_lib_element(L_CS7_AS_NODE, &as_rout_key_opc_si_cmd);
+	install_lib_element(L_CS7_AS_NODE, &as_rout_key_opc_si_ssn_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_rout_key_si_cmd);
-	install_lib_element(L_CS7_AS_NODE, &as_rout_key_ssn_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_rout_key_si_ssn_cmd);
+	install_lib_element(L_CS7_AS_NODE, &as_rout_key_ssn_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_pc_override_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_no_pc_override_cmd);
 	install_lib_element(L_CS7_AS_NODE, &as_pc_patch_sccp_cmd);
