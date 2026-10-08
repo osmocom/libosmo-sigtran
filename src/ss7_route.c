@@ -147,6 +147,7 @@ ss7_route_alloc(struct osmo_ss7_route_table *rtbl, uint32_t pc, uint32_t mask, b
 	rt->cfg.pc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, pc);
 	rt->cfg.priority = OSMO_SS7_ROUTE_PRIO_DEFAULT;
 	rt->cfg.dyn_allocated = dynamic;
+	rt->cfg.match_as_routing_key = false;
 
 	osmo_timer_setup(&rt->t10_audit_timer, t10_audit_timer_cb, rt);
 
@@ -228,7 +229,8 @@ ss7_route_insert(struct osmo_ss7_route *rt)
 		struct osmo_ss7_route *prev_rt;
 		llist_for_each_entry(prev_rt, &clset->routes, list) {
 			if (strcmp(prev_rt->cfg.linkset_name, rt->cfg.linkset_name) == 0 &&
-			    prev_rt->cfg.dyn_allocated == rt->cfg.dyn_allocated) {
+			    prev_rt->cfg.dyn_allocated == rt->cfg.dyn_allocated &&
+			    prev_rt->cfg.match_as_routing_key == rt->cfg.match_as_routing_key) {
 				LOGPRT(rt, DLSS7, LOGL_ERROR,
 				       "Refusing to create route with existing linkset/AS name '%s'\n", rt->cfg.linkset_name);
 				return -EADDRINUSE;
@@ -384,6 +386,8 @@ const char *osmo_ss7_route_name(struct osmo_ss7_route *rt, bool list_asps)
 
 	if (rt->dest.as) {
 		struct osmo_ss7_as *as = rt->dest.as;
+		if (rt->cfg.match_as_routing_key)
+			APPEND(" match-routing-key");
 		APPEND(" via AS %s proto=%s", as->cfg.name, osmo_ss7_asp_protocol_name(as->cfg.proto));
 
 		if (list_asps) {
@@ -455,6 +459,25 @@ bool ss7_route_dest_is_available(const struct osmo_ss7_route *rt)
 	if (rt->dest.linkset)
 		return ss7_linkset_is_available(rt->dest.linkset);
 	return false;
+}
+
+bool ss7_route_is_available_for_rtlabel(const struct osmo_ss7_route *rt,
+					const struct osmo_ss7_route_label *rtlabel)
+{
+	if (!ss7_route_dest_is_available(rt))
+		return false;
+	if (rt->cfg.match_as_routing_key) {
+		struct osmo_ss7_as *as = rt->dest.as;
+		OSMO_ASSERT(as);
+		struct osmo_ss7_routing_key *rkey = &as->cfg.routing_key;
+		if (rtlabel->dpc != rkey->pc)
+			return false;
+		if ((rtlabel->opc & rkey->opc_mask) != rkey->opc)
+			return false;
+		/* TODO: match rkey->si */
+		/* TODO: match rkey->ssn */
+	}
+	return true;
 }
 
 /* Whether route mask identifies a single DPC. */

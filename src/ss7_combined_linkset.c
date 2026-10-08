@@ -193,11 +193,12 @@ static ext_sls_t osmo_ss7_instance_calc_itu_ext_sls(const struct osmo_ss7_instan
 }
 
 /* ITU Q.704 4.2.1: "current link set (combined link set)". Pick available already selected route */
-struct osmo_ss7_route *current_rt(const struct osmo_ss7_esls_entry *eslse)
+struct osmo_ss7_route *current_rt(const struct osmo_ss7_esls_entry *eslse,
+				  const struct osmo_ss7_route_label *rtlabel)
 {
-	if (eslse->normal_rt && ss7_route_is_available(eslse->normal_rt))
+	if (eslse->normal_rt && ss7_route_is_available_for_rtlabel(eslse->normal_rt, rtlabel))
 		return eslse->normal_rt;
-	if (eslse->alt_rt && ss7_route_is_available(eslse->alt_rt))
+	if (eslse->alt_rt && ss7_route_is_available_for_rtlabel(eslse->alt_rt, rtlabel))
 		return eslse->alt_rt;
 	return NULL;
 }
@@ -223,13 +224,14 @@ static struct osmo_ss7_route *ss7_combined_linkset_assign_route_roundrobin(struc
 }
 
 /* Pick an available route from Combined Linkset in a round-robin fashion, to send a message through. */
-static struct osmo_ss7_route *ss7_combined_linkset_select_route_roundrobin(struct osmo_ss7_combined_linkset *clset)
+static struct osmo_ss7_route *ss7_combined_linkset_select_route_roundrobin(struct osmo_ss7_combined_linkset *clset,
+									   const struct osmo_ss7_route_label *rtlabel)
 {
 	struct osmo_ss7_route *rt;
 
 	for (unsigned int i = 0; i < clset->num_routes; i++) {
 		rt = ss7_llist_round_robin(&clset->routes, &clset->last_route_roundrobin_tx, struct osmo_ss7_route, list);
-		if (rt && ss7_route_is_available(rt))
+		if (rt && ss7_route_is_available_for_rtlabel(rt, rtlabel))
 			return rt;
 	}
 	return NULL;
@@ -245,7 +247,7 @@ ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const
 	char buf[256];
 
 	/* First check if we have a cached route for this ESLS */
-	rt = current_rt(eslse);
+	rt = current_rt(eslse, rtlabel);
 	if (rt) {
 		if (rt == eslse->normal_rt) {
 			/* We can transmit over normal route.
@@ -279,7 +281,7 @@ ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const
 		if (!rt)
 			return NULL;
 		eslse->normal_rt = rt;
-		rt_avail = ss7_route_is_available(eslse->normal_rt);
+		rt_avail = ss7_route_is_available_for_rtlabel(eslse->normal_rt, rtlabel);
 		LOGPCLSET(clset, DLSS7, LOGL_INFO, "RT loookup: %s -> eSLS=%u: "
 			  "picked Normal Route via '%s' round-robin style (%s)\n",
 			  ss7_route_label_to_str(buf, sizeof(buf), inst, rtlabel), esls,
@@ -295,7 +297,7 @@ ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const
 
 	/* Normal route unavailable and no alternative route (or unavailable too).
 	 * start ITU Q.704 section 7 "forced rerouting" procedure: */
-	rt = ss7_combined_linkset_select_route_roundrobin(clset);
+	rt = ss7_combined_linkset_select_route_roundrobin(clset, rtlabel);
 	if (rt) {
 		eslse->alt_rt = rt;
 		LOGPCLSET(clset, DLSS7, LOGL_NOTICE, "RT Lookup: %s -> eSLS=%u: "
