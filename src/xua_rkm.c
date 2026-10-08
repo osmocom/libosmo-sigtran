@@ -330,7 +330,7 @@ static int handle_rkey_reg(struct osmo_ss7_asp *asp, struct xua_msg *inner,
 		as->cfg.routing_key.ssn = OSSMO_SS7_RKEY_SSN_UNSET;
 
 		/* add dynamic route for that routing key */
-		rt = ss7_route_create(as->inst->rtable_system, dpc, 0xFFFFFF, true, namebuf);
+		rt = ss7_as_routing_key_create_route(as);
 		if (!rt) {
 			LOGPASP(asp, DLSS7, LOGL_ERROR, "RKM: Cannot insert route for DPC %s / as %s\n",
 				osmo_ss7_pointcode_print(asp->inst, dpc), namebuf);
@@ -431,7 +431,6 @@ static int handle_rkey_dereg(struct osmo_ss7_asp *asp, uint32_t rctx,
 {
 	struct osmo_ss7_instance *inst = asp->inst;
 	struct osmo_ss7_as *as;
-	struct osmo_ss7_route *rt;
 
 	as = ss7_asp_find_as_by_rctx(asp, rctx);
 	if (!as) {
@@ -451,19 +450,13 @@ static int handle_rkey_dereg(struct osmo_ss7_asp *asp, uint32_t rctx,
 		return -1;
 	}
 
-	rt = ss7_route_table_find_route_by_dpc_mask(inst->rtable_system,
-						    as->cfg.routing_key.pc, 0xffffff,
-						    true);
-	if (!rt) {
-		msgb_append_dereg_res(resp, M3UA_RKM_DEREG_ERR_UNKNOWN, 0);
-		return -1;
-	}
-
 	LOGPASP(asp, DLSS7, LOGL_INFO, "RKM: De-Registering rctx %u for DPC %s\n",
 		rctx, osmo_ss7_pointcode_print(inst, as->cfg.routing_key.pc));
 
-	/* Release the associated route */
-	ss7_route_destroy(rt);
+	if (ss7_as_routing_key_delete_route(as) < 0) {
+		msgb_append_dereg_res(resp, M3UA_RKM_DEREG_ERR_UNKNOWN, 0);
+		return -1;
+	}
 	/* Dissassociate the ASP from the dynamically allocated AS.
 	 * The AS may be freed if it is serving no more ASPs. */
 	ss7_as_del_asp(as, asp);

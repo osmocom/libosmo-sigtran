@@ -741,3 +741,49 @@ bool osmo_ss7_as_tmode_compatible_xua(struct osmo_ss7_as *as, uint32_t m3ua_tmt)
 	return false;
 
 }
+
+/* Add a fully qualified route in routing table based on configured AS routing-key: */
+struct osmo_ss7_route *ss7_as_routing_key_create_route(struct osmo_ss7_as *as)
+{
+	struct osmo_ss7_route *rt;
+	int rc;
+
+	rt = ss7_route_alloc(as->inst->rtable_system,
+			     as->cfg.routing_key.pc,
+			     0xFFFFFF,
+			     true);
+	if (!rt)
+		goto ret_free;
+	if (ss7_route_set_linkset(rt, as->cfg.name) < 0)
+		goto ret_free;
+
+	rc = ss7_route_insert(rt);
+	if (rc == -EADDRINUSE) {
+		talloc_free(rt);
+		return ss7_route_table_find_route_by_dpc_mask(as->inst->rtable_system,
+							      as->cfg.routing_key.pc,
+							      0xFFFFFF,
+							      true);
+	}
+
+	return rt;
+
+ret_free:
+	talloc_free(rt);
+	return NULL;
+}
+
+/* Remove fully qualified route in routing table based on configured AS routing-key: */
+int ss7_as_routing_key_delete_route(struct osmo_ss7_as *as)
+{
+	struct osmo_ss7_route *rt;
+	rt = ss7_route_table_find_route_by_dpc_mask(as->inst->rtable_system,
+						    as->cfg.routing_key.pc, 0xffffff,
+						    true);
+	if (!rt)
+		return -ENOENT;
+
+	/* Release the associated route */
+	ss7_route_destroy(rt);
+	return 0;
+}
