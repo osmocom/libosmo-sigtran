@@ -757,6 +757,8 @@ struct osmo_ss7_route *ss7_as_routing_key_create_route(struct osmo_ss7_as *as)
 	if (ss7_route_set_linkset(rt, as->cfg.name) < 0)
 		goto ret_free;
 
+	rt->cfg.match_as_routing_key = true;
+
 	rc = ss7_route_insert(rt);
 	if (rc == -EADDRINUSE) {
 		talloc_free(rt);
@@ -782,6 +784,13 @@ int ss7_as_routing_key_delete_route(struct osmo_ss7_as *as)
 						    true);
 	if (!rt)
 		return -ENOENT;
+
+	if (!rt->cfg.match_as_routing_key) {
+		LOGPAS(as, DLSS7, LOGL_NOTICE,
+		       "Skip removing route %s without match-routing-key field!\n",
+		       osmo_ss7_route_name(rt, false));
+		return 0;
+	}
 
 	/* Release the associated route */
 	ss7_route_destroy(rt);

@@ -10,6 +10,7 @@
 
 struct osmo_ss7_instance;
 struct osmo_ss7_route_table;
+struct osmo_ss7_route_label;
 struct osmo_ss7_linkset;
 struct osmo_ss7_as;
 
@@ -54,6 +55,7 @@ struct osmo_ss7_route {
 		uint32_t priority;
 		uint8_t qos_class;
 		bool dyn_allocated;
+		bool match_as_routing_key;
 	} cfg;
 };
 
@@ -75,6 +77,8 @@ int ss7_route_insert(struct osmo_ss7_route *rt);
 
 bool ss7_route_dest_is_available(const struct osmo_ss7_route *rt);
 bool ss7_route_is_available(const struct osmo_ss7_route *rt);
+bool ss7_route_is_available_for_rtlabel(const struct osmo_ss7_route *rt,
+					const struct osmo_ss7_route_label *rtlabel);
 
 bool ss7_route_is_fully_qualified(const struct osmo_ss7_route *rt);
 static inline bool ss7_route_is_summary(const struct osmo_ss7_route *rt)
