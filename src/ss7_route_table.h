@@ -9,14 +9,40 @@
  ***********************************************************************/
 
 struct osmo_ss7_instance;
+struct osmo_mtp_transfer_param;
 enum osmo_ss7_route_status;
 
+/* Q.703 3.1.4 Message labelling
+ * Q.704 2.2 Routing label
+ * Q.704 15.2 Label */
+#define OSMO_SS7_RTLABEL_SLS_UNSET 0
 struct osmo_ss7_route_label {
-	uint32_t opc;
-	uint32_t dpc;
-	uint8_t sls;
+	uint32_t opc; /* Q.704 2.2.3 */
+	uint32_t dpc; /* Q.704 2.2.3 */
+	uint8_t sls;  /* Q.704 2.2.4 */
 };
 char *ss7_route_label_to_str(char *buf, size_t buf_len, const struct osmo_ss7_instance *inst, const struct osmo_ss7_route_label *rtlb);
+
+/* MTP3 Label: SI + Routing Label + User Part specific label
+ * Q.703 3.1.4 Message labelling
+ * Q.704 2.1.5, 2.1.6, 2.3.1
+ * Q.704 14.1 (Common characteristics of message signal unit formats) */
+struct osmo_ss7_route_label_mtp3 {
+	struct osmo_ss7_route_label rtlabel;
+	uint8_t si; /* Q.704 14.2.1 Service indicator */
+#if 0
+	union { /* Q.704 14.3 Label (User Part labels) */
+		struct { /* si = MTP_SI_SCCP */
+			uint32_t ssn;
+		} sccp;
+	} u;
+#endif
+};
+char *ss7_route_label_mtp3_to_str(char *buf, size_t buf_len,
+				  const struct osmo_ss7_instance *inst,
+				  const struct osmo_ss7_route_label_mtp3 *rtlb);
+void mtp_xfer_param_to_route_label_mtp3(struct osmo_ss7_route_label_mtp3 *rtlb,
+					const struct osmo_mtp_transfer_param *param);
 
 struct osmo_ss7_route_table {
 	/*! member in list of routing tables */
@@ -45,7 +71,8 @@ struct osmo_ss7_route *
 ss7_route_table_find_route_by_dpc_mask_as(const struct osmo_ss7_route_table *rtbl, uint32_t dpc,
 				       uint32_t mask, const struct osmo_ss7_as *as, bool dynamic);
 struct osmo_ss7_route *
-ss7_route_table_lookup_route(const struct osmo_ss7_route_table *rtbl, const struct osmo_ss7_route_label *rtlabel);
+ss7_route_table_lookup_route(const struct osmo_ss7_route_table *rtbl,
+			     const struct osmo_ss7_route_label_mtp3 *rtlabel);
 bool ss7_route_table_dpc_is_accessible(const struct osmo_ss7_route_table *rtbl, uint32_t dpc);
 bool ss7_route_table_dpc_is_accessible_via_as(const struct osmo_ss7_route_table *rtbl, uint32_t dpc, const struct osmo_ss7_as *as);
 bool ss7_route_table_dpc_is_accessible_skip_as(const struct osmo_ss7_route_table *rtbl, uint32_t dpc, const struct osmo_ss7_as *as);

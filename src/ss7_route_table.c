@@ -50,6 +50,35 @@ char *ss7_route_label_to_str(char *buf, size_t buf_len, const struct osmo_ss7_in
 	return buf;
 }
 
+char *ss7_route_label_mtp3_to_str(char *buf, size_t buf_len, const struct osmo_ss7_instance *inst, const struct osmo_ss7_route_label_mtp3 *rtlb)
+{
+	char buf_opc[MAX_PC_STR_LEN];
+	char buf_dpc[MAX_PC_STR_LEN];
+
+	if (buf_len == 0)
+		return NULL;
+	snprintf(buf, buf_len, "OPC=%u=%s,DPC=%u=%s,SLS=%u,SI=%u=%s",
+		 rtlb->rtlabel.opc, osmo_ss7_pointcode_print_buf(buf_opc, sizeof(buf_opc), inst, rtlb->rtlabel.opc),
+		 rtlb->rtlabel.dpc, osmo_ss7_pointcode_print_buf(buf_dpc, sizeof(buf_dpc), inst, rtlb->rtlabel.dpc),
+		 rtlb->rtlabel.sls,
+		 rtlb->si, get_value_string(mtp_si_vals, rtlb->si));
+	return buf;
+}
+
+/* convert osmo_mtp_transfer_param to osmo_ss7_route_label_mtp3 */
+void mtp_xfer_param_to_route_label_mtp3(struct osmo_ss7_route_label_mtp3 *rtlb,
+					const struct osmo_mtp_transfer_param *param)
+{
+	*rtlb = (struct osmo_ss7_route_label_mtp3){
+		.rtlabel = {
+			.opc = param->dpc,
+			.dpc = param->opc,
+			.sls = param->sls,
+		},
+		.si = param->sio & 0x0f,
+	};
+}
+
 /***********************************************************************
  * SS7 Route Tables
  ***********************************************************************/
@@ -302,20 +331,24 @@ void ss7_route_table_del_routes_by_linkset(struct osmo_ss7_route_table *rtbl, st
 /* Choose a specific route to transmit a packet.
  * Note: This function potentially modifies loadsharing state context of chosen combined linkset. */
 struct osmo_ss7_route *
-ss7_route_table_lookup_route(const struct osmo_ss7_route_table *rtbl, const struct osmo_ss7_route_label *rtlabel)
+ss7_route_table_lookup_route(const struct osmo_ss7_route_table *rtbl,
+			     const struct osmo_ss7_route_label_mtp3 *rtlabel)
 {
 	struct osmo_ss7_combined_linkset *clset;
 	struct osmo_ss7_route *rt;
-	struct osmo_ss7_route_label rtlb = {
-		.opc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, rtlabel->opc),
-		.dpc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, rtlabel->dpc),
-		.sls = rtlabel->sls,
+	struct osmo_ss7_route_label_mtp3 rtlb = {
+		.rtlabel = {
+			.opc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, rtlabel->rtlabel.opc),
+			.dpc = osmo_ss7_pc_normalize(&rtbl->inst->cfg.pc_fmt, rtlabel->rtlabel.dpc),
+			.sls = rtlabel->rtlabel.sls,
+		},
+		.si = rtlabel->si,
 	};
 	/* we assume the combined_links are sorted by mask length, i.e. more
 	 * specific combined links first, and less specific combined links with shorter
 	 * mask later */
 	llist_for_each_entry(clset, &rtbl->combined_linksets, list) {
-		if ((rtlb.dpc & clset->cfg.mask) != clset->cfg.pc)
+		if ((rtlb.rtlabel.dpc & clset->cfg.mask) != clset->cfg.pc)
 			continue;
 		rt = ss7_combined_linkset_lookup_route(clset, &rtlb);
 		if (!rt)

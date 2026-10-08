@@ -16,7 +16,7 @@
 
 struct osmo_ss7_user;
 struct osmo_ss7_route_table;
-struct osmo_ss7_route_label;
+struct osmo_ss7_route_label_mtp3;
 struct osmo_sccp_instance;
 
 enum ss7_instance_xua_timer {
@@ -107,7 +107,8 @@ ss7_instance_alloc(void *ctx, uint32_t id);
 
 uint32_t ss7_find_free_l_rk_id(struct osmo_ss7_instance *inst);
 struct osmo_ss7_route *
-ss7_instance_lookup_route(struct osmo_ss7_instance *inst, const struct osmo_ss7_route_label *rtlabel);
+ss7_instance_lookup_route(struct osmo_ss7_instance *inst,
+			  const struct osmo_ss7_route_label_mtp3 *rtlabel);
 
 #define _LOGSS7(inst, subsys, level, fmt, args ...) \
 	LOGP(subsys, level, "%u: " fmt, inst ? (inst)->cfg.id : 0, ## args)

@@ -736,18 +736,19 @@ DEFUN(show_cs7_route_bindingtable, show_cs7_route_bindingtable_cmd,
 }
 
 DEFUN(show_cs7_route_lookup, show_cs7_route_lookup_cmd,
-      "show cs7 instance <0-15> route-lookup POINT_CODE from POINT_CODE sls <0-15> [list-asps]",
+      "show cs7 instance <0-15> route-lookup POINT_CODE from POINT_CODE sls <0-15> si SI [list-asps]",
       SHOW_STR CS7_STR INST_STR INST_STR
       "Look up route\n" "Destination PC\n"
       "From\n" "Origin PC\n"
       "SLS\n" "SLS value\n"
+      "Service Indicator\n" "SI value\n"
       "List ASPs of the AS if route points to an AS")
 {
 	int id = atoi(argv[0]);
-	bool list_asps = argc > 4;
+	bool list_asps = argc > 5;
 	struct osmo_ss7_instance *inst;
 	struct osmo_ss7_route *rt;
-	struct osmo_ss7_route_label rtlabel = {};
+	struct osmo_ss7_route_label_mtp3 rtlabel = {};
 	int pc;
 
 	inst = osmo_ss7_instance_find(id);
@@ -761,22 +762,23 @@ DEFUN(show_cs7_route_lookup, show_cs7_route_lookup_cmd,
 		vty_out(vty, "Invalid point code (%s)%s", argv[1], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
-	rtlabel.dpc = pc;
+	rtlabel.rtlabel.dpc = pc;
 
 	pc = osmo_ss7_pointcode_parse(inst, argv[2]);
 	if (pc < 0 || !osmo_ss7_pc_is_valid((uint32_t)pc)) {
 		vty_out(vty, "Invalid point code (%s)%s", argv[2], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
-	rtlabel.opc = pc;
+	rtlabel.rtlabel.opc = pc;
 
-	rtlabel.sls = atoi(argv[3]);
+	rtlabel.rtlabel.sls = atoi(argv[3]);
+	rtlabel.si = atoi(argv[4]);
 
 	rt = ss7_instance_lookup_route(inst, &rtlabel);
 	if (!rt) {
 		char buf[256];
 		vty_out(vty, "No route found for label '%s'%s",
-			ss7_route_label_to_str(buf, sizeof(buf), inst, &rtlabel), VTY_NEWLINE);
+			ss7_route_label_mtp3_to_str(buf, sizeof(buf), inst, &rtlabel), VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 

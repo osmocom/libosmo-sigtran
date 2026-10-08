@@ -10,20 +10,20 @@ DLSS7 INFO 0: Creating Link a:0
 DLSS7 INFO 0: Creating Linkset b
 DLSS7 INFO 0: Creating Link b:0
 DLSS7 INFO 0: RT(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5,via=a,st=available) Creating route: pc=12=0.1.4 mask=0x3fff=7.255.7 prio=5 via linkset a
-DLSS7 INFO 0: CombinedLinkset(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5) RT loookup: OPC=0=0.0.0,DPC=12=0.1.4,SLS=0 -> eSLS=80: picked Normal Route via '<linkset>' round-robin style (available)
+DLSS7 INFO 0: CombinedLinkset(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5) RT loookup: OPC=0=0.0.0,DPC=12=0.1.4,SLS=0,SI=3=sccp -> eSLS=80: picked Normal Route via '<linkset>' round-robin style (available)
 DLSS7 INFO 0: RT(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5,via=a,st=available) Destroying route: pc=12=0.1.4 mask=0x3fff=7.255.7 prio=5 via linkset a
 DLSS7 INFO 0: RT(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5,via=a,st=available) Creating route: pc=8=0.1.0 mask=0x3ff8=7.255.0 prio=5 via linkset a
-DLSS7 INFO 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT loookup: OPC=0=0.0.0,DPC=8=0.1.0,SLS=0 -> eSLS=16: picked Normal Route via '<linkset>' round-robin style (available)
-DLSS7 INFO 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT loookup: OPC=0=0.0.0,DPC=9=0.1.1,SLS=0 -> eSLS=0: picked Normal Route via '<linkset>' round-robin style (available)
-DLSS7 INFO 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT loookup: OPC=0=0.0.0,DPC=12=0.1.4,SLS=0 -> eSLS=80: picked Normal Route via '<linkset>' round-robin style (available)
-DLSS7 INFO 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT loookup: OPC=0=0.0.0,DPC=15=0.1.7,SLS=0 -> eSLS=96: picked Normal Route via '<linkset>' round-robin style (available)
+DLSS7 INFO 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT loookup: OPC=0=0.0.0,DPC=8=0.1.0,SLS=0,SI=3=sccp -> eSLS=16: picked Normal Route via '<linkset>' round-robin style (available)
+DLSS7 INFO 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT loookup: OPC=0=0.0.0,DPC=9=0.1.1,SLS=0,SI=3=sccp -> eSLS=0: picked Normal Route via '<linkset>' round-robin style (available)
+DLSS7 INFO 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT loookup: OPC=0=0.0.0,DPC=12=0.1.4,SLS=0,SI=3=sccp -> eSLS=80: picked Normal Route via '<linkset>' round-robin style (available)
+DLSS7 INFO 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT loookup: OPC=0=0.0.0,DPC=15=0.1.7,SLS=0,SI=3=sccp -> eSLS=96: picked Normal Route via '<linkset>' round-robin style (available)
 DLSS7 INFO 0: RT(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5,via=b,st=available) Creating route: pc=12=0.1.4 mask=0x3fff=7.255.7 prio=5 via linkset b
-DLSS7 INFO 0: CombinedLinkset(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5) RT loookup: OPC=0=0.0.0,DPC=12=0.1.4,SLS=0 -> eSLS=80: picked Normal Route via '<linkset>' round-robin style (available)
-DLSS7 DEBUG 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT lookup: OPC=0=0.0.0,DPC=15=0.1.7,SLS=0 -> eSLS=96: use Normal Route via '<linkset>'
+DLSS7 INFO 0: CombinedLinkset(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5) RT loookup: OPC=0=0.0.0,DPC=12=0.1.4,SLS=0,SI=3=sccp -> eSLS=80: picked Normal Route via '<linkset>' round-robin style (available)
+DLSS7 DEBUG 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT lookup: OPC=0=0.0.0,DPC=15=0.1.7,SLS=0,SI=3=sccp -> eSLS=96: use Normal Route via '<linkset>'
 DLSS7 INFO 0: RT(dpc=0=0.0.0,mask=0x0=0.0.0,prio=5,via=a,st=available) Creating route: pc=0=0.0.0 mask=0x0=0.0.0 prio=5 via linkset a
-DLSS7 DEBUG 0: CombinedLinkset(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5) RT lookup: OPC=0=0.0.0,DPC=12=0.1.4,SLS=0 -> eSLS=80: use Normal Route via '<linkset>'
-DLSS7 DEBUG 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT lookup: OPC=0=0.0.0,DPC=15=0.1.7,SLS=0 -> eSLS=96: use Normal Route via '<linkset>'
-DLSS7 INFO 0: CombinedLinkset(dpc=0=0.0.0,mask=0x0=0.0.0,prio=5) RT loookup: OPC=0=0.0.0,DPC=16=0.2.0,SLS=0 -> eSLS=32: picked Normal Route via '<linkset>' round-robin style (available)
+DLSS7 DEBUG 0: CombinedLinkset(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5) RT lookup: OPC=0=0.0.0,DPC=12=0.1.4,SLS=0,SI=3=sccp -> eSLS=80: use Normal Route via '<linkset>'
+DLSS7 DEBUG 0: CombinedLinkset(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5) RT lookup: OPC=0=0.0.0,DPC=15=0.1.7,SLS=0,SI=3=sccp -> eSLS=96: use Normal Route via '<linkset>'
+DLSS7 INFO 0: CombinedLinkset(dpc=0=0.0.0,mask=0x0=0.0.0,prio=5) RT loookup: OPC=0=0.0.0,DPC=16=0.2.0,SLS=0,SI=3=sccp -> eSLS=32: picked Normal Route via '<linkset>' round-robin style (available)
 DLSS7 INFO 0: RT(dpc=0=0.0.0,mask=0x0=0.0.0,prio=5,via=a,st=available) Destroying route: pc=0=0.0.0 mask=0x0=0.0.0 prio=5 via linkset a
 DLSS7 INFO 0: RT(dpc=12=0.1.4,mask=0x3fff=7.255.7,prio=5,via=b,st=available) Destroying route: pc=12=0.1.4 mask=0x3fff=7.255.7 prio=5 via linkset b
 DLSS7 INFO 0: RT(dpc=8=0.1.0,mask=0x3ff8=7.255.0,prio=5,via=a,st=available) Destroying route: pc=8=0.1.0 mask=0x3ff8=7.255.0 prio=5 via linkset a

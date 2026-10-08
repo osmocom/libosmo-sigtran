@@ -10,7 +10,7 @@
 
 struct osmo_ss7_instance;
 struct osmo_ss7_link;
-struct osmo_ss7_route_label;
+struct osmo_ss7_route_label_mtp3;
 
 #define NUM_EXT_SLS 128
 typedef uint8_t ext_sls_t; /* range: 0-127, 7 bit */
@@ -56,7 +56,8 @@ ss7_combined_linkset_add_route(struct osmo_ss7_combined_linkset *clset, struct o
 void
 ss7_combined_linkset_del_route(struct osmo_ss7_route *rt);
 struct osmo_ss7_route *
-ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const struct osmo_ss7_route_label *rtlabel);
+ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset,
+				  const struct osmo_ss7_route_label_mtp3 *rtlabel);
 bool ss7_combined_linkset_is_available(const struct osmo_ss7_combined_linkset *clset);
 
 #define LOGPCLSET(clset, subsys, level, fmt, args ...) do { \

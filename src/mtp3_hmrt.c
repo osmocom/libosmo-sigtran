@@ -54,15 +54,12 @@
 int mtp3_hmrt_message_for_routing(struct osmo_ss7_instance *inst, struct xua_msg *xua)
 {
 	uint32_t dpc = xua->mtp.dpc;
-	struct osmo_ss7_route_label rtlabel = {
-		.opc = xua->mtp.opc,
-		.dpc = xua->mtp.dpc,
-		.sls = xua->mtp.sls,
-	};
+	struct osmo_ss7_route_label_mtp3 rtlabel;
 	struct osmo_ss7_route *rt;
 
 	/* find route for OPC+DPC+SLS: */
 	/* FIXME: unify with gen_mtp_transfer_req_xua() */
+	mtp_xfer_param_to_route_label_mtp3(&rtlabel, &xua->mtp);
 	rt = ss7_instance_lookup_route(inst, &rtlabel);
 	if (rt) {
 		/* FIXME: DPC SP restart? */

@@ -172,7 +172,8 @@ bool ss7_combined_linkset_is_available(const struct osmo_ss7_combined_linkset *c
 	return avail;
 }
 
-static ext_sls_t osmo_ss7_instance_calc_itu_ext_sls(const struct osmo_ss7_instance *inst, const struct osmo_ss7_route_label *rtlabel)
+static ext_sls_t osmo_ss7_instance_calc_itu_ext_sls(const struct osmo_ss7_instance *inst,
+						    const struct osmo_ss7_route_label *rtlabel)
 {
 	/* Take 6 bits from OPC and DPC according to config: */
 	uint8_t opc6 = (uint8_t)((rtlabel->opc >> inst->cfg.opc_shift) & 0x3f);
@@ -194,7 +195,7 @@ static ext_sls_t osmo_ss7_instance_calc_itu_ext_sls(const struct osmo_ss7_instan
 
 /* ITU Q.704 4.2.1: "current link set (combined link set)". Pick available already selected route */
 struct osmo_ss7_route *current_rt(const struct osmo_ss7_esls_entry *eslse,
-				  const struct osmo_ss7_route_label *rtlabel)
+				  const struct osmo_ss7_route_label_mtp3 *rtlabel)
 {
 	if (eslse->normal_rt && ss7_route_is_available_for_rtlabel(eslse->normal_rt, rtlabel))
 		return eslse->normal_rt;
@@ -225,7 +226,7 @@ static struct osmo_ss7_route *ss7_combined_linkset_assign_route_roundrobin(struc
 
 /* Pick an available route from Combined Linkset in a round-robin fashion, to send a message through. */
 static struct osmo_ss7_route *ss7_combined_linkset_select_route_roundrobin(struct osmo_ss7_combined_linkset *clset,
-									   const struct osmo_ss7_route_label *rtlabel)
+									   const struct osmo_ss7_route_label_mtp3 *rtlabel)
 {
 	struct osmo_ss7_route *rt;
 
@@ -238,11 +239,12 @@ static struct osmo_ss7_route *ss7_combined_linkset_select_route_roundrobin(struc
 }
 
 struct osmo_ss7_route *
-ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const struct osmo_ss7_route_label *rtlabel)
+ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset,
+				  const struct osmo_ss7_route_label_mtp3 *rtlabel)
 {
 	struct osmo_ss7_route *rt;
 	struct osmo_ss7_instance *inst = clset->rtable->inst;
-	ext_sls_t esls = osmo_ss7_instance_calc_itu_ext_sls(inst, rtlabel);
+	ext_sls_t esls = osmo_ss7_instance_calc_itu_ext_sls(inst, &rtlabel->rtlabel);
 	struct osmo_ss7_esls_entry *eslse = &clset->esls_table[esls];
 	char buf[256];
 
@@ -255,14 +257,14 @@ ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const
 			if (eslse->alt_rt) {
 				LOGPCLSET(clset, DLSS7, LOGL_NOTICE, "RT lookup: %s -> eSLS=%u: "
 					  "Normal Route via '%s' became available, drop use of Alternative Route via '%s'\n",
-					  ss7_route_label_to_str(buf, sizeof(buf), inst, rtlabel), esls,
+					  ss7_route_label_mtp3_to_str(buf, sizeof(buf), inst, rtlabel), esls,
 					  eslse->normal_rt->dest.as ? eslse->normal_rt->dest.as->cfg.name : "<linkset>",
 					  eslse->alt_rt->dest.as ? eslse->alt_rt->dest.as->cfg.name : "<linkset>");
 				eslse->alt_rt = NULL;
 			}
 			LOGPCLSET(clset, DLSS7, LOGL_DEBUG,
 				  "RT lookup: %s -> eSLS=%u: use Normal Route via '%s'\n",
-				  ss7_route_label_to_str(buf, sizeof(buf), inst, rtlabel), esls,
+				  ss7_route_label_mtp3_to_str(buf, sizeof(buf), inst, rtlabel), esls,
 				  eslse->normal_rt->dest.as ? eslse->normal_rt->dest.as->cfg.name : "<linkset>");
 			return rt;
 		}
@@ -284,7 +286,7 @@ ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const
 		rt_avail = ss7_route_is_available_for_rtlabel(eslse->normal_rt, rtlabel);
 		LOGPCLSET(clset, DLSS7, LOGL_INFO, "RT loookup: %s -> eSLS=%u: "
 			  "picked Normal Route via '%s' round-robin style (%s)\n",
-			  ss7_route_label_to_str(buf, sizeof(buf), inst, rtlabel), esls,
+			  ss7_route_label_mtp3_to_str(buf, sizeof(buf), inst, rtlabel), esls,
 			  rt->dest.as ? rt->dest.as->cfg.name : "<linkset>",
 			  rt_avail ? "available" : "unavailable");
 		if (rt_avail) {
@@ -302,14 +304,14 @@ ss7_combined_linkset_lookup_route(struct osmo_ss7_combined_linkset *clset, const
 		eslse->alt_rt = rt;
 		LOGPCLSET(clset, DLSS7, LOGL_NOTICE, "RT Lookup: %s -> eSLS=%u: "
 			  "Normal Route via '%s' unavailable, picked Alternative Route via '%s' round-robin style\n",
-			  ss7_route_label_to_str(buf, sizeof(buf), inst, rtlabel), esls,
+			  ss7_route_label_mtp3_to_str(buf, sizeof(buf), inst, rtlabel), esls,
 			  eslse->normal_rt->dest.as ? eslse->normal_rt->dest.as->cfg.name : "<linkset>",
 			  eslse->alt_rt->dest.as ? eslse->alt_rt->dest.as->cfg.name : "<linkset>");
 	} else {
 		/* No alternative route found, NULL is returned. */
 		LOGPCLSET(clset, DLSS7, LOGL_INFO, "RT Lookup: %s -> eSLS=%u: "
 			  "Normal Route via '%s' unavailable, all Alternative Routes unavailable\n",
-			  ss7_route_label_to_str(buf, sizeof(buf), inst, rtlabel), esls,
+			  ss7_route_label_mtp3_to_str(buf, sizeof(buf), inst, rtlabel), esls,
 			  eslse->normal_rt->dest.as ? eslse->normal_rt->dest.as->cfg.name : "<linkset>");
 	}
 	return rt;

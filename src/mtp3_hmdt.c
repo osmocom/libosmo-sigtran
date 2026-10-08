@@ -82,7 +82,7 @@ static int mtp3_hmdt_rx_msg_for_local_unavailable_part(struct osmo_ss7_instance 
 	struct xua_msg *xua;
 	char buf_orig_opc[MAX_PC_STR_LEN];
 	char buf_orig_dpc[MAX_PC_STR_LEN];
-	struct osmo_ss7_route_label rtlabel;
+	struct osmo_ss7_route_label_mtp3 rtlabel;
 	struct osmo_ss7_route *rt;
 
 	if (osmo_ss7_pc_is_local(inst, orig_xua->mtp.opc)) {
@@ -95,11 +95,7 @@ static int mtp3_hmdt_rx_msg_for_local_unavailable_part(struct osmo_ss7_instance 
 
 	/* We should only be sending DUPU to M3UA peers, hence why we don't
 	 * simply call  mtp3_hmrt_message_for_routing() here. */
-	rtlabel = (struct osmo_ss7_route_label){
-		.opc = orig_xua->mtp.dpc,
-		.dpc = orig_xua->mtp.opc,
-		.sls = orig_xua->mtp.sls,
-	};
+	mtp_xfer_param_to_route_label_mtp3(&rtlabel, &orig_xua->mtp);
 	rt = ss7_instance_lookup_route(inst, &rtlabel);
 	if (!rt) {
 		LOGSS7(inst, LOGL_NOTICE, "Tx DUPU %u=%s User %u=%s to concerned SP %u=%s: no route!\n",

@@ -141,7 +141,7 @@ static int gen_mtp_transfer_req_xua(struct osmo_sccp_instance *inst,
 {
 	struct osmo_sccp_addr calling;
 	struct osmo_ss7_route *rt;
-	struct osmo_ss7_route_label rtlabel;
+	struct osmo_ss7_route_label_mtp3 rtlabel;
 
 	/* this is a bit fishy due to the different requirements of
 	 * classic SSCP/MTP compared to various SIGTRAN stackings.
@@ -165,17 +165,13 @@ static int gen_mtp_transfer_req_xua(struct osmo_sccp_instance *inst,
 	if (called->presence & OSMO_SCCP_ADDR_T_PC)
 		xua->mtp.dpc = called->pc;
 
-	rtlabel = (struct osmo_ss7_route_label){
-		.opc = xua->mtp.opc,
-		.dpc = xua->mtp.dpc,
-		.sls = xua->mtp.sls,
-	};
-
+	/* TODO: Add SSN to rtlabel */
+	mtp_xfer_param_to_route_label_mtp3(&rtlabel, &xua->mtp);
 	rt = ss7_instance_lookup_route(inst->ss7, &rtlabel);
 	if (!rt) {
 		char buf[256];
 		LOGPSCI(inst, LOGL_ERROR, "MTP-TRANSFER.req from SCCP for %s: no route!\n",
-			ss7_route_label_to_str(buf, sizeof(buf), inst->ss7, &rtlabel));
+			ss7_route_label_mtp3_to_str(buf, sizeof(buf), inst->ss7, &rtlabel));
 		sccp_rout_fail_enqueue(inst, xua, SCCP_RETURN_CAUSE_MTP_FAILURE, xua->hdr.msg_class == SUA_MSGC_CO);
 		return -1;
 	}
