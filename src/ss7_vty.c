@@ -609,7 +609,7 @@ static void vty_dump_rtable(struct vty *vty, struct osmo_ss7_route_table *rtbl, 
 			default:
 				OSMO_ASSERT(0);
 			}
-			vty_out(vty, "%-16s %-5s %c %c %u %-19s %-7s %-7s %-7s %-3s%s",
+			vty_out(vty, "%-16s %-5s %c %c %u %-19s %-7s %-7s %-7s %-3s %-17s%s",
 				rt_str,
 				clsetavail_str,
 				' ',
@@ -620,6 +620,7 @@ static void vty_dump_rtable(struct vty *vty, struct osmo_ss7_route_table *rtbl, 
 				nonadj_str,
 				rtavail_str,
 				rt->cfg.dyn_allocated ? "dyn" : "",
+				rt->cfg.match_as_routing_key ? "match-routing-key" : "",
 				VTY_NEWLINE);
 		}
 	}

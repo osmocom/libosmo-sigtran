@@ -436,6 +436,9 @@ static int _rout_key(struct vty *vty,
 		ssn = OSSMO_SS7_RKEY_SSN_UNSET;
 	}
 
+	/* Drop previous route if exists: */
+	ss7_as_routing_key_delete_route(as);
+
 	rkey->context = rctx;
 	/* truncate mask to maximum. Let's avoid callers specifying arbitrary large
 	 * masks to ensure we don't fail duplicate detection with longer mask lengths */
@@ -444,6 +447,13 @@ static int _rout_key(struct vty *vty,
 	rkey->opc_mask = osmo_ss7_pc_normalize(&as->inst->cfg.pc_fmt, opc_mask);
 	rkey->si = si;
 	rkey->ssn = ssn;
+
+	/* Add fully qualified route for routing-key: */
+	if (ss7_as_routing_key_create_route(as) < 0) {
+		vty_out(vty, "Failed adding dynamic match-routing-key route for AS %s!%s",
+			as->cfg.name, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
 	return CMD_SUCCESS;
 }
 
