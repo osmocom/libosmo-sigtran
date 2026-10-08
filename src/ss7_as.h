@@ -200,6 +200,9 @@ struct osmo_ss7_asp *ss7_as_find_asp_by_remote_asp_id(const struct osmo_ss7_as *
 						      const struct osmo_ss7_asp *excl_asp);
 void ss7_as_loadshare_binding_table_reset(struct osmo_ss7_as *as);
 
+struct osmo_ss7_route *ss7_as_routing_key_create_route(struct osmo_ss7_as *as);
+int ss7_as_routing_key_delete_route(struct osmo_ss7_as *as);
+
 void ss7_as_del_asp_update_llist_round_robin(struct osmo_ss7_as *as, struct osmo_ss7_asp *asp, struct ss7_as_asp_assoc **state);
 #define ss7_as_asp_assoc_llist_round_robin(as, state) \
 	ss7_llist_round_robin(&(as)->assoc_asp_list, (void **)state, struct ss7_as_asp_assoc, as_entry)
