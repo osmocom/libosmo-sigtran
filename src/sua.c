@@ -35,6 +35,7 @@
 
 #include <osmocom/netif/stream.h>
 
+#include <osmocom/sigtran/mtp_sap.h>
 #include <osmocom/sigtran/sccp_sap.h>
 #include <osmocom/sigtran/protocol/mtp.h>
 #include <osmocom/sigtran/protocol/sua.h>
