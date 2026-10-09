@@ -37,7 +37,14 @@ static inline const char *osmo_mtp_prim_type_name(enum osmo_mtp_prim_type val)
 }
 
 /* ITU Q.704 14.2 Service information octet. See enum mtp_si_ni00 in mtp.h. */
-#define MTP_SIO(service, net_ind)	((((net_ind) & 0x3) << 6) | ((service) & 0xF))
+#define MTP_SIO_EXT(service, net_ind, mp) \
+	((((net_ind) & 0x3) << 6) | \
+	 (((mp) & 0x3) << 4) | \
+	 ((service) & 0xf))
+#define MTP_SIO(service, net_ind) MTP_SIO_EXT(service, net_ind, 0)
+#define MTP_SIO_NI(sio)	(((sio) >> 6) & 0x3)
+#define MTP_SIO_MP(sio)	(((sio) >> 4) & 0x3)
+#define MTP_SIO_SI(sio)	((sio) & 0xf)
 
 struct osmo_mtp_transfer_param {
 	uint32_t opc;
