@@ -43,7 +43,7 @@ static struct xua_msg *gen_duna_ret_msg(struct osmo_ss7_instance *inst, const st
 	struct xua_msg_part *rctx_ie;
 	unsigned int num_rctx = 0;
 	uint32_t *rctx_raw = NULL;
-	uint32_t aff_pc = htonl(orig_xua->mtp.dpc);
+	uint32_t aff_pc = htonl(orig_xua->mtp.rtlabel.dpc);
 
 	if ((rctx_ie = xua_msg_find_tag(orig_xua, M3UA_IEI_ROUTE_CTX))) {
 		rctx_raw = (uint32_t *) rctx_ie->dat;
@@ -54,8 +54,8 @@ static struct xua_msg *gen_duna_ret_msg(struct osmo_ss7_instance *inst, const st
 	OSMO_ASSERT(xua);
 
 	xua->mtp = orig_xua->mtp;
-	xua->mtp.opc = orig_xua->mtp.dpc;
-	xua->mtp.dpc = orig_xua->mtp.opc;
+	xua->mtp.rtlabel.opc = orig_xua->mtp.rtlabel.dpc;
+	xua->mtp.rtlabel.dpc = orig_xua->mtp.rtlabel.opc;
 	return xua;
 }
 
@@ -65,18 +65,18 @@ int mtp3_rtpc_rx_msg_for_inaccessible_sp(struct osmo_ss7_instance *inst, const s
 	struct xua_msg *xua;
 	char buf_orig_opc[MAX_PC_STR_LEN];
 	char buf_orig_dpc[MAX_PC_STR_LEN];
-	struct osmo_ss7_route_label rtlabel;
+	struct ss7_mtp3_rtlabel mtp3_rtlabel_tfp;
 	struct osmo_ss7_route *rt;
 
 	/* Start T8 */
-	if (ss7_instance_t8_inaccessible_sp_running(inst, orig_xua->mtp.dpc)) {
+	if (ss7_instance_t8_inaccessible_sp_running(inst, orig_xua->mtp.rtlabel.dpc)) {
 		/* T8 is running for this SP, inhibit Tx of transfer prohibited */
 		LOGSS7(inst, LOGL_DEBUG, "Tx TFP (DUNA) inaccessible SP %u=%s to concerned SP %u=%s: inhibit due to T8\n",
-		       orig_xua->mtp.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.dpc),
-		       orig_xua->mtp.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.opc));
+		       orig_xua->mtp.rtlabel.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.rtlabel.dpc),
+		       orig_xua->mtp.rtlabel.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.rtlabel.opc));
 		return 0;
 	}
-	ss7_instance_t8_inaccessible_sp_start(inst, orig_xua->mtp.dpc);
+	ss7_instance_t8_inaccessible_sp_start(inst, orig_xua->mtp.rtlabel.dpc);
 
 	/* "transfer prohibited RTPC -> HMRT", "To concerned SP or STP".
 	 * See also Q.704 13.2 Transfer-prohibited. */
@@ -89,45 +89,43 @@ int mtp3_rtpc_rx_msg_for_inaccessible_sp(struct osmo_ss7_instance *inst, const s
 	 * Best match for it is DUNA, so DUNA we send.
 	 */
 
-	if (osmo_ss7_pc_is_local(inst, orig_xua->mtp.opc)) {
+	if (osmo_ss7_pc_is_local(inst, orig_xua->mtp.rtlabel.opc)) {
 		xua = gen_duna_ret_msg(inst, orig_xua);
 		return mtp3_hmdt_message_for_distribution(inst, xua);
 	}
 
 	/* We should only be sending DUNA to M3UA peers, hence why we don't
 	 * simply call  mtp3_hmrt_message_for_routing() here. */
-	rtlabel = (struct osmo_ss7_route_label){
-		.opc = orig_xua->mtp.dpc,
-		.dpc = orig_xua->mtp.opc,
-		.sls = orig_xua->mtp.sls,
-	};
-	rt = ss7_instance_lookup_route(inst, &rtlabel);
+	mtp3_rtlabel_tfp = orig_xua->mtp;
+	mtp3_rtlabel_tfp.rtlabel.opc = orig_xua->mtp.rtlabel.dpc;
+	mtp3_rtlabel_tfp.rtlabel.dpc = orig_xua->mtp.rtlabel.opc;
+	rt = ss7_instance_lookup_route(inst, &mtp3_rtlabel_tfp);
 	if (!rt) {
 		LOGSS7(inst, LOGL_NOTICE, "Tx TFP (DUNA) inaccessible SP %u=%s to concerned SP %u=%s: no route!\n",
-		       orig_xua->mtp.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.dpc),
-		       orig_xua->mtp.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.opc));
+		       orig_xua->mtp.rtlabel.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.rtlabel.dpc),
+		       orig_xua->mtp.rtlabel.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.rtlabel.opc));
 		return 0;
 	}
 	if (!rt->dest.as) {
 		LOGSS7(inst, LOGL_ERROR, "Tx TFP (DUNA) inaccessible SP %u=%s to concerned SP %u=%s: unsupported for linkset!\n",
-		       orig_xua->mtp.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.dpc),
-		       orig_xua->mtp.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.opc));
+		       orig_xua->mtp.rtlabel.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.rtlabel.dpc),
+		       orig_xua->mtp.rtlabel.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.rtlabel.opc));
 		return 0;
 	}
 
 	switch (rt->dest.as->cfg.proto) {
 	case OSMO_SS7_ASP_PROT_M3UA:
 		LOGSS7(inst, LOGL_INFO, "Message received for inaccessible SP %u=%s. Tx TFP (DUNA) to concerned SP %u=%s\n",
-		       orig_xua->mtp.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.dpc),
-		       orig_xua->mtp.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.opc));
+		       orig_xua->mtp.rtlabel.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.rtlabel.dpc),
+		       orig_xua->mtp.rtlabel.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.rtlabel.opc));
 		xua = gen_duna_ret_msg(inst, orig_xua);
 		return m3ua_tx_xua_as(rt->dest.as, xua);
 	case OSMO_SS7_ASP_PROT_IPA:
 		/* FIXME: No DUNA in IPA, maybe send SUA CLDR (SCCP UDTS) instead? */
 		LOGSS7(inst, LOGL_INFO, "Message received for inaccessible SP %u=%s, "
 		       "but concerned SP %u=%s is IPA-based and doesn't support TFP (DUNA)\n",
-		       orig_xua->mtp.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.dpc),
-		       orig_xua->mtp.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.opc));
+		       orig_xua->mtp.rtlabel.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.rtlabel.dpc),
+		       orig_xua->mtp.rtlabel.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.rtlabel.opc));
 		return 0;
 	default:
 		LOGSS7(inst, LOGL_ERROR, "DUNA message for ASP of unknown protocol %u\n",

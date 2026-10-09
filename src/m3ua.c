@@ -520,27 +520,27 @@ const struct xua_dialect xua_dialect_m3ua = {
 	},
 };
 
-/* convert osmo_mtp_transfer_param to m3ua_data_hdr */
-void mtp_xfer_param_to_m3ua_dh(struct m3ua_data_hdr *mdh,
-				const struct osmo_mtp_transfer_param *param)
+/* convert ss7_mtp3_rtlabel to m3ua_data_hdr */
+void mtp3_rtlabel_to_m3ua_dh(struct m3ua_data_hdr *mdh,
+			     const struct ss7_mtp3_rtlabel *rtlb)
 {
-	mdh->opc = htonl(param->opc);
-	mdh->dpc = htonl(param->dpc);
-	mdh->si = MTP_SIO_SI(param->sio);
-	mdh->ni = MTP_SIO_NI(param->sio);
-	mdh->mp = MTP_SIO_MP(param->sio);
-	mdh->sls = param->sls;
+	mdh->opc = htonl(rtlb->rtlabel.opc);
+	mdh->dpc = htonl(rtlb->rtlabel.dpc);
+	mdh->si = MTP_SIO_SI(rtlb->sio);
+	mdh->ni = MTP_SIO_NI(rtlb->sio);
+	mdh->mp = MTP_SIO_MP(rtlb->sio);
+	mdh->sls = rtlb->rtlabel.sls;
 }
 
-/* convert m3ua_data_hdr to osmo_mtp_transfer_param */
-void m3ua_dh_to_xfer_param(struct osmo_mtp_transfer_param *param,
-			   const struct m3ua_data_hdr *mdh)
+/* convert m3ua_data_hdr to ss7_mtp3_rtlabel */
+void m3ua_dh_to_mtp3_rtlabel(struct ss7_mtp3_rtlabel *rtlb,
+			     const struct m3ua_data_hdr *mdh)
 {
-	param->opc = ntohl(mdh->opc);
-	param->dpc = ntohl(mdh->dpc);
-	param->sls = mdh->sls;
+	rtlb->rtlabel.opc = ntohl(mdh->opc);
+	rtlb->rtlabel.dpc = ntohl(mdh->dpc);
+	rtlb->rtlabel.sls = mdh->sls;
 	/* re-construct SIO */
-	param->sio = MTP_SIO_EXT(mdh->si, mdh->ni, mdh->mp);
+	rtlb->sio = MTP_SIO_EXT(mdh->si, mdh->ni, mdh->mp);
 }
 
 struct msgb *m3ua_msgb_alloc(const char *name)
@@ -924,12 +924,12 @@ static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	/* store the MTP-level information in the xua_msg for use by
 	 * higher layer protocols */
 	dh = (struct m3ua_data_hdr *) data_ie->dat;
-	m3ua_dh_to_xfer_param(&xua->mtp, dh);
+	m3ua_dh_to_mtp3_rtlabel(&xua->mtp, dh);
 	LOGPASP(asp, DLM3UA, LOGL_DEBUG,
 		"%s(): M3UA data header: opc=%u=%s dpc=%u=%s sls=%u\n",
-		__func__, xua->mtp.opc, osmo_ss7_pointcode_print(asp->inst, xua->mtp.opc),
-		xua->mtp.dpc, osmo_ss7_pointcode_print2(asp->inst, xua->mtp.dpc),
-		xua->mtp.sls);
+		__func__, xua->mtp.rtlabel.opc, osmo_ss7_pointcode_print(asp->inst, xua->mtp.rtlabel.opc),
+		xua->mtp.rtlabel.dpc, osmo_ss7_pointcode_print2(asp->inst, xua->mtp.rtlabel.dpc),
+		xua->mtp.rtlabel.sls);
 
 	rc = xua_find_as_for_asp(&as, asp, rctx_ie);
 	if (rc)
@@ -943,8 +943,8 @@ static int m3ua_rx_xfer(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 	}
 
 	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_TOTAL);
-	OSMO_ASSERT(xua->mtp.sls <= 0xf);
-	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_SLS_0 + xua->mtp.sls);
+	OSMO_ASSERT(xua->mtp.rtlabel.sls <= 0xf);
+	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_SLS_0 + xua->mtp.rtlabel.sls);
 
 	if (rctx_ie) {
 		/* remove ROUTE_CTX as in the routing case we want to add a new

@@ -55,14 +55,14 @@ static struct xua_msg *gen_dupu_ret_msg(enum osmo_ss7_asp_protocol proto, uint8_
 			rctx = xua_msg_part_get_u32(rctx_ie);
 			num_rctx = 1;
 		}
-		xua = m3ua_encode_dupu(&rctx, num_rctx, orig_xua->mtp.dpc, user_part, cause, info_str);
+		xua = m3ua_encode_dupu(&rctx, num_rctx, orig_xua->mtp.rtlabel.dpc, user_part, cause, info_str);
 		break;
 	case OSMO_SS7_ASP_PROT_SUA:
 		if ((rctx_ie = xua_msg_find_tag(orig_xua, SUA_IEI_ROUTE_CTX))) {
 			rctx = xua_msg_part_get_u32(rctx_ie);
 			num_rctx = 1;
 		}
-		xua = sua_encode_dupu(&rctx, num_rctx, orig_xua->mtp.dpc, user_part, cause, info_str);
+		xua = sua_encode_dupu(&rctx, num_rctx, orig_xua->mtp.rtlabel.dpc, user_part, cause, info_str);
 		break;
 	default:
 		OSMO_ASSERT(0);
@@ -70,8 +70,8 @@ static struct xua_msg *gen_dupu_ret_msg(enum osmo_ss7_asp_protocol proto, uint8_
 	OSMO_ASSERT(xua);
 
 	xua->mtp = orig_xua->mtp;
-	xua->mtp.opc = orig_xua->mtp.dpc;
-	xua->mtp.dpc = orig_xua->mtp.opc;
+	xua->mtp.rtlabel.opc = orig_xua->mtp.rtlabel.dpc;
+	xua->mtp.rtlabel.dpc = orig_xua->mtp.rtlabel.opc;
 	return xua;
 }
 
@@ -82,10 +82,9 @@ static int mtp3_hmdt_rx_msg_for_local_unavailable_part(struct osmo_ss7_instance 
 	struct xua_msg *xua;
 	char buf_orig_opc[MAX_PC_STR_LEN];
 	char buf_orig_dpc[MAX_PC_STR_LEN];
-	struct osmo_ss7_route_label rtlabel;
 	struct osmo_ss7_route *rt;
 
-	if (osmo_ss7_pc_is_local(inst, orig_xua->mtp.opc)) {
+	if (osmo_ss7_pc_is_local(inst, orig_xua->mtp.rtlabel.opc)) {
 		/* This shouldn't happen, if a MTP3 User sends data down the
 		 * stack it should also be there to receive it back and hence we
 		 * shouldn't have entered this step... */
@@ -95,24 +94,19 @@ static int mtp3_hmdt_rx_msg_for_local_unavailable_part(struct osmo_ss7_instance 
 
 	/* We should only be sending DUPU to M3UA peers, hence why we don't
 	 * simply call  mtp3_hmrt_message_for_routing() here. */
-	rtlabel = (struct osmo_ss7_route_label){
-		.opc = orig_xua->mtp.dpc,
-		.dpc = orig_xua->mtp.opc,
-		.sls = orig_xua->mtp.sls,
-	};
-	rt = ss7_instance_lookup_route(inst, &rtlabel);
+	rt = ss7_instance_lookup_route(inst, &orig_xua->mtp);
 	if (!rt) {
 		LOGSS7(inst, LOGL_NOTICE, "Tx DUPU %u=%s User %u=%s to concerned SP %u=%s: no route!\n",
-		       orig_xua->mtp.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.dpc),
+		       orig_xua->mtp.rtlabel.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.rtlabel.dpc),
 		       user_part, get_value_string(mtp_si_vals, user_part),
-		       orig_xua->mtp.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.opc));
+		       orig_xua->mtp.rtlabel.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.rtlabel.opc));
 		return 0;
 	}
 	if (!rt->dest.as) {
 		LOGSS7(inst, LOGL_ERROR, "Tx DUPU %u=%s User %u=%s to concerned SP %u=%s: unsupported for linkset!\n",
-		       orig_xua->mtp.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.dpc),
+		       orig_xua->mtp.rtlabel.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.rtlabel.dpc),
 		       user_part, get_value_string(mtp_si_vals, user_part),
-		       orig_xua->mtp.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.opc));
+		       orig_xua->mtp.rtlabel.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.rtlabel.opc));
 		return 0;
 	}
 
@@ -120,18 +114,18 @@ static int mtp3_hmdt_rx_msg_for_local_unavailable_part(struct osmo_ss7_instance 
 	case OSMO_SS7_ASP_PROT_M3UA:
 	case OSMO_SS7_ASP_PROT_SUA:
 		LOGSS7(inst, LOGL_INFO, "Message received for unavailable SP %u=%s User %u=%s. Tx DUPU to concerned SP %u=%s\n",
-		       orig_xua->mtp.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.dpc),
+		       orig_xua->mtp.rtlabel.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.rtlabel.dpc),
 		       user_part, get_value_string(mtp_si_vals, user_part),
-		       orig_xua->mtp.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.opc));
+		       orig_xua->mtp.rtlabel.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.rtlabel.opc));
 		xua = gen_dupu_ret_msg(rt->dest.as->cfg.proto, user_part, orig_xua);
 		return m3ua_tx_xua_as(rt->dest.as, xua);
 	case OSMO_SS7_ASP_PROT_IPA:
 		/* FIXME: No DUPU in IPA, maybe send SUA CLDR (SCCP UDTS) instead? (see send_back_udts()) */
 		LOGSS7(inst, LOGL_INFO, "Message received for unavailable SP %u=%s User %u=%s, "
 		       "but concerned SP %u=%s is IPA-based and doesn't support DUPU\n",
-		       orig_xua->mtp.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.dpc),
+		       orig_xua->mtp.rtlabel.dpc, osmo_ss7_pointcode_print_buf(buf_orig_dpc, sizeof(buf_orig_dpc), inst, orig_xua->mtp.rtlabel.dpc),
 		       user_part, get_value_string(mtp_si_vals, user_part),
-		       orig_xua->mtp.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.opc));
+		       orig_xua->mtp.rtlabel.opc, osmo_ss7_pointcode_print_buf(buf_orig_opc, sizeof(buf_orig_opc), inst, orig_xua->mtp.rtlabel.opc));
 		return 0;
 	default:
 		LOGSS7(inst, LOGL_ERROR, "DUPU message for ASP of unknown protocol %u\n",
@@ -158,7 +152,7 @@ static struct osmo_mtp_prim *m3ua_to_xfer_ind(struct xua_msg *xua)
 	prim = mtp_prim_xfer_ind_alloc(NULL,
 				       data_ie->dat + sizeof(*data_hdr),
 				       data_ie->len - sizeof(*data_hdr));
-	m3ua_dh_to_xfer_param(&prim->u.transfer, data_hdr);
+	mtp3_rtlabel_to_mtp_xfer_param(&prim->u.transfer, &xua->mtp);
 
 	return prim;
 }
@@ -177,7 +171,6 @@ static int deliver_to_mtp_user(const struct osmo_ss7_user *osu, struct xua_msg *
 		rc = -1;
 		goto ret_free;
 	}
-	prim->u.transfer = xua->mtp;
 
 	rc = ss7_user_mtp_sap_prim_up(osu, prim);
 

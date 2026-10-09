@@ -160,7 +160,7 @@ static void scoc_fsm_idle(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 			conn->remote_pc = conn->calling_addr.pc;
 		else {
 			/* Hack to get the MTP label here ?!? */
-			conn->remote_pc = xua->mtp.opc;
+			conn->remote_pc = xua->mtp.rtlabel.opc;
 		}
 
 		rc = sua_addr_parse(&conn->called_addr, xua, SUA_IEI_DEST_ADDR);
@@ -284,7 +284,7 @@ static void scoc_fsm_conn_pend_out(struct osmo_fsm_inst *fi, uint32_t event, voi
 		 * MTP-TRANSFER.indication primitive which conveyed the
 		 * CC message [plus the MTP-SAP instance]) is associated
 		 * with the connection section. */
-		conn->remote_pc = xua->mtp.opc;
+		conn->remote_pc = xua->mtp.rtlabel.opc;
 
 		osmo_fsm_inst_state_chg(fi, S_ACTIVE, 0, 0);
 		/* If CR which was used to initiate this connection had excessive Optional Data which we had to cache,
@@ -326,7 +326,7 @@ static void scoc_fsm_wait_conn_conf(struct osmo_fsm_inst *fi, uint32_t event, vo
 		 * MTP-TRANSFER.indication primitive which conveyed the
 		 * CC message [plus the MTP-SAP instance]) is associated
 		 * with the connection section. */
-		conn->remote_pc = xua->mtp.opc;
+		conn->remote_pc = xua->mtp.rtlabel.opc;
 
 		/* released to SCRC */
 		sccp_conn_xua_gen_relre_and_send(conn, conn->release_cause, NULL);

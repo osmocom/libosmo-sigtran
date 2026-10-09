@@ -53,17 +53,12 @@
  */
 int mtp3_hmrt_message_for_routing(struct osmo_ss7_instance *inst, struct xua_msg *xua)
 {
-	uint32_t dpc = xua->mtp.dpc;
-	struct osmo_ss7_route_label rtlabel = {
-		.opc = xua->mtp.opc,
-		.dpc = xua->mtp.dpc,
-		.sls = xua->mtp.sls,
-	};
+	uint32_t dpc = xua->mtp.rtlabel.dpc;
 	struct osmo_ss7_route *rt;
 
 	/* find route for OPC+DPC+SLS: */
 	/* FIXME: unify with gen_mtp_transfer_req_xua() */
-	rt = ss7_instance_lookup_route(inst, &rtlabel);
+	rt = ss7_instance_lookup_route(inst, &xua->mtp);
 	if (rt) {
 		/* FIXME: DPC SP restart? */
 		/* FIXME: DPC Congested? */
@@ -82,8 +77,8 @@ int mtp3_hmrt_message_for_routing(struct osmo_ss7_instance *inst, struct xua_msg
 			}
 
 			rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TX_MSU_TOTAL);
-			OSMO_ASSERT(xua->mtp.sls <= 0xf);
-			rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TX_MSU_SLS_0 + xua->mtp.sls);
+			OSMO_ASSERT(xua->mtp.rtlabel.sls <= 0xf);
+			rate_ctr_inc2(as->ctrg, SS7_AS_CTR_TX_MSU_SLS_0 + xua->mtp.rtlabel.sls);
 
 			switch (as->cfg.proto) {
 			case OSMO_SS7_ASP_PROT_M3UA:
@@ -126,12 +121,14 @@ int mtp3_hmrt_mtp_xfer_request_l4_to_l3(struct osmo_ss7_instance *inst, const st
 {
 	struct m3ua_data_hdr data_hdr;
 	struct xua_msg *xua;
+	struct ss7_mtp3_rtlabel mtp3_rtlabel;
 
 	/* convert from osmo_mtp_prim MTP-TRANSFER.req to xua_msg */
-	mtp_xfer_param_to_m3ua_dh(&data_hdr, param);
+	mtp_xfer_param_to_mtp3_rtlabel(&mtp3_rtlabel, param);
+	mtp3_rtlabel_to_m3ua_dh(&data_hdr, &mtp3_rtlabel);
 	xua = m3ua_xfer_from_data(&data_hdr, user_data, user_data_len);
 	OSMO_ASSERT(xua);
-	xua->mtp = *param;
+	xua->mtp = mtp3_rtlabel;
 
 	/* normally we would call mtp3_hmrt_message_for_routing() here, if we were to follow the state
 	 * diagrams of the ITU-T Q.70x specifications.  However, what if a local MTP user sends a

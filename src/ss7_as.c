@@ -549,12 +549,12 @@ static struct osmo_ss7_asp *current_asp(const struct osmo_ss7_as *as, const stru
 	return NULL;
 }
 
-static struct osmo_ss7_asp *ss7_as_select_asp_loadshare(struct osmo_ss7_as *as, const struct osmo_mtp_transfer_param *mtp)
+static struct osmo_ss7_asp *ss7_as_select_asp_loadshare(struct osmo_ss7_as *as, const struct ss7_mtp3_rtlabel *rtlb)
 {
 	as_ext_sls_t as_ext_sls;
 	struct osmo_ss7_asp *asp;
 
-	as_ext_sls = osmo_ss7_instance_calc_itu_as_ext_sls(as, mtp->opc, mtp->sls);
+	as_ext_sls = osmo_ss7_instance_calc_itu_as_ext_sls(as, rtlb->rtlabel.opc, rtlb->rtlabel.sls);
 	struct osmo_ss7_as_esls_entry *aeslse = &as->aesls_table[as_ext_sls];
 
 	/* First check if we have a cached route for this ESLS */
@@ -566,19 +566,19 @@ static struct osmo_ss7_asp *ss7_as_select_asp_loadshare(struct osmo_ss7_as *as, 
 			if (aeslse->alt_asp) {
 				LOGPAS(as, DLSS7, LOGL_NOTICE, "Tx Loadshare: OPC=%u=%s,SLS=%u -> eSLS=%u: "
 				       "Normal ASP '%s' became available, drop use of Alternative ASP '%s'\n",
-				       mtp->opc, osmo_ss7_pointcode_print(as->inst, mtp->opc),
-				       mtp->sls, as_ext_sls, asp->cfg.name, aeslse->alt_asp->cfg.name);
+				       rtlb->rtlabel.opc, osmo_ss7_pointcode_print(as->inst, rtlb->rtlabel.opc),
+				       rtlb->rtlabel.sls, as_ext_sls, asp->cfg.name, aeslse->alt_asp->cfg.name);
 				aeslse->alt_asp = NULL;
 			}
 			LOGPAS(as, DLSS7, LOGL_DEBUG, "Tx Loadshare: OPC=%u=%s,SLS=%u -> eSLS=%u: use Normal ASP '%s'\n",
-			       mtp->opc, osmo_ss7_pointcode_print(as->inst, mtp->opc),
-			       mtp->sls, as_ext_sls, asp->cfg.name);
+			       rtlb->rtlabel.opc, osmo_ss7_pointcode_print(as->inst, rtlb->rtlabel.opc),
+			       rtlb->rtlabel.sls, as_ext_sls, asp->cfg.name);
 			return asp;
 		}
 		/* We can transmit over alternative ASP: */
 		LOGPAS(as, DLSS7, LOGL_INFO, "Tx Loadshare: OPC=%u=%s,SLS=%u -> eSLS=%u: use Alternative ASP '%s'\n",
-		       mtp->opc, osmo_ss7_pointcode_print(as->inst, mtp->opc),
-		       mtp->sls, as_ext_sls, asp->cfg.name);
+		       rtlb->rtlabel.opc, osmo_ss7_pointcode_print(as->inst, rtlb->rtlabel.opc),
+		       rtlb->rtlabel.sls, as_ext_sls, asp->cfg.name);
 		return asp;
 	}
 
@@ -594,8 +594,8 @@ static struct osmo_ss7_asp *ss7_as_select_asp_loadshare(struct osmo_ss7_as *as, 
 		aeslse->normal_asp = asp;
 		LOGPAS(as, DLSS7, LOGL_DEBUG, "Tx Loadshare: OPC=%u=%s,SLS=%u -> eSLS=%u: "
 		       "picked Normal ASP '%s' round-robin style\n",
-		       mtp->opc, osmo_ss7_pointcode_print(as->inst, mtp->opc),
-		       mtp->sls, as_ext_sls, aeslse->normal_asp->cfg.name);
+		       rtlb->rtlabel.opc, osmo_ss7_pointcode_print(as->inst, rtlb->rtlabel.opc),
+		       rtlb->rtlabel.sls, as_ext_sls, aeslse->normal_asp->cfg.name);
 		if (osmo_ss7_asp_active(aeslse->normal_asp)) {
 			/* Found active Normal Route: */
 			return aeslse->normal_asp;
@@ -611,8 +611,8 @@ static struct osmo_ss7_asp *ss7_as_select_asp_loadshare(struct osmo_ss7_as *as, 
 		aeslse->alt_asp = asp;
 		LOGPAS(as, DLSS7, LOGL_NOTICE, "Tx Loadshare: OPC=%u=%s,SLS=%u -> eSLS=%u: "
 			"Normal ASP '%s' unavailable, picked Alternative ASP '%s' round-robin style\n",
-			 mtp->opc, osmo_ss7_pointcode_print(as->inst, mtp->opc),
-			 mtp->sls, as_ext_sls, aeslse->normal_asp->cfg.name, asp->cfg.name);
+			 rtlb->rtlabel.opc, osmo_ss7_pointcode_print(as->inst, rtlb->rtlabel.opc),
+			 rtlb->rtlabel.sls, as_ext_sls, aeslse->normal_asp->cfg.name, asp->cfg.name);
 	}
 	return asp;
 }
@@ -642,7 +642,7 @@ static struct osmo_ss7_asp *ss7_as_select_asp_broadcast(struct osmo_ss7_as *as)
  */
 struct osmo_ss7_asp *ss7_as_select_asp(struct osmo_ss7_as *as, const struct xua_msg *xua)
 {
-	const struct osmo_mtp_transfer_param *mtp = &xua->mtp;
+	const struct ss7_mtp3_rtlabel *mtp3_rtlabel = &xua->mtp;
 	struct osmo_ss7_asp *asp = NULL;
 
 	switch (as->cfg.mode) {
@@ -654,12 +654,12 @@ struct osmo_ss7_asp *ss7_as_select_asp(struct osmo_ss7_as *as, const struct xua_
 		if (as->cfg.loadshare.tcap.enabled) {
 			int rc = tcap_as_select_asp_loadshare(&asp, as, xua);
 			if (rc == -EPROTONOSUPPORT) /* fallback to non-tcap loadsharing */
-				asp = ss7_as_select_asp_loadshare(as, mtp);
+				asp = ss7_as_select_asp_loadshare(as, mtp3_rtlabel);
 			/* for all other cases, the asp has been either set to NULL or the corresponding asp */
 		} else
 #endif
 		{
-			asp = ss7_as_select_asp_loadshare(as, mtp);
+			asp = ss7_as_select_asp_loadshare(as, mtp3_rtlabel);
 		}
 		break;
 	case OSMO_SS7_AS_TMOD_ROUNDROBIN:
@@ -687,7 +687,7 @@ struct osmo_ss7_asp *ss7_as_select_asp(struct osmo_ss7_as *as, const struct xua_
 struct osmo_ss7_asp *osmo_ss7_as_select_asp(struct osmo_ss7_as *as)
 {
 	struct osmo_ss7_asp *asp = NULL;
-	struct osmo_mtp_transfer_param mtp;
+	struct ss7_mtp3_rtlabel mtp3_rtlabel;
 
 	switch (as->cfg.mode) {
 	case OSMO_SS7_AS_TMOD_OVERRIDE:
@@ -697,8 +697,8 @@ struct osmo_ss7_asp *osmo_ss7_as_select_asp(struct osmo_ss7_as *as)
 		/* We don't have OPC and SLS information in this API (which is
 		actually only used to route IPA msgs nowadays by osmo-bsc, so we
 		don't care. Use hardcoded value to provide some fallback for this scenario: */
-		mtp = (struct osmo_mtp_transfer_param){0};
-		asp = ss7_as_select_asp_loadshare(as, &mtp);
+		mtp3_rtlabel = (struct ss7_mtp3_rtlabel){0};
+		asp = ss7_as_select_asp_loadshare(as, &mtp3_rtlabel);
 		break;
 	case OSMO_SS7_AS_TMOD_ROUNDROBIN:
 		asp = ss7_as_select_asp_roundrobin(as);

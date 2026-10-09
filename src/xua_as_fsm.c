@@ -185,7 +185,7 @@ int xua_as_transmit_msg(struct osmo_ss7_as *as, struct xua_msg *xua)
 	case OSMO_SS7_AS_TMOD_OVERRIDE:
 	case OSMO_SS7_AS_TMOD_LOADSHARE:
 		/* TODO: OSMO_SS7_AS_TMOD_LOADSHARE: actually use the SLS value
-		 * in xua->mtp.sls to ensure same SLS goes through same ASP. Not
+		 * in xua->mtp.rtlabel.sls to ensure same SLS goes through same ASP. Not
 		 * strictly required by M3UA RFC, but would fit the overall
 		 * principle. */
 	case OSMO_SS7_AS_TMOD_ROUNDROBIN:
