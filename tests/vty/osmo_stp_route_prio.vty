@@ -274,5 +274,5 @@ Loadshare Seed  Normal Route           Available  Alternative Route      Availab
 127             -                      -          -                      -         
 
 OsmoSTP(config-cs7-rt)# ! NOW TEST LOOKUP FAILS AS EXPECTED (all route links are down):
-OsmoSTP(config-cs7-rt)# do show cs7 instance 0 route-lookup 3.2.1 from 0.0.1 sls 0
-No route found for label 'OPC=1=0.0.1,DPC=6161=3.2.1,SLS=0'
+OsmoSTP(config-cs7-rt)# do show cs7 instance 0 route-lookup 3.2.1 from 0.0.1 sls 0 si 3
+No route found for label 'OPC=1=0.0.1,DPC=6161=3.2.1,SLS=0,SIO=3=sccp'
