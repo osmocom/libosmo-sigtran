@@ -28,6 +28,7 @@
 
 #include <osmocom/sccp/sccp_types.h>
 #include <osmocom/sigtran/osmo_ss7.h>
+#include <osmocom/sigtran/mtp_sap.h>
 #include <osmocom/sigtran/sccp_sap.h>
 #include <osmocom/sigtran/sccp_helpers.h>
 #include <osmocom/sigtran/protocol/sua.h>
