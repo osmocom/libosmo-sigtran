@@ -736,19 +736,21 @@ DEFUN(show_cs7_route_bindingtable, show_cs7_route_bindingtable_cmd,
 }
 
 DEFUN(show_cs7_route_lookup, show_cs7_route_lookup_cmd,
-      "show cs7 instance <0-15> route-lookup POINT_CODE from POINT_CODE sls <0-15> [list-asps]",
+      "show cs7 instance <0-15> route-lookup POINT_CODE from POINT_CODE sls <0-15> si <0-15> [list-asps]",
       SHOW_STR CS7_STR INST_STR INST_STR
       "Look up route\n" "Destination PC\n"
       "From\n" "Origin PC\n"
       "SLS\n" "SLS value\n"
+      "Service Indicator\n" "SI value\n"
       "List ASPs of the AS if route points to an AS")
 {
 	int id = atoi(argv[0]);
-	bool list_asps = argc > 4;
+	bool list_asps = argc > 5;
 	struct osmo_ss7_instance *inst;
 	struct osmo_ss7_route *rt;
 	struct ss7_mtp3_rtlabel mtp3_rtlb = {};
 	int pc;
+	int si;
 
 	inst = osmo_ss7_instance_find(id);
 	if (!inst) {
@@ -769,16 +771,16 @@ DEFUN(show_cs7_route_lookup, show_cs7_route_lookup_cmd,
 		return CMD_WARNING;
 	}
 	mtp3_rtlb.rtlabel.opc = pc;
-
 	mtp3_rtlb.rtlabel.sls = atoi(argv[3]);
 
-	/* TODO: set mtp3_rtlb.sio through VTY param once we use it during route lookup below: */
+	si = atoi(argv[4]);
+	mtp3_rtlb.sio = MTP_SIO(si, inst->cfg.network_indicator);
 
 	rt = ss7_instance_lookup_route(inst, &mtp3_rtlb);
 	if (!rt) {
 		char buf[256];
 		vty_out(vty, "No route found for label '%s'%s",
-			ss7_route_label_to_str(buf, sizeof(buf), inst, &mtp3_rtlb.rtlabel), VTY_NEWLINE);
+			ss7_mtp3_rtlabel_to_str(buf, sizeof(buf), inst, &mtp3_rtlb), VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 

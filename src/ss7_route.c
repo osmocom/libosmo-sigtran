@@ -461,8 +461,8 @@ bool ss7_route_dest_is_available(const struct osmo_ss7_route *rt)
 	return false;
 }
 
-bool ss7_route_is_available_for_rtlabel(const struct osmo_ss7_route *rt,
-					const struct osmo_ss7_route_label *rtlabel)
+bool ss7_route_is_available_for_mtp3_rtlabel(const struct osmo_ss7_route *rt,
+					     const struct ss7_mtp3_rtlabel *mtp3_rtlb)
 {
 	if (!ss7_route_dest_is_available(rt))
 		return false;
@@ -470,11 +470,13 @@ bool ss7_route_is_available_for_rtlabel(const struct osmo_ss7_route *rt,
 		struct osmo_ss7_as *as = rt->dest.as;
 		OSMO_ASSERT(as);
 		struct osmo_ss7_routing_key *rkey = &as->cfg.routing_key;
-		if (rtlabel->dpc != rkey->pc)
+		if (mtp3_rtlb->rtlabel.dpc != rkey->pc)
 			return false;
-		if ((rtlabel->opc & rkey->opc_mask) != rkey->opc)
+		if ((mtp3_rtlb->rtlabel.opc & rkey->opc_mask) != rkey->opc)
 			return false;
-		/* TODO: match rkey->si */
+		if (rkey->si != OSSMO_SS7_RKEY_SI_UNSET &&
+		    MTP_SIO_SI(mtp3_rtlb->sio) != rkey->si)
+			return false;
 		/* TODO: match rkey->ssn */
 	}
 	return true;

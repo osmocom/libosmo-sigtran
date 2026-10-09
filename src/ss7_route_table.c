@@ -361,7 +361,7 @@ ss7_route_table_lookup_route(const struct osmo_ss7_route_table *rtbl,
 	llist_for_each_entry(clset, &rtbl->combined_linksets, list) {
 		if ((rtlb.rtlabel.dpc & clset->cfg.mask) != clset->cfg.pc)
 			continue;
-		rt = ss7_combined_linkset_lookup_route(clset, &rtlb.rtlabel);
+		rt = ss7_combined_linkset_lookup_route(clset, &rtlb);
 		if (!rt)
 			continue;
 		return rt;
