@@ -10,3 +10,4 @@
 libosmocore	>1.14.2			new VTY node L_CS7_QOS_CLASS_NODE added
 libosmo-sigtran added			enum osmo_sccp_reset_reason_*, enum osmo_sccp_release_reason_*
 libosmo-sigtran added			enum osmo_sccp_return_reason
+libosmo-sigtran added                   MTP_SIO_*()

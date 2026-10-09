@@ -736,7 +736,7 @@ out_free_msgb:
 /* return 0 and asp is set */
 int tcap_as_select_asp_loadshare(struct osmo_ss7_asp **asp, struct osmo_ss7_as *as, const struct xua_msg *xua)
 {
-	uint8_t service_ind = xua->mtp.sio & 0xF;
+	uint8_t service_ind = MTP_SIO_SI(xua->mtp.sio);
 	struct xua_msg_part *m3ua_data_ie;
 	struct msgb *sccp_msg;
 	uint8_t *cur;

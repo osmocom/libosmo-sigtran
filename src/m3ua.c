@@ -526,9 +526,9 @@ void mtp_xfer_param_to_m3ua_dh(struct m3ua_data_hdr *mdh,
 {
 	mdh->opc = htonl(param->opc);
 	mdh->dpc = htonl(param->dpc);
-	mdh->si = param->sio & 0xF;
-	mdh->ni = (param->sio >> 6) & 0x3;
-	mdh->mp = (param->sio >> 4) & 0x3;
+	mdh->si = MTP_SIO_SI(param->sio);
+	mdh->ni = MTP_SIO_NI(param->sio);
+	mdh->mp = MTP_SIO_MP(param->sio);
 	mdh->sls = param->sls;
 }
 
@@ -540,9 +540,7 @@ void m3ua_dh_to_xfer_param(struct osmo_mtp_transfer_param *param,
 	param->dpc = ntohl(mdh->dpc);
 	param->sls = mdh->sls;
 	/* re-construct SIO */
-	param->sio = (mdh->si & 0xF) |
-		     ((mdh->mp & 0x3) << 4) |
-		     ((mdh->ni & 0x3) << 6);
+	param->sio = MTP_SIO_EXT(mdh->si, mdh->ni, mdh->mp);
 }
 
 struct msgb *m3ua_msgb_alloc(const char *name)
