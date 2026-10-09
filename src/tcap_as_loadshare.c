@@ -408,7 +408,7 @@ out:
   * @return 0 on success, negative on error
 */
 static int send_back_udts(struct osmo_ss7_as *as,
-			  const struct osmo_mtp_transfer_param *orig_mtp,
+			  const struct ss7_mtp3_rtlabel *orig_mtp3_rtlb,
 			  const struct xua_msg *orig_sua,
 			  uint8_t cause_code)
 {
@@ -444,9 +444,11 @@ static int send_back_udts(struct osmo_ss7_as *as,
 		goto free_sua;
 	}
 
-	new_mtp = *orig_mtp;
-	new_mtp.opc = orig_mtp->dpc;
-	new_mtp.dpc = orig_mtp->opc;
+	/* Build MTP3 transfer params with swapped OPC and DPC: */
+	new_mtp.opc = orig_mtp3_rtlb->rtlabel.dpc;
+	new_mtp.dpc = orig_mtp3_rtlb->rtlabel.opc;
+	new_mtp.sls = orig_mtp3_rtlb->rtlabel.sls;
+	new_mtp.sio = orig_mtp3_rtlb->sio;
 	mtp3_hmrt_mtp_xfer_request_l4_to_l3(as->inst, &new_mtp, msgb_data(msg), msgb_length(msg));
 	msgb_free(msg);
 free_sua:
@@ -463,12 +465,16 @@ free_sua:
  * \return 0 on success or -ENOKEY
  */
 static int asp_loadshare_tcap_route_fallback(struct osmo_ss7_as *as,
-					     const struct osmo_mtp_transfer_param *orig_mtp,
+					     const struct ss7_mtp3_rtlabel *orig_mtp3_rtlb,
 					     const struct msgb *sccp_msg)
 {
-	struct osmo_mtp_transfer_param new_mtp = *orig_mtp;
+	struct osmo_mtp_transfer_param new_mtp;
 	int rc = 0;
+
+	new_mtp.opc = orig_mtp3_rtlb->rtlabel.opc;
 	new_mtp.dpc = as->cfg.loadshare.tcap.unroutable_tcap_fallback_dpc;
+	new_mtp.sls = orig_mtp3_rtlb->rtlabel.sls;
+	new_mtp.sio = orig_mtp3_rtlb->sio;
 
 	/* l2 contains the sccp message */
 	rc = mtp3_hmrt_mtp_xfer_request_l4_to_l3(as->inst, &new_mtp, msgb_l2(sccp_msg), msgb_l2len(sccp_msg));
@@ -489,7 +495,7 @@ static int asp_loadshare_tcap_route_fallback(struct osmo_ss7_as *as,
  */
 static int asp_loadshare_tcap_handle_unroutable(struct osmo_ss7_asp **rasp,
 						struct osmo_ss7_as *as,
-						const struct osmo_mtp_transfer_param *mtp,
+						const struct ss7_mtp3_rtlabel *mtp3_rtlb,
 						const struct msgb *sccp_msg)
 {
 	struct osmo_ss7_asp *asp = NULL;
@@ -505,7 +511,7 @@ static int asp_loadshare_tcap_handle_unroutable(struct osmo_ss7_asp **rasp,
 		break;
 	case SS7_AS_TCAP_UNROUTABLE_ROUTE_FALLBACK:
 		/* No ASP selection. Try to route the SCCP msg to the fallback DPC */
-		rc = asp_loadshare_tcap_route_fallback(as, mtp, sccp_msg);
+		rc = asp_loadshare_tcap_route_fallback(as, mtp3_rtlb, sccp_msg);
 		if (!rc) /* rc == 0 would require a valid asp, use > 0 to drop the msg, but don't send an error back if needed */
 			rc = 1;
 		break;
@@ -532,7 +538,7 @@ static int asp_loadshare_tcap_handle_unroutable(struct osmo_ss7_asp **rasp,
  *	   -EPROTONOSUPPORT: let caller (regular loadsharing) handle those.
  */
 static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_as *as,
-				   const struct osmo_mtp_transfer_param *mtp, struct msgb *sccp_msg)
+				   const struct ss7_mtp3_rtlabel *mtp3_rtlabel, struct msgb *sccp_msg)
 {
 	struct tcap_parsed parsed = {};
 	struct xua_msg *sua;
@@ -652,7 +658,7 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 			asp = tcap_as_asp_find_by_tcap_id(as, &calling_addr, &called_addr, parsed.dtid);
 			if (!asp) {
 				/* Couldn't find a matching TCAP endpoint for an ongoing session */
-				rc = asp_loadshare_tcap_handle_unroutable(&asp, as, mtp, sccp_msg);
+				rc = asp_loadshare_tcap_handle_unroutable(&asp, as, mtp3_rtlabel, sccp_msg);
 				if (rc)
 					goto out_free_sua;
 
@@ -684,7 +690,7 @@ static int asp_loadshare_tcap_sccp(struct osmo_ss7_asp **rasp, struct osmo_ss7_a
 			asp = tcap_as_asp_find_by_tcap_id(as, &calling_addr, &called_addr, parsed.dtid);
 			if (!asp) {
 				/* Couldn't find a matching TCAP endpoint for an ongoing session */
-				rc = asp_loadshare_tcap_handle_unroutable(&asp, as, mtp, sccp_msg);
+				rc = asp_loadshare_tcap_handle_unroutable(&asp, as, mtp3_rtlabel, sccp_msg);
 				if (rc)
 					goto out_free_sua;
 
@@ -715,7 +721,7 @@ out_free_sua:
 	 * if the return option is used."
 	 * See also ITU Q.714 4.2 */
 	if (rc < 0 && rc != -EPROTONOSUPPORT) {
-		send_back_udts(as, mtp, sua, SCCP_RETURN_CAUSE_SUBSYSTEM_FAILURE);
+		send_back_udts(as, mtp3_rtlabel, sua, SCCP_RETURN_CAUSE_SUBSYSTEM_FAILURE);
 		rc = 0;
 	}
 	xua_msg_free(sua);

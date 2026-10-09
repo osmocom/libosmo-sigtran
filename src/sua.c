@@ -929,8 +929,8 @@ static int sua_rx_cl(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		return rc;
 
 	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_TOTAL);
-	OSMO_ASSERT(xua->mtp.sls <= 0xf);
-	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_SLS_0 + xua->mtp.sls);
+	OSMO_ASSERT(xua->mtp.rtlabel.sls <= 0xf);
+	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_SLS_0 + xua->mtp.rtlabel.sls);
 
 	switch (xua->hdr.msg_type) {
 	case 0: /* Reserved, permitted by ETSI TS 101 592 5.2.3.2 */
@@ -961,8 +961,8 @@ static int sua_rx_co(struct osmo_ss7_asp *asp, struct xua_msg *xua)
 		return rc;
 
 	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_TOTAL);
-	OSMO_ASSERT(xua->mtp.sls <= 0xf);
-	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_SLS_0 + xua->mtp.sls);
+	OSMO_ASSERT(xua->mtp.rtlabel.sls <= 0xf);
+	rate_ctr_inc2(as->ctrg, SS7_AS_CTR_RX_MSU_SLS_0 + xua->mtp.rtlabel.sls);
 
 	switch (xua->hdr.msg_type) {
 	case 0: /* Reserved, permitted by ETSI TS 101 592 5.2.3.2 */
@@ -1107,8 +1107,8 @@ int sua_rx_msg(struct osmo_ss7_asp *asp, struct msgb *msg)
 	}
 
 #if 0
-	xua->mtp.opc = ;
-	xua->mtp.dpc = ;
+	xua->mtp.rtlabel.opc = /* TODO */;
+	xua->mtp.rtlabel.dpc = /* TODO */;
 #endif
 	xua->mtp.sio = MTP_SIO(MTP_SI_SCCP, asp->inst->cfg.network_indicator);
 

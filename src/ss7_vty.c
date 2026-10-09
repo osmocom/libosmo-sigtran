@@ -747,7 +747,7 @@ DEFUN(show_cs7_route_lookup, show_cs7_route_lookup_cmd,
 	bool list_asps = argc > 4;
 	struct osmo_ss7_instance *inst;
 	struct osmo_ss7_route *rt;
-	struct osmo_ss7_route_label rtlabel = {};
+	struct ss7_mtp3_rtlabel mtp3_rtlb = {};
 	int pc;
 
 	inst = osmo_ss7_instance_find(id);
@@ -761,22 +761,22 @@ DEFUN(show_cs7_route_lookup, show_cs7_route_lookup_cmd,
 		vty_out(vty, "Invalid point code (%s)%s", argv[1], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
-	rtlabel.dpc = pc;
+	mtp3_rtlb.rtlabel.dpc = pc;
 
 	pc = osmo_ss7_pointcode_parse(inst, argv[2]);
 	if (pc < 0 || !osmo_ss7_pc_is_valid((uint32_t)pc)) {
 		vty_out(vty, "Invalid point code (%s)%s", argv[2], VTY_NEWLINE);
 		return CMD_WARNING;
 	}
-	rtlabel.opc = pc;
+	mtp3_rtlb.rtlabel.opc = pc;
 
-	rtlabel.sls = atoi(argv[3]);
+	mtp3_rtlb.rtlabel.sls = atoi(argv[3]);
 
-	rt = ss7_instance_lookup_route(inst, &rtlabel);
+	rt = ss7_instance_lookup_route(inst, &mtp3_rtlb);
 	if (!rt) {
 		char buf[256];
 		vty_out(vty, "No route found for label '%s'%s",
-			ss7_route_label_to_str(buf, sizeof(buf), inst, &rtlabel), VTY_NEWLINE);
+			ss7_mtp3_rtlabel_to_str(buf, sizeof(buf), inst, &mtp3_rtlb), VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 

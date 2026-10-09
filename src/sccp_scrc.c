@@ -105,7 +105,7 @@ static int sua2sccp_tx_m3ua(struct osmo_sccp_instance *inst,
 	struct osmo_mtp_prim *omp;
 	struct osmo_mtp_transfer_param *param;
 	struct osmo_ss7_instance *s7i = inst->ss7;
-	uint32_t remote_pc = sua->mtp.dpc;
+	uint32_t remote_pc = sua->mtp.rtlabel.dpc;
 
 	/* 1) encode the SUA in xua_msg to SCCP message */
 	msg = osmo_sua_to_sccp(sua);
@@ -117,8 +117,8 @@ static int sua2sccp_tx_m3ua(struct osmo_sccp_instance *inst,
 	/* 2) wrap into MTP-TRANSFER.req primitive */
 	omp = osmo_mtp_prim_xfer_req_prepend(NULL, msg);
 	param = &omp->u.transfer;
-	if (sua->mtp.opc)
-		param->opc = sua->mtp.opc;
+	if (sua->mtp.rtlabel.opc)
+		param->opc = sua->mtp.rtlabel.opc;
 	else {
 		if (!osmo_ss7_pc_is_valid(s7i->cfg.primary_pc)) {
 			LOGPSCI(inst, LOGL_ERROR, "SS7 instance %u: no primary point-code set\n",
@@ -128,7 +128,7 @@ static int sua2sccp_tx_m3ua(struct osmo_sccp_instance *inst,
 		param->opc = s7i->cfg.primary_pc;
 	}
 	param->dpc = remote_pc;
-	param->sls = sua->mtp.sls;
+	param->sls = sua->mtp.rtlabel.sls;
 	param->sio = MTP_SIO(MTP_SI_SCCP, s7i->cfg.network_indicator);
 
 	/* 3) send via MTP-SAP (osmo_ss7_instance) */
@@ -142,7 +142,6 @@ static int gen_mtp_transfer_req_xua(struct osmo_sccp_instance *inst,
 {
 	struct osmo_sccp_addr calling;
 	struct osmo_ss7_route *rt;
-	struct osmo_ss7_route_label rtlabel;
 
 	/* this is a bit fishy due to the different requirements of
 	 * classic SSCP/MTP compared to various SIGTRAN stackings.
@@ -160,23 +159,17 @@ static int gen_mtp_transfer_req_xua(struct osmo_sccp_instance *inst,
 
 	if (sua_addr_parse(&calling, xua, SUA_IEI_SRC_ADDR) == 0 &&
 	    (calling.presence & OSMO_SCCP_ADDR_T_PC))
-		xua->mtp.opc = calling.pc;
+		xua->mtp.rtlabel.opc = calling.pc;
 
 
 	if (called->presence & OSMO_SCCP_ADDR_T_PC)
-		xua->mtp.dpc = called->pc;
+		xua->mtp.rtlabel.dpc = called->pc;
 
-	rtlabel = (struct osmo_ss7_route_label){
-		.opc = xua->mtp.opc,
-		.dpc = xua->mtp.dpc,
-		.sls = xua->mtp.sls,
-	};
-
-	rt = ss7_instance_lookup_route(inst->ss7, &rtlabel);
+	rt = ss7_instance_lookup_route(inst->ss7, &xua->mtp);
 	if (!rt) {
 		char buf[256];
 		LOGPSCI(inst, LOGL_ERROR, "MTP-TRANSFER.req from SCCP for %s: no route!\n",
-			ss7_route_label_to_str(buf, sizeof(buf), inst->ss7, &rtlabel));
+			ss7_route_label_to_str(buf, sizeof(buf), inst->ss7, &xua->mtp.rtlabel));
 		sccp_rout_fail_enqueue(inst, xua, SCCP_RETURN_CAUSE_MTP_FAILURE, xua->hdr.msg_class == SUA_MSGC_CO);
 		return -1;
 	}
@@ -245,11 +238,11 @@ static int scrc_node_2(struct osmo_sccp_instance *inst, struct xua_msg *xua)
 	rc = sua_addr_parse(&called, xua, SUA_IEI_DEST_ADDR);
 	if (rc < 0) {
 		/* Q.714 2.2.2: It is expectd that CO msgs != CREQ have no "Called Address".
-		* Use MTP DPC info provided by SCOC in xua->mtp.dpc instead. */
+		* Use MTP DPC info provided by SCOC in xua->mtp.rtlabel.dpc instead. */
 		called = (struct osmo_sccp_addr){
 			.ri = OSMO_SCCP_RI_SSN_PC,
 			.presence = OSMO_SCCP_ADDR_T_PC,
-			.pc = xua->mtp.dpc,
+			.pc = xua->mtp.rtlabel.dpc,
 		};
 	}
 	if (!(called.presence & OSMO_SCCP_ADDR_T_PC)) {
@@ -524,7 +517,7 @@ static int ensure_opc_in_calling_ssn(struct osmo_sccp_instance *inst,
 		/* add the M3UA OPC to the address to ensure that the recipient
 		 * can actually respond back to the source */
 		calling.presence |= OSMO_SCCP_ADDR_T_PC;
-		calling.pc = xua->mtp.opc;
+		calling.pc = xua->mtp.rtlabel.opc;
 		xua_msg_free_tag(xua, SUA_IEI_SRC_ADDR);
 		xua_msg_add_sccp_addr(xua, SUA_IEI_SRC_ADDR, &calling);
 	}

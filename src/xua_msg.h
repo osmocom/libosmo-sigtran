@@ -17,12 +17,13 @@
  */
 #pragma once
 
-#include "xua_types.h"
+#include <stdint.h>
+#include <stdint.h>
 
 #include <osmocom/core/linuxlist.h>
-#include <osmocom/sigtran/mtp_sap.h>
-#include <stdint.h>
-#include <stdint.h>
+
+#include "xua_types.h"
+#include "ss7_route_table.h"
 
 #define XUA_HDR(class, type)	((struct xua_common_hdr) { .spare = 0, .msg_class = (class), .msg_type = (type) })
 
@@ -33,7 +34,7 @@ struct osmo_sccp_gt;
 struct xua_msg {
 	struct llist_head entry; /* Allows queueing a xua_msg into a llist */
 	struct xua_common_hdr hdr;
-	struct osmo_mtp_transfer_param mtp;
+	struct ss7_mtp3_rtlabel mtp;
 
 	struct llist_head headers;
 };

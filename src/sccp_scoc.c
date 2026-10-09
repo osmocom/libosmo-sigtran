@@ -189,7 +189,7 @@ int sccp_conn_xua_gen_relre_and_send(struct sccp_connection *conn, uint32_t caus
 
 	/* amend this with point code information; The SUA RELRE
 	 * includes neither called nor calling party address! */
-	xua->mtp.dpc = conn->remote_pc;
+	xua->mtp.rtlabel.dpc = conn->remote_pc;
 	sccp_scrc_rx_scoc_conn_msg(conn->inst, xua);
 	xua_msg_free(xua);
 	return 0;
@@ -290,10 +290,10 @@ static struct xua_msg *xua_gen_msg_co(struct sccp_connection *conn, uint32_t eve
 
 	/* amend this with point code information; Many CO msgs
 	 * includes neither called nor calling party address! */
-	xua->mtp.dpc = conn->remote_pc;
+	xua->mtp.rtlabel.dpc = conn->remote_pc;
 
 	/* Apply SLS calculated for the connection (ITU-T Q.714 1.1.2.3). */
-	xua->mtp.sls = conn->tx_co_mtp_sls;
+	xua->mtp.rtlabel.sls = conn->tx_co_mtp_sls;
 
 	switch (msg_type) {
 	case SUA_CO_CORE: /* Connect Request == SCCP CR */
@@ -555,8 +555,8 @@ static void tx_coerr_from_xua(struct osmo_sccp_instance *inst,
 
 	xua = gen_coerr(route_ctx, dest_ref, err_cause);
 	/* copy over the MTP parameters */
-	xua->mtp.dpc = in->mtp.opc;
-	xua->mtp.opc = in->mtp.dpc;
+	xua->mtp.rtlabel.dpc = in->mtp.rtlabel.opc;
+	xua->mtp.rtlabel.opc = in->mtp.rtlabel.dpc;
 	xua->mtp.sio = in->mtp.sio;
 
 	/* sent to SCRC for transmission */
@@ -593,8 +593,8 @@ static void tx_relco_from_xua(struct osmo_sccp_instance *inst,
 
 	xua = gen_relco(route_ctx, dest_ref, src_ref);
 	/* copy over the MTP parameters */
-	xua->mtp.dpc = in->mtp.opc;
-	xua->mtp.opc = in->mtp.dpc;
+	xua->mtp.rtlabel.dpc = in->mtp.rtlabel.opc;
+	xua->mtp.rtlabel.opc = in->mtp.rtlabel.dpc;
 	xua->mtp.sio = in->mtp.sio;
 
 	/* send to SCRC for transmission */
@@ -632,8 +632,8 @@ static void tx_rlsd_from_xua_twoway(struct sccp_connection *conn,
 	/* Generate RLSD towards remote peer */
 	xua = gen_rlsd(route_ctx, dest_ref, src_ref);
 	/* copy over the MTP parameters */
-	xua->mtp.dpc = in->mtp.opc;
-	xua->mtp.opc = in->mtp.dpc;
+	xua->mtp.rtlabel.dpc = in->mtp.rtlabel.opc;
+	xua->mtp.rtlabel.opc = in->mtp.rtlabel.dpc;
 	xua->mtp.sio = in->mtp.sio;
 	/* send to SCRC for transmission */
 	sccp_scrc_rx_scoc_conn_msg(conn->inst, xua);
@@ -641,8 +641,8 @@ static void tx_rlsd_from_xua_twoway(struct sccp_connection *conn,
 
 	/* Generate RLSD towards local peer */
 	xua = gen_rlsd(conn->inst->route_ctx, conn->conn_id, conn->remote_ref);
-	xua->mtp.dpc = in->mtp.dpc;
-	xua->mtp.opc = conn->remote_pc;
+	xua->mtp.rtlabel.dpc = in->mtp.rtlabel.dpc;
+	xua->mtp.rtlabel.opc = conn->remote_pc;
 	xua->mtp.sio = in->mtp.sio;
 	osmo_fsm_inst_dispatch(conn->fi, SCOC_E_RCOC_RLSD_IND, xua);
 	xua_msg_free(xua);
@@ -721,8 +721,8 @@ static void sccp_scoc_rx_inval_opc(struct sccp_connection *conn,
 	LOGPSCC(conn, LOGL_NOTICE,
 		"Received message %s on conn with mismatching remote pc=%u=%s\n",
 		xua_hdr_dump(xua, &xua_dialect_sua),
-		xua->mtp.opc,
-		osmo_ss7_pointcode_print_buf(buf_opc, sizeof(buf_opc), conn->inst->ss7, xua->mtp.opc));
+		xua->mtp.rtlabel.opc,
+		osmo_ss7_pointcode_print_buf(buf_opc, sizeof(buf_opc), conn->inst->ss7, xua->mtp.rtlabel.opc));
 
 	/* we have received a message with invalid origin PC and thus
 	 * apply the action indicated in Table B.2/Q.714 */
@@ -805,7 +805,7 @@ void sccp_scoc_rx_from_scrc(struct osmo_sccp_instance *inst,
 		}
 
 		/* Check if received OPC != the remote_pc we stored locally */
-		if (xua->mtp.opc != conn->remote_pc) {
+		if (xua->mtp.rtlabel.opc != conn->remote_pc) {
 			sccp_scoc_rx_inval_opc(conn, xua);
 			return;
 		}

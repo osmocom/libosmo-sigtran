@@ -13,6 +13,7 @@
 
 struct osmo_sccp_addr;
 struct m3ua_data_hdr;
+struct ss7_mtp3_rtlabel;
 
 int sua_addr_parse_part(struct osmo_sccp_addr *out,
 			const struct xua_msg_part *param);
@@ -80,10 +81,10 @@ struct msgb *m3ua_msgb_alloc(const char *name);
 struct xua_msg *m3ua_xfer_from_data(const struct m3ua_data_hdr *data_hdr,
 				    const uint8_t *data, unsigned int data_len);
 struct m3ua_data_hdr *data_hdr_from_m3ua(const struct xua_msg *xua);
-void m3ua_dh_to_xfer_param(struct osmo_mtp_transfer_param *param,
-			   const struct m3ua_data_hdr *mdh);
-void mtp_xfer_param_to_m3ua_dh(struct m3ua_data_hdr *mdh,
-				const struct osmo_mtp_transfer_param *param);
+void m3ua_dh_to_mtp3_rtlabel(struct ss7_mtp3_rtlabel *rtlb,
+			     const struct m3ua_data_hdr *mdh);
+void mtp3_rtlabel_to_m3ua_dh(struct m3ua_data_hdr *mdh,
+			     const struct ss7_mtp3_rtlabel *rtlb);
 
 
 extern const struct xua_msg_class m3ua_msg_class_mgmt;

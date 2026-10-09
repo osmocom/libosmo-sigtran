@@ -85,7 +85,7 @@ static struct xua_msg *xua_gen_msg_cl(uint32_t event,
 		 * "They are transferred independently of each other.
 		 *  Therefore, they may be delivered to the SCCP user out-of-sequence."
 		 */
-		xua->mtp.sls = rand() & 0xf;
+		xua->mtp.rtlabel.sls = rand() & 0xf;
 	} else {
 		/* "ITU-T Q.711 6.2.1 Class 1:
 		 * "The SCCP user can invoke this service by means of the parameter
@@ -98,7 +98,7 @@ static struct xua_msg *xua_gen_msg_cl(uint32_t event,
 		* stream of NSDUs with the same sequence control parameter".
 		* SLS is 4 bits, as described in ITU Q.704 Figure 3.
 		*/
-		xua->mtp.sls = udpar->in_sequence_control & 0x0f;
+		xua->mtp.rtlabel.sls = udpar->in_sequence_control & 0x0f;
 	}
 
 	switch (msg_type) {
@@ -369,7 +369,7 @@ void sccp_sclc_rx_scrc_rout_fail(struct osmo_sccp_instance *inst,
 	case SUA_CL_CLDT:
 		xua_out = gen_ret_msg(inst, xua_in, cause);
 		/* TODO: Message Return Option? */
-		if (!osmo_ss7_pc_is_local(inst->ss7, xua_in->mtp.opc)) {
+		if (!osmo_ss7_pc_is_local(inst->ss7, xua_in->mtp.rtlabel.opc)) {
 			/* non-local originator: send UDTS */
 			/* TODO: Assign SLS */
 			sccp_scrc_rx_sclc_msg(inst, xua_out);
