@@ -5,6 +5,7 @@
 
 #include <osmocom/core/tdef.h>
 #include <osmocom/sigtran/osmo_ss7.h>
+#include <osmocom/sigtran/sigtran_sap.h>
 #include "xua_msg.h"
 
 #define M3UA_MSG_SIZE 2048
