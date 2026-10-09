@@ -8,6 +8,8 @@
  * SS7 Routing Tables
  ***********************************************************************/
 
+struct osmo_ss7_as;
+struct osmo_ss7_linkset;
 struct osmo_ss7_instance;
 enum osmo_ss7_route_status;
 
