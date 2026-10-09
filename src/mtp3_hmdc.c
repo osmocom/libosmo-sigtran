@@ -40,7 +40,7 @@
  * Ownership of xua_msg passed is transferred to this function. */
 int mtp3_hmdc_rx_from_l2(struct osmo_ss7_instance *inst, struct xua_msg *xua)
 {
-	uint32_t dpc = xua->mtp.dpc;
+	uint32_t dpc = xua->mtp.rtlabel.dpc;
 	if (osmo_ss7_pc_is_local(inst, dpc)) {
 		LOGSS7(inst, LOGL_DEBUG, "%s(): found dpc=%u=%s as local\n",
 		       __func__, dpc, osmo_ss7_pointcode_print(inst, dpc));

@@ -416,10 +416,13 @@ struct osmo_ss7_route *
 osmo_ss7_route_lookup(struct osmo_ss7_instance *inst, uint32_t dpc)
 {
 	OSMO_ASSERT(ss7_initialized);
-	struct osmo_ss7_route_label rtlb = {
-		.opc = 0,
-		.dpc = dpc,
-		.sls = 0,
+	struct ss7_mtp3_rtlabel rtlb = {
+		.rtlabel = {
+			.opc = 0,
+			.dpc = dpc,
+			.sls = 0,
+		},
+		.sio = 0,
 	};
 
 	return ss7_instance_lookup_route(inst, &rtlb);
