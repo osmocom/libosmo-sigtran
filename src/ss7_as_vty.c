@@ -318,13 +318,17 @@ DEFUN_ATTR(as_qos_clas, as_qos_class_cmd,
 }
 
 const struct value_string mtp_si_vals[] = {
+	{ MTP_SI_SNM,		"snm" },
+	{ MTP_SI_STM,		"stm" },
 	{ MTP_SI_SCCP,		"sccp" },
 	{ MTP_SI_TUP,		"tup" },
 	{ MTP_SI_ISUP,		"isup" },
 	{ MTP_SI_DUP,		"dup" },
+	{ MTP_SI_DUP_FAC,	"dup-facility" },
 	{ MTP_SI_TESTING,	"testing" },
 	{ MTP_SI_B_ISUP,	"b-isup" },
 	{ MTP_SI_SAT_ISUP,	"sat-isup" },
+	{ MTP_SI_SPEECH,	"speech" },
 	{ MTP_SI_AAL2_SIG,	"aal2" },
 	{ MTP_SI_BICC,		"bicc" },
 	{ MTP_SI_GCP,		"h248" },
@@ -341,16 +345,22 @@ const struct value_string mtp_si_vals[] = {
 	"Match on Originating Point Code and Mask\n" \
 	"Originating Point Code\n" \
 	"Originating Point Code Mask\n"
-#define ROUTING_KEY_SI_ARG " si (aal2|bicc|b-isup|h248|isup|sat-isup|sccp|tup)"
+#define ROUTING_KEY_SI_ARG " si (aal2|bicc|b-isup|dup|dup-facility|h248|isup|sat-isup|sccp|snm|speech|stm|testing|tup)"
 #define ROUTING_KEY_SI_ARG_STRS \
 	"Match on Service Indicator\n" \
 	"ATM Adaption Layer 2\n" \
 	"Bearer Independent Call Control\n" \
 	"Broadband ISDN User Part\n" \
+	"Data User Part (Call Related)\n" \
+	"Data User Part (Facility Related)\n" \
 	"H.248\n" \
 	"ISDN User Part\n" \
 	"Sattelite ISDN User Part\n" \
 	"Signalling Connection Control Part\n" \
+	"Sig Network Management\n" \
+	"Speech Processing Network Element\n" \
+	"Sig Testing and Maintenance\n" \
+	"MTP Testing User Part\n" \
 	"Telephony User Part\n"
 #define ROUTING_KEY_SSN_ARG " ssn SSN"
 #define ROUTING_KEY_SSN_ARG_STRS \
