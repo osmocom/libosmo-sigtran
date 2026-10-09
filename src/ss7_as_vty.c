@@ -441,6 +441,8 @@ static int _rout_key(struct vty *vty,
 					osmo_ss7_asp_protocol_name(as->cfg.proto), VTY_NEWLINE);
 				return CMD_WARNING;
 			}
+			vty_out(vty, "%% NOTE: routing-key based on SSN is not yet implemented, "
+				"all SSNs will be accepted regardless of configuration (See OS#7070)%s", VTY_NEWLINE);
 		}
 	} else {
 		ssn = OSSMO_SS7_RKEY_SSN_UNSET;
