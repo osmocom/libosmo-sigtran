@@ -642,24 +642,23 @@ void ss7_vty_write_one_as(struct vty *vty, struct osmo_ss7_as *as, bool show_dyn
 			vty_out(vty, "  sls-shift %u%s", as->cfg.loadshare.sls_shift, VTY_NEWLINE);
 	}
 #ifdef WITH_TCAP_LOADSHARING
-	if (as->cfg.loadshare.tcap.enabled)
+	if (as->cfg.loadshare.tcap.enabled) {
+		const char *tcap_unroutable_str = get_value_string_or_null(osmo_ss7_as_tcap_unroutable_vals,
+							as->cfg.loadshare.tcap.unroutable_tcap_msg);
 		vty_out(vty, "  tcap-routing%s", VTY_NEWLINE);
-
-	const char *tcap_unroutable_str = get_value_string_or_null(osmo_ss7_as_tcap_unroutable_vals,
-						   as->cfg.loadshare.tcap.unroutable_tcap_msg);
-	switch (as->cfg.loadshare.tcap.unroutable_tcap_msg) {
-	case SS7_AS_TCAP_UNROUTABLE_REJECT_UDTS:
-		/* default value, no need to write it out */
-		break;
-	case SS7_AS_TCAP_UNROUTABLE_ROUTE_FALLBACK:
-		vty_out(vty, "  tcap-route-fallback %s%s%s", tcap_unroutable_str,
-			osmo_ss7_pointcode_print(as->inst, as->cfg.loadshare.tcap.unroutable_tcap_fallback_dpc),
-			VTY_NEWLINE);
-		break;
-	case SS7_AS_TCAP_UNROUTABLE_LOAD_SHARE_AS:
-		vty_out(vty, "  tcap-route-fallback %s%s", tcap_unroutable_str, VTY_NEWLINE);
-	default:
-		break;
+		switch (as->cfg.loadshare.tcap.unroutable_tcap_msg) {
+		case SS7_AS_TCAP_UNROUTABLE_REJECT_UDTS:
+		case SS7_AS_TCAP_UNROUTABLE_LOAD_SHARE_AS:
+			vty_out(vty, "  tcap-unroutable-sessions %s%s", tcap_unroutable_str, VTY_NEWLINE);
+			break;
+		case SS7_AS_TCAP_UNROUTABLE_ROUTE_FALLBACK:
+			vty_out(vty, "  tcap-unroutable-sessions %s %s%s", tcap_unroutable_str,
+				osmo_ss7_pointcode_print(as->inst, as->cfg.loadshare.tcap.unroutable_tcap_fallback_dpc),
+				VTY_NEWLINE);
+			break;
+		default:
+			break;
+		}
 	}
 
 #endif /* WITH_TCAP_LOADSHARING */

@@ -46,3 +46,26 @@ OsmoSTP(config-cs7-as)# no ?
   traffic-mode  Remove explicit traffic mode of operation of this AS
   tcap-routing  Disable TCAP-based routing when in traffic-mode loadshare
   point-code    Point Code Specific Features
+
+OsmoSTP(config-cs7-as)# tcap-unroutable-sessions ?
+  reject-udts         Reject the message with a UDTS
+  load-share-over-as  Fallback to load-share over AS by using all available AS (round robin)
+  route-fallback      Route to a different M3UA PC
+
+OsmoSTP(config-cs7-as)# do show cs7 config
+cs7 instance 0
+...
+ as my-ass m3ua
+  routing-key 0 0.0.0
+...
+
+OsmoSTP(config-cs7-as)# tcap-routing
+
+OsmoSTP(config-cs7-as)# do show cs7 config
+cs7 instance 0
+...
+ as my-ass m3ua
+  tcap-routing
+  tcap-unroutable-sessions reject-udts
+  routing-key 0 0.0.0
+...
