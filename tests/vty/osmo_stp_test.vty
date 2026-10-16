@@ -673,27 +673,35 @@ ASP Name      AS Name       State          Type  Role  SCTP Role  Local Addresse
 ------------  ------------  -------------  ----  ----  ---------  -----------------------  -----------------------
 my-asp        my-ass        ASP_DOWN       m3ua  sg    server     (127.0.0.100|127.0.0.101):54321  (127.0.0.200|127.0.0.201):12345
 
-OsmoSTP(config-cs7-as)# exit
-OsmoSTP(config-cs7)# do show cs7 instance 0 asp
+OsmoSTP(config-cs7-as)# do show cs7 instance 0 asp
 ASP Name      AS Name       State          Type  Role  SCTP Role  Local Addresses          Remote Addresses
 ------------  ------------  -------------  ----  ----  ---------  -----------------------  -----------------------
 my-asp        my-ass        ASP_DOWN       m3ua  sg    server     (127.0.0.100|127.0.0.101):54321  (127.0.0.200|127.0.0.201):12345
 
-OsmoSTP(config-cs7)# exit
 
 
-OsmoSTP(config)# do show cs7 instance 0 asp
+OsmoSTP(config-cs7-as)# do show cs7 instance 0 asp
 ASP Name      AS Name       State          Type  Role  SCTP Role  Local Addresses          Remote Addresses
 ------------  ------------  -------------  ----  ----  ---------  -----------------------  -----------------------
 my-asp        my-ass        ASP_DOWN       m3ua  sg    server     (127.0.0.100|127.0.0.101):54321  (127.0.0.200|127.0.0.201):12345
 
-OsmoSTP(config)# do show cs7 instance 0 as all
+OsmoSTP(config-cs7-as)# do show cs7 instance 0 as all
                           Routing    Routing Key                          Cic   Cic   Traffic
 AS Name      State        Context    Dpc           Si   Opc           Ssn Min   Max   Mode
 ------------ ------------ ---------- ------------- ---- ------------- --- ----- ----- -------
 my-ass       AS_DOWN      0          3.2.1                                             override
 
+OsmoSTP(config-cs7-as)# routing-key 0 3.2.1 opc 2.7.0 7.255.4 si sccp ssn 45
+m3ua AS doesn't support matching on AS; only permitted on SUA AS
+OsmoSTP(config-cs7-as)# routing-key 0 3.2.1 opc 2.7.0 7.255.4 si sccp ssn 0
+OsmoSTP(config-cs7-as)# do show cs7 instance 0 as all
+                          Routing    Routing Key                          Cic   Cic   Traffic
+AS Name      State        Context    Dpc           Si   Opc           Ssn Min   Max   Mode
+------------ ------------ ---------- ------------- ---- ------------- --- ----- ----- -------
+my-ass       AS_DOWN      0          3.2.1            3 2.7.0/7.255.4                  override
 
+OsmoSTP(config-cs7-as)# exit
+OsmoSTP(config-cs7)# exit
 
 OsmoSTP(config)# show running-config
 ...
@@ -710,7 +718,7 @@ cs7 instance 0
   no shutdown
  as my-ass m3ua
   asp my-asp
-  routing-key 0 3.2.1
+  routing-key 0 3.2.1 opc 2.7.0 7.255.4 si sccp
  route-table system
  listen m3ua 2905
   local-ip 127.0.0.2
@@ -753,7 +761,7 @@ OsmoSTP(config-cs7)# do show cs7 instance 0 as all
                           Routing    Routing Key                          Cic   Cic   Traffic
 AS Name      State        Context    Dpc           Si   Opc           Ssn Min   Max   Mode
 ------------ ------------ ---------- ------------- ---- ------------- --- ----- ----- -------
-my-ass       AS_DOWN      0          3.2.1                                             override
+my-ass       AS_DOWN      0          3.2.1            3 2.7.0/7.255.4                  override
 
 
 OsmoSTP(config-cs7)# do show cs7 instance 0 sccp timers
